@@ -1,0 +1,5 @@
+# build artifacts that should never be committed
+*.zip
+.building/
+coverage/
+node_modules/

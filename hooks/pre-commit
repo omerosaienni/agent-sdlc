@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Refuse commits authored with an email not on the allowlist, so the loop's
+# commits attribute to the right GitHub account. Override with GIT_IDENTITY_ALLOWLIST.
+allowed="${GIT_IDENTITY_ALLOWLIST:-39497847+omerosaienni@users.noreply.github.com}"
+email="$(git config user.email)"
+case " $allowed " in
+  *" $email "*) ;;
+  *) echo "BLOCKED: commit email '$email' is not on the allowlist."; echo "Set: git config user.email <one of: $allowed>"; exit 1 ;;
+esac

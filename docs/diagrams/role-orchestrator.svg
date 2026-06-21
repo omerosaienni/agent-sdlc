@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" viewBox="0 0 680 326" role="img" font-family="sans-serif">
+<title>Role card: Orchestrator</title>
+<desc>Orchestrator. Owns: the deliverable sequence and the state file. Produces: branches, pull requests, state.json updates. Cannot: write code, judge, or override a verdict. Context: passive, never evaluates quality itself.</desc>
+<rect x="40" y="30" width="600" height="56" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+<text x="60" y="51" dominant-baseline="central" fill="#444441" font-size="16" font-weight="500">Orchestrator</text>
+<text x="60" y="71" dominant-baseline="central" fill="#5F5E5A" font-size="12">passive conductor, sequences and tracks</text>
+<line x1="40" y1="142" x2="640" y2="142" stroke="#5F5E5A" stroke-width="0.3" opacity="0.4"/>
+<line x1="40" y1="198" x2="640" y2="198" stroke="#5F5E5A" stroke-width="0.3" opacity="0.4"/>
+<line x1="40" y1="254" x2="640" y2="254" stroke="#5F5E5A" stroke-width="0.3" opacity="0.4"/>
+<text x="60" y="114" dominant-baseline="central" fill="#444441" font-size="13" font-weight="500">Owns</text>
+<text x="200" y="114" dominant-baseline="central" fill="#5F5E5A" font-size="12">the deliverable sequence and the state file</text>
+<text x="60" y="170" dominant-baseline="central" fill="#444441" font-size="13" font-weight="500">Produces</text>
+<text x="200" y="170" dominant-baseline="central" fill="#5F5E5A" font-size="12">branches, pull requests, state.json updates</text>
+<text x="60" y="226" dominant-baseline="central" fill="#444441" font-size="13" font-weight="500">Cannot</text>
+<text x="200" y="226" dominant-baseline="central" fill="#5F5E5A" font-size="12">write code, judge, or override a verdict</text>
+<text x="60" y="282" dominant-baseline="central" fill="#444441" font-size="13" font-weight="500">Context</text>
+<text x="200" y="282" dominant-baseline="central" fill="#5F5E5A" font-size="12">passive, never evaluates quality itself</text>
+</svg>
