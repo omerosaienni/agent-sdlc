@@ -15,6 +15,12 @@ The human entry point to the system. The contracts under [`../contracts/`](../co
 - [`diagram-spec.md`](diagram-spec.md): the canonical definition of the visual set, and how to regenerate a diagram.
 - [`diagrams/`](diagrams/): the SVGs.
 
+## Templates and examples
+
+- [`templates/ts-react-mongo.md`](templates/ts-react-mongo.md): a forward-looking roadmap for a full TypeScript / React / MongoDB monorepo template. The current generator is backend only; this page is the intended shape, not what ships today.
+- [`../examples/smoke-test-sheet.md`](../examples/smoke-test-sheet.md): a one-deliverable sheet that exercises the whole build loop on a trivial case. Run it first to validate the orchestration itself.
+- [`../hooks/`](../hooks/README.md): the per-commit git identity guard, the runtime half of the commit-attribution defence the setup gate also enforces.
+
 ## Contracts
 
 The operating contracts, each a project-agnostic rulebook a project consumes by supplying its small project-specific pieces:

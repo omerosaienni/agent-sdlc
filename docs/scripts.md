@@ -44,8 +44,8 @@ the loop consumes the stamp.
 ## init-ts-mongo.sh (the generator)
 
 Scaffolds a backend TypeScript + MongoDB project: tooling, infra, the db helper,
-an entry point, conventions, then inits git. It makes no domain assumptions; you
-grow `src/index.ts` and add your own modules.
+an entry point, a faker seed helper, conventions, then inits git. It makes no
+domain assumptions; you grow `src/index.ts` and add your own modules.
 
 ```
 init-ts-mongo.sh <project-name> [target-dir] [--verbose] [--no-color] [--debug]
@@ -69,7 +69,7 @@ flowchart TD
     tooling --> db["database helper<br/>src/db.ts (db name baked in, shared 27017)"]
     db --> infra["docker infra<br/>compose, rs-init"]
     infra --> build["build surface<br/>Makefile, package.json"]
-    build --> entry["entry point<br/>src/index.ts + test + smoke test"]
+    build --> entry["entry + seed<br/>src/index.ts + test + smoke test<br/>src/seed.ts (faker seed helper)"]
     entry --> editor["editor<br/>.vscode debug configs"]
     editor --> docs["docs<br/>CLAUDE.md, README"]
     docs --> git["git init + initial commit<br/>(idempotent)"]
@@ -112,6 +112,7 @@ flowchart TD
         index["src/index.ts (entry point)"]
         indextest["src/index.test.ts (unit)"]
         smoke["src/smoke.integration.test.ts"]
+        seed["src/seed.ts (faker seed helper)"]
     end
 
     subgraph build["Build surface"]
@@ -127,14 +128,18 @@ flowchart TD
 
     dbts --> index
     dbts --> smoke
+    dbts --> seed
 
     classDef param fill:#dceadf,stroke:#5a8a66,color:#1d2733;
     class name,dbname param;
 ```
 
-The entry point and the smoke test both use `src/db.ts`, so the database helper
-is exercised from birth: the unit tier tests the entry point, the integration
-tier runs a generic Mongo connectivity smoke test through the real helper.
+The entry point, the seed helper and the smoke test all use `src/db.ts`, so the
+database helper is exercised from birth: the unit tier tests the entry point, and
+the integration tier runs a replica-set smoke test through the real helper (it
+asserts the set reports a PRIMARY, so it fails if mongod is down or the replica
+set was never initiated). The seed helper (`make seed`, faker-backed) proves the
+faker to Mongo path end to end and is a domain-free starting point you grow.
 
 ### What it does not do
 

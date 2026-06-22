@@ -2,7 +2,7 @@
 
 The build loop runs four agent roles plus a passive orchestrator. The split is the point: no single agent both writes code and certifies it. Full definitions live in [`../contracts/build-judge-loop.md`](../contracts/build-judge-loop.md); this page is the human-readable summary. The roles are identical in both build modes.
 
-See [`diagrams/roles-comparison.svg`](diagrams/roles-comparison.svg) for all four side by side, and the per-role cards [`diagrams/role-builder.svg`](diagrams/role-builder.svg), [`diagrams/role-reviewer.svg`](diagrams/role-reviewer.svg), [`diagrams/role-judge.svg`](diagrams/role-judge.svg), [`diagrams/role-orchestrator.svg`](diagrams/role-orchestrator.svg).
+See [`diagrams/roles-comparison.svg`](diagrams/roles-comparison.svg) for the orchestrator and all four agent roles side by side, and the per-role cards [`diagrams/role-builder.svg`](diagrams/role-builder.svg), [`diagrams/role-reviewer.svg`](diagrams/role-reviewer.svg), [`diagrams/role-judge.svg`](diagrams/role-judge.svg), [`diagrams/role-document.svg`](diagrams/role-document.svg), [`diagrams/role-orchestrator.svg`](diagrams/role-orchestrator.svg).
 
 ## Orchestrator (passive)
 

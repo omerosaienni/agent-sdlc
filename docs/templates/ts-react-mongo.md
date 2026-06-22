@@ -1,5 +1,10 @@
 # TS / React / MongoDB project template
 
+> Roadmap, not shipped. This describes the intended full monorepo template. The
+> generator that exists today (`scripts/init-ts-mongo.sh`) is backend only. Treat
+> this page as the target shape to grow toward, not a description of the current
+> generator output.
+
 The constant skeleton for a TypeScript + React + MongoDB monorepo, plus the
 parts that change per project. Start a new project from the constant layer and
 grow the template as each project teaches you what else is constant.
@@ -57,7 +62,7 @@ it out of the constant layer here.
 - scripts/rs-init.sh (idempotent, polls for PRIMARY; run by make up, once per server)
 - The full Makefile target set (below)
 - vitest tier configs and the suffix convention (`*.test.ts` unit, `*.integration.test.ts` integration)
-- graphify: the `graphify.mf` Ollama model, `.graphifyignore` config exclusions, `make graph`/`graph-viz`, MCP registration, the orientation rule in the build-loop contract
+- graphify: the `graphify.mf` Ollama model, `.graphifyignore` config exclusions, and the `make graph`/`graph-viz` targets
 - Root package.json workspace wiring (front / back / shared)
 - tsconfig base (strict), eslint, prettier config
 
@@ -181,9 +186,10 @@ the API boundary, it does not reach into the database.
   project, the gate can lay down the constant skeleton (Makefile, vitest configs,
   db helper, docker-compose, graphify wiring) for a new repo, the same way it now
   checks identity. Until then, copy the skeleton by hand and note what you change.
-- **Build-loop contract**: the graphify orientation rule (query the graph before
-  reading files wholesale) belongs here so every project's agents use the graph.
-  Confirm whether it is already in the contract or was improvised this session.
+- **Build-loop contract**: a graphify orientation rule (query the graph before
+  reading files wholesale) is NOT currently in the build-judge-loop contract. If
+  you want every project's agents to use the graph, add it there deliberately
+  rather than assuming it is already present.
 - **graphify.mf model**: machine-level, lives in the ollama repo with the
   interactive-vs-batch-model note. Reused by every project, not per-repo.
 

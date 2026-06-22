@@ -16,7 +16,7 @@ The two gates are independent: re-running design (a new sheet) does not invalida
 
 A project is created by a stack-specific generator, separate from the pipeline. The generator decides the stack; the pipeline runs on whatever project exists and passes setup. This keeps the pipeline stack-agnostic: the same design, setup and build work on any project a generator produces.
 
-`scripts/init-ts-mongo.sh` scaffolds a backend TypeScript and MongoDB project from the constant template (tooling, infra, the db helper, an entry point, conventions, then git init). It makes no domain assumptions; you grow `src/index.ts` and add your own modules. Generators are named for the stack they create, so each is honest about what it produces and more can be added without renaming.
+`scripts/init-ts-mongo.sh` scaffolds a backend TypeScript and MongoDB project from the constant template (tooling, infra, the db helper, an entry point, a faker seed helper, conventions, then git init). It makes no domain assumptions; you grow `src/index.ts` and add your own modules. Generators are named for the stack they create, so each is honest about what it produces and more can be added without renaming.
 
 ## Pipeline tooling
 
@@ -29,12 +29,17 @@ All three scripts (the generator plus these two) follow a shared layout ([`../co
 
 ## Prerequisites for an attended run
 
-Proven by the setup gate, which checks and reports, scaffolding boilerplate on consent and never creating remotes:
+Some prerequisites you provide; the rest the setup gate proves by execution.
 
-- git, a GitHub remote with main present, gh authenticated.
-- Docker and Compose for container deliverables.
-- Matching report tooling (coverage provider derived from the installed test runner).
-- The project's declared test-tier commands and integration endpoints.
+You provide (the gate does not install these): the integration endpoints up (e.g. Docker and Compose running the shared Mongo, brought up with `make up`), `gh` authenticated, and a GitHub remote with main present (the gate never creates a remote).
+
+The gate proves, by running things, and scaffolds boilerplate on consent:
+
+- git is a repo, the remote and main are reachable, `gh` is authenticated, and the commit identity is on the allowlist.
+- report tooling matches (the coverage provider is derived from the installed test runner).
+- the project's declared test-tier commands select non-zero tests and pass.
+- the declared integration endpoint is reachable (it runs the integration tier; a downed endpoint is reported as BLOCKED, not a failure).
+- `.building` is gitignored.
 
 ## External tooling
 

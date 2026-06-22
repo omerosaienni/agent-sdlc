@@ -36,17 +36,17 @@ Per-deliverable loop drawn as a supervisor pattern. Left: the orchestrator lane 
 ### endpoint-block.svg
 Four-step sequence: Judge checks endpoint readiness (teal) -> down -> Environment block, tells you in the session, names the endpoint and bring-up, no judge attempt spent (amber) -> You bring it up and confirm (grey, make up) -> Judge re-checks and continues (teal).
 
-### role-orchestrator.svg, role-builder.svg, role-reviewer.svg, role-judge.svg
-Role cards. Coloured header (role colour) with name and tagline, then four rows: Owns, Produces, Cannot, Context. The Cannot row is the role boundary. Content per role is in build-judge-loop.md.
+### role-orchestrator.svg, role-builder.svg, role-reviewer.svg, role-judge.svg, role-document.svg
+Role cards, one per agent role plus the orchestrator. Coloured header (role colour) with name and tagline, then four rows: Owns, Produces, Cannot, Context. The Cannot row is the role boundary. The document card is amber and its Cannot row is "block, reject, or evaluate a deliverable" (it is the only role that never gates). Content per role is in build-judge-loop.md.
 
 ### roles-comparison.svg
-All four roles side by side as small coloured boxes, with rows: owns, context (passive/building/informed/fresh), can block (no/no/bounce <=3/reject <=3). Caption: reviewer and judge split on code-vs-behaviour and informed-vs-fresh, which is why neither is redundant.
+The orchestrator and all four agent roles side by side as small coloured boxes (orchestrator grey, builder blue, reviewer purple, judge teal, document amber), with rows: owns (sequence+state / the deliverable / the code / the behaviour / the docs), context (passive / building / informed / fresh / producer), can block (no / no / bounce <=3 / reject <=3 / no). Caption: reviewer and judge split on code-vs-behaviour and informed-vs-fresh, which is why neither is redundant; the document agent is the only agent that never gates.
 
 ### loop-data-flow.svg
-Vertical data flow. Shared inputs (amber file: deliverable sheet + CLAUDE.md, available to all) -> Builder (blue) -> code + tests + builder.md (grey FILE) -> Reviewer (purple) -> review report: record + bounce (grey FILE) -> Judge (teal, runs the suite itself) -> judge report: verdict + per-tier coverage (grey FILE) -> on pass, the document agent runs, then the orchestrator commits code and docs/ only (reports stay local under .building/) and opens the PR (amber); human merges. All on-disk artifacts use the folded-corner file shape.
+Vertical data flow. Shared inputs (amber file: deliverable sheet + CLAUDE.md, available to all) -> Builder (blue) -> code + tests + builder.md + doc-payload.md (grey FILE) -> Reviewer (purple) -> review report: record + bounce (grey FILE) -> Judge (teal, runs the suite itself) -> judge report: verdict + per-tier coverage (grey FILE) -> on pass the Document agent (amber, producer, never blocks) -> docs/modules + ARCHITECTURE.md (grey FILE) -> the orchestrator commits code and docs/ only (reports stay local under .building/) and opens the PR (amber file); human merges. All on-disk artifacts use the folded-corner file shape.
 
-### io-orchestrator.svg, io-builder.svg, io-reviewer.svg, io-judge.svg
-Input/output cards. Coloured header, then Inputs (left) and Outputs (right) lists with an arrow between. Contents per agent match the role and data-flow definitions.
+### io-orchestrator.svg, io-builder.svg, io-reviewer.svg, io-judge.svg, io-document.svg
+Input/output cards, one per agent role plus the orchestrator. Coloured header, then Inputs (left) and Outputs (right) lists with an arrow between. The builder lists its doc-payload.md slice as an output; the document card takes the doc-payload slice plus the reviewer and judge reports as inputs and produces docs only, never a verdict. Contents per agent match the role and data-flow definitions.
 
 ### file-layout.svg
 Two boxes: committed versus gitignored. Committed (green): the deliverable, code plus docs/ (modules and ARCHITECTURE.md). Gitignored (grey): the whole .building/ folder, all loop output, never committed. Inside .building/: build/ (state.json, setup-ok), work/<branch-name>/ (builder.md, review-pass-N.md, judge.md, doc-payload.md per unit; an escalations/ subfolder if escalated), and a top-level escalations/ index of relative symlinks into the work folders. One gitignore rule: .building/. Shows the file-based, no-memory architecture and the single-folder structure.
