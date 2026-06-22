@@ -3,7 +3,7 @@ name: omero-project-setup
 description: Prove a project is ready to build, by execution, at a single idempotent gate before the build loop. Derives and matches tooling, runs both test tiers and asserts non-zero selection, places and proves the agent test runner the judge uses, checks git and endpoints. Safe to re-run as a health check.
 disable-model-invocation: true
 argument-hint: "[--yes to install/push where needed, or --check to verify only]"
-allowed-tools: Bash(./scripts/*:*), Bash(git:*), Bash(gh:*), Bash(npm:*), Bash(npx:*), Bash(node:*), Bash(docker:*), Bash(cat:*), Bash(ls:*), Read
+allowed-tools: Bash({{SDLC_REPO}}/scripts/project-setup.sh:*), Bash(git:*), Bash(gh:*), Bash(npm:*), Bash(npx:*), Bash(node:*), Bash(docker:*), Bash(cat:*), Bash(ls:*), Read
 ---
 Operate the project setup gate defined in
 {{SDLC_REPO}}/contracts/project-setup.md. Read that contract, then run the gate

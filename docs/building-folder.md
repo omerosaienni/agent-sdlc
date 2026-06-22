@@ -68,7 +68,7 @@ rm -rf .build-loop .deliverable reports
 # (edit .gitignore: remove .build-loop/, .deliverable/, reports/ ; add .building/)
 
 # re-run the setup gate so the receipt lands at the new path
-./scripts/project-setup.sh --yes
+# (via the skill: /omero-project-setup --yes)
 ```
 
 After this, `state.json` is at `.building/build/state.json`, the receipt is regenerated at `.building/build/setup-ok`, and the next loop run uses the new structure throughout.

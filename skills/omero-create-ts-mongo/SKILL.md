@@ -3,7 +3,7 @@ name: omero-create-ts-mongo
 description: Scaffold a new backend TypeScript and MongoDB project from the constant template. Writes tooling, infra, the db helper, an entry point, conventions, then inits git. Makes no domain assumptions; you grow src/index.ts. Picks a free Mongo port so projects never collide.
 disable-model-invocation: true
 argument-hint: "<project-name> [target-dir] [--port N] [--verbose]"
-allowed-tools: Bash(./scripts/*:*), Bash(git:*), Read
+allowed-tools: Bash({{SDLC_REPO}}/scripts/init-ts-mongo.sh:*), Bash(git:*), Read
 ---
 Create a new TypeScript and MongoDB project by running the generator:
     {{SDLC_REPO}}/scripts/init-ts-mongo.sh $ARGUMENTS
