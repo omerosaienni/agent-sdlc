@@ -22,7 +22,7 @@ The two gates are independent: re-running design (a new sheet) does not invalida
 
 ## Creating a project
 
-A project is created by a stack-specific generator, separate from the pipeline below. The generator decides the stack; the pipeline runs on whatever project exists and passes setup. This keeps the pipeline stack-agnostic: the same design, setup, and build work on any project a generator produces.
+A project is created by a stack-specific generator, separate from the pipeline below. The generator decides the stack; the pipeline runs on whatever project exists and passes setup. This keeps the pipeline stack-agnostic: the same design, setup and build work on any project a generator produces.
 
 - `scripts/init-ts-mongo.sh` scaffolds a backend TypeScript and MongoDB project from the constant template (tooling, infra, the db helper, an entry point, conventions, then git init). It makes no domain assumptions; you grow `src/index.ts` and add your own modules.
 
@@ -35,7 +35,7 @@ Two scripts back the pipeline itself, stack-agnostic:
 - `scripts/project-setup.sh` is the setup gate (phase 2): it proves a project ready by execution and writes the receipt.
 - `scripts/ensure-report-tooling.sh` is a focused helper that installs and verifies the coverage tooling the judge needs.
 
-All three scripts follow a shared layout ([`contracts/script-layout.md`](contracts/script-layout.md)) and share pure-constant content through `templates/` so nothing drifts. See [`docs/scripts.md`](docs/scripts.md) for what each does, how they connect, and diagrams of the generation flow and the scaffold components.
+All three scripts (the `init-ts-mongo.sh` generator above and these two pipeline scripts) follow a shared layout ([`contracts/script-layout.md`](contracts/script-layout.md)) and share pure-constant content through `templates/` so nothing drifts. See [`docs/scripts.md`](docs/scripts.md) for what each does, how they connect and diagrams of the generation flow and the scaffold components.
 
 ## The four roles in the build loop
 
@@ -95,7 +95,7 @@ Proven by the setup gate, which checks and reports, scaffolding boilerplate on c
 
 Most tooling is project-level, not something you install by hand: a generated project lists vitest, typescript, eslint, prettier, tsx and the MongoDB driver in its package.json, and `npm install` plus the setup gate bring and prove them. You do not pre-install those.
 
-What your environment is expected to provide for an attended run is short: git and a GitHub remote, the gh CLI authenticated, Node and npm, and Docker with Compose for container deliverables. The setup gate checks and reports these.
+What your environment is expected to provide for an attended run is short: git and a GitHub remote, the gh CLI authenticated, Node and npm and Docker with Compose for container deliverables. The setup gate checks and reports these.
 
 One optional external tool is referenced by generated projects but is not required by the pipeline. The scaffolded Makefile carries `graph` and `graph-viz` targets that call [graphify](https://github.com/safishamsi/graphify), a local-first codebase knowledge-graph tool, pinned to a local Ollama backend. The build loop never invokes it; the targets are a convenience for exploring a project as a graph. If you do not have graphify, those two Make targets are the only thing that will not run, everything else works without it. Install is `uv tool install graphifyy` (note the double y in the package name; the CLI command is still `graphify`).
 
