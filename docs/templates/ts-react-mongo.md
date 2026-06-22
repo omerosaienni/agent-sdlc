@@ -84,7 +84,7 @@ it out of the constant layer here.
 - The `ex:<feature>` example modules and their `ex:*` npm scripts
 - The frontend app (components, routes, state)
 - The shared types' actual content
-- docs/deliverables.md (this project's sheet), ARCHITECTURE.md, module docs
+- the design sheet at `.building/design/<slug>/deliverables.md` (this project's sheet), `docs/ARCHITECTURE.md`, module docs
 - CLAUDE.md's scope section (what this project is and is not)
 
 ---

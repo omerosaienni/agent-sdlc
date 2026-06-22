@@ -86,10 +86,13 @@ Branch green after every commit. A commit may not lower greenness. The judge run
 Every deliverable PRs into main directly; there is no integration branch. main accumulates verified deliverables one merge at a time. In sequential-attended it is green after every merge; in parallel-attended it is green after the combined re-run that the next judge run (or the human's final-combine run) performs, per Monotonic green. The project is complete when the final deliverable's PR is merged into main. Each PR is one deliverable's audit record.
 
 ## State and channels (file-based, no memory layer)
-All loop output lives under a single gitignored folder, .building/, with this structure:
+All loop output, plus the design sheets it builds from, lives under a single gitignored folder, .building/, with this structure:
 
 ```
 .building/
+  design/                         the design sheets (build input), one folder per design
+    <slug>/                       keyed by the design slug (e.g. greeting-spike)
+      deliverables.md             the schema-valid sheet the loop builds
   build/                          the loop's own state
     state.json
     setup-ok                      the setup receipt

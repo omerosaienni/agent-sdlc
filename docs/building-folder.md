@@ -1,11 +1,14 @@
 # The .building folder
 
-Everything the build loop generates while it works lives under one folder: `.building/`. It is gitignored in full, so none of it is ever committed. Your commits and pull requests carry only code and docs, the actual deliverable. `.building/` is the loop's private workspace on your machine.
+Everything the build loop generates while it works, plus the design sheets it builds from, lives under one folder: `.building/`. It is gitignored in full, so none of it is ever committed. Your commits and pull requests carry only code and docs, the actual deliverable. `.building/` is the loop's private workspace on your machine.
 
 ## Structure
 
 ```
 .building/
+  design/                         the design sheets, one folder per design
+    greeting-spike/               keyed by the design slug
+      deliverables.md             the schema-valid sheet the loop builds
   build/                          the loop's own state
     state.json                    mode, sheet/conventions paths, per-unit status, loop counts, branch names
     setup-ok                      the setup receipt (proves the environment was ready)
@@ -30,6 +33,8 @@ Everything the build loop generates while it works lives under one folder: `.bui
 ```
 
 ## The parts
+
+**design/** holds the design sheets the build loop builds from, one folder per design, keyed by a short slug you give the design partner (so `greeting-spike`, not a path). The design partner writes `deliverables.md` here; re-running the same slug overwrites it, and different designs sit side by side. The sheet is the build's input, but it lives under gitignored `.building/` like everything else in the pipeline workspace, so it stays local rather than being committed.
 
 **build/** is the loop's own bookkeeping. `state.json` carries the project-level `mode` (sequential-attended or parallel-attended, set once and persisting across conversations) alongside the sheet and conventions paths, and tracks where each unit is (its status, how many review and judge attempts it has had, its branch name). `setup-ok` is the receipt the setup gate writes to prove the environment was ready; the loop checks for it on entry.
 
