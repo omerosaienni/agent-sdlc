@@ -105,8 +105,6 @@ Conventions are defined where they are used, not restated here, so there is one 
 - A generated project's coding conventions (strict TypeScript, the db-helper and COLLECTIONS patterns, the runnable-module pattern, test-tier rules) live in that project's `CLAUDE.md`, written by `init-ts-mongo.sh`.
 - Script conventions (layout, colour, flags) live in [`contracts/script-layout.md`](contracts/script-layout.md).
 
-The cross-cutting writing rules, applied everywhere: British English, no em dashes, no Oxford commas, no hyphens in compound modifiers.
-
 ## Where things live
 
 - `contracts/` the operating contracts (above), the agent-facing source of truth.
