@@ -402,7 +402,7 @@ write_file "$DIR/Makefile" <<EOF
 # help is the default goal so a bare \`make\` documents the project
 .DEFAULT_GOAL := help
 
-.PHONY: help up rs-init start down nuke bootstrap test test-unit test-integration graph graph-viz
+.PHONY: help up rs-init start seed down nuke bootstrap test test-unit test-integration lint typecheck graph graph-viz
 
 help: ## List available targets
 	@echo "${NAME} - available targets:"
@@ -411,12 +411,15 @@ help: ## List available targets
 	@echo "  up          Start MongoDB in Docker"
 	@echo "  rs-init     Initialise the single node replica set (idempotent)"
 	@echo "  start       Run the entry point (src/index.ts)"
+	@echo "  seed        Generate and load faker seed data"
 	@echo "  down        Stop the container, keep data"
 	@echo "  nuke        Stop the container and delete the named volume"
 	@echo "  bootstrap   up + rs-init in one go"
 	@echo "  test-unit   Run the unit tier (no database needed)"
 	@echo "  test-integration  Run the integration tier (needs Mongo up)"
 	@echo "  test        Run unit then integration, in that order"
+	@echo "  lint        Run eslint over src"
+	@echo "  typecheck   Type-check without emitting (tsc --noEmit)"
 	@echo "  graph       Rebuild the knowledge graph (code + docs) and HTML"
 	@echo "  graph-viz   Regenerate graph.html and report from the existing graph"
 
@@ -441,6 +444,9 @@ rs-init: ## Initialise the single node replica set (idempotent)
 start: ## Run the entry point (src/index.ts)
 	npm start
 
+seed: ## Generate and load faker seed data
+	npm run seed
+
 down: ## Stop the container, keep data
 	docker compose down
 
@@ -464,6 +470,12 @@ test-integration: ## Run the integration tier (needs Mongo up)
 # unit before integration so a logic break fails fast without needing the database
 test: test-unit test-integration ## Run unit then integration, in that order
 
+lint: ## Run eslint over src
+	npm run lint
+
+typecheck: ## Type-check without emitting (tsc --noEmit)
+	npm run typecheck
+
 # Knowledge graph (graphify). Model/env pinned so the target is self-contained.
 # Code is auto-refreshed by the post-commit hook (AST, no LLM); this target is
 # for refreshing docs (needs the LLM) and rebuilding the HTML view.
@@ -485,8 +497,11 @@ write_file "$DIR/package.json" <<EOF
   "private": true,
   "scripts": {
     "start": "tsx src/index.ts",
+    "seed": "tsx src/seed.ts",
     "test:unit": "vitest run -c vitest.unit.config.ts",
     "test:integration": "vitest run -c vitest.integration.config.ts",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
     "format:check": "prettier --check ."
   },
   "dependencies": {
@@ -528,6 +543,41 @@ export function main(): string {
 // without running when imported.
 if (import.meta.url === `file://${process.argv[1]}`) {
   console.log(main());
+}
+EOF
+
+write_file "$DIR/src/seed.ts" <<'EOF'
+import { faker } from '@faker-js/faker';
+import { getDb, closeClient } from './db.js';
+
+// Generate and load development seed data. A domain-free starting point that
+// proves the faker to Mongo path works end to end; grow it into the collections
+// and shapes your project needs.
+export async function seed(count = 10): Promise<number> {
+  const db = await getDb();
+  const examples = db.collection('examples');
+  const docs = Array.from({ length: count }, () => ({
+    name: faker.person.fullName(),
+    email: faker.internet.email(),
+    createdAt: new Date(),
+  }));
+  await examples.deleteMany({});
+  const result = await examples.insertMany(docs);
+  return result.insertedCount;
+}
+
+// Runnable directly. The import.meta.url guard keeps seed() importable from tests
+// without running on import.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  try {
+    const count = await seed();
+    console.log(`seeded ${count} documents into 'examples'`);
+  } catch (error) {
+    console.error(error);
+    process.exitCode = 1;
+  } finally {
+    await closeClient();
+  }
 }
 EOF
 
