@@ -57,7 +57,7 @@ run_tier(){ local s="$1" ep="$2" out rc
     out=$(npm run "$s" 2>&1); rc=$?
     if echo "$out" | grep -q "No test files found"; then bad "$s selected zero tests (hollow suite)"; return; fi
     if [ "$rc" -ne 0 ]; then
-        if [ "$ep" = yes ] && echo "$out" | grep -qiE "ECONNREFUSED|MongoServerSelectionError|connection refused"; then block "$s endpoint not reachable; bring it up and re-run"
+        if [ "$ep" = yes ] && echo "$out" | grep -qiE "ECONNREFUSED|MongoServerSelectionError|connection refused"; then block "$s endpoint not reachable; bring up the shared Mongo (make up, see CLAUDE.md integration endpoints) and re-run"
         else bad "$s failed (see output)"; fi; return; fi
     ok "$s selected tests and passed"; }
 

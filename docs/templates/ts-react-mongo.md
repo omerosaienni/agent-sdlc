@@ -16,7 +16,7 @@ it out of the constant layer here.
 ```
 <project>/
   Makefile                 constant (target set below)
-  docker-compose.yml       constant (Mongo single-node replica set)
+  docker-compose.yml       constant (shared-mongo, single-node replica set)
   CLAUDE.md                mostly constant (conventions) + domain (this project's scope)
   .graphifyignore          constant (config exclusions)
   .gitignore               constant base + domain additions
@@ -53,8 +53,8 @@ it out of the constant layer here.
 ### Constant (template provides, do not re-derive)
 
 **Infra / tooling**
-- docker-compose.yml (Mongo 8, single-node replica set, named volume)
-- scripts/rs-init.sh (idempotent, polls for PRIMARY)
+- docker-compose.yml (shared-mongo, Mongo 8, single-node replica set, shared named volume)
+- scripts/rs-init.sh (idempotent, polls for PRIMARY; run by make up, once per server)
 - The full Makefile target set (below)
 - vitest tier configs and the suffix convention (`*.test.ts` unit, `*.integration.test.ts` integration)
 - graphify: the `graphify.mf` Ollama model, `.graphifyignore` config exclusions, `make graph`/`graph-viz`, MCP registration, the orientation rule in the build-loop contract
@@ -101,12 +101,10 @@ Group by side so `make test` runs everything and `make test-backend` scopes.
 # ---- meta ----
 help            ## List available targets
 
-# ---- infra (backend, Mongo) — constant ----
-up              ## Start MongoDB in Docker (polls for readiness)
-rs-init         ## Initialise the single node replica set (idempotent)
-down            ## Stop the container, keep data
-nuke            ## Stop the container and delete the named volume
-bootstrap       ## up + rs-init in one go
+# ---- infra (backend, shared Mongo) — constant ----
+up              ## Start the shared mongod (idempotent) and ensure the replica set
+down            ## Stop the shared mongod, keep data (affects every project)
+drop            ## Drop this project's database only
 
 # ---- backend dev/build — constant ----
 dev-backend     ## Run the backend in watch mode (tsx watch)

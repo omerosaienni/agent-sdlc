@@ -48,11 +48,9 @@ an entry point, conventions, then inits git. It makes no domain assumptions; you
 grow `src/index.ts` and add your own modules.
 
 ```
-init-ts-mongo.sh <project-name> [target-dir] [--port N] [--verbose] [--no-color] [--debug]
+init-ts-mongo.sh <project-name> [target-dir] [--verbose] [--no-color] [--debug]
 ```
 
-- `--port N` host port for this project's Mongo; default auto-picks the first
-  free port from 27017 up, so a second project never collides with a first.
 - `--verbose` prints each file as it is written.
 - `--no-color` forces plain output (colour is auto-detected and on only at a
   terminal).
@@ -66,9 +64,9 @@ writes anything, then writes each area, then inits git.
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#e4edf4','primaryTextColor':'#1d2733','primaryBorderColor':'#5b6b7a','lineColor':'#5b6b7a','fontSize':'14px'}}}%%
 flowchart TD
-    args["parse args<br/>name, dir, --port, flags"] --> resolve["resolve + validate<br/>kebab-case name, derive db/volume,<br/>pick free port, refuse if dir exists"]
+    args["parse args<br/>name, dir, flags"] --> resolve["resolve + validate<br/>kebab-case name, derive db name,<br/>refuse if dir exists"]
     resolve --> tooling["tooling configs<br/>vitest tiers, tsconfig, eslint,<br/>prettier, ignores"]
-    tooling --> db["database helper<br/>src/db.ts (port + db name baked in)"]
+    tooling --> db["database helper<br/>src/db.ts (db name baked in, shared 27017)"]
     db --> infra["docker infra<br/>compose, rs-init"]
     infra --> build["build surface<br/>Makefile, package.json"]
     build --> entry["entry point<br/>src/index.ts + test + smoke test"]
@@ -86,19 +84,16 @@ flowchart TD
 ### Scaffold components
 
 What lands in a generated project, grouped, with the parameters that flow into
-each. The port and name are the only varying inputs; everything else is constant.
+each. The project name is the only varying input; everything else, including the
+shared compose and the fixed port, is constant.
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#e4edf4','primaryTextColor':'#1d2733','primaryBorderColor':'#5b6b7a','lineColor':'#5b6b7a','fontSize':'14px'}}}%%
 flowchart TD
-    port(["picked port"]) --> compose
-    port --> dbts
-    name(["project name"]) --> compose
-    name --> volume(["volume name"])
-    volume --> compose
-    volume --> makefile
-    name --> dbname(["db name"])
+    name(["project name"]) --> dbname(["db name (verbatim)"])
     dbname --> dbts
+    dbname --> makefile
+    name --> makefile
 
     subgraph tooling["Tooling (constant)"]
         vitest["vitest.unit/integration.config.ts"]
@@ -107,7 +102,7 @@ flowchart TD
         ignores[".gitignore, .graphifyignore"]
     end
 
-    subgraph infra["Infra"]
+    subgraph infra["Infra (constant, shared-mongo)"]
         compose["docker-compose.yml"]
         rsinit["scripts/rs-init.sh"]
     end
@@ -134,7 +129,7 @@ flowchart TD
     dbts --> smoke
 
     classDef param fill:#dceadf,stroke:#5a8a66,color:#1d2733;
-    class port,name,volume,dbname param;
+    class name,dbname param;
 ```
 
 The entry point and the smoke test both use `src/db.ts`, so the database helper

@@ -8,16 +8,21 @@
 # still needs: npm install, docker bring-up, and the setup gate (project-setup.sh)
 # to prove it ready for the build loop.
 #
-# Usage:
-#   init-ts-mongo.sh <project-name> [target-dir] [--port N] [--verbose] [--debug]
+# Mongo model: every project shares one mongod container (shared-mongo, fixed
+# port 27017, replica set rs0). A project lives in its own database inside it,
+# named after the project. The compose that defines the shared container is
+# identical in every project, so the first project to run `make up` creates it
+# and later projects reuse it. Nobody owns the container, so deleting it is a
+# manual docker rm, never a make target; a project's own destructive verb (drop)
+# removes only its database.
 #
-#   project-name : kebab-case, used for the npm package, the compose project,
-#                  the container, the volume, and the Mongo database name.
+# Usage:
+#   init-ts-mongo.sh <project-name> [target-dir] [--verbose] [--debug]
+#
+#   project-name : kebab-case, used for the npm package and the Mongo database
+#                  name. The shared container and volume are constant, not named
+#                  after the project.
 #   target-dir   : where to create it (default: ./<project-name>)
-#   --port N     : host port for this project's Mongo. Default: auto-pick the
-#                  first free port from 27017 up, so a second project never
-#                  collides with a first that is already running. Baked into the
-#                  project's files (instance per repo, deterministic once made).
 #   --verbose    : print each file as it is written (default prints one line per
 #                  area).
 #   --debug      : trace every shell command (set -x); shows exactly which step
@@ -85,19 +90,8 @@ copy_template() {
     note "wrote ${dest#"$DIR"/} (from template)"
 }
 
-# port_in_use: true if something is already listening on the host port. A
-# project's mongod binds the host port, so probing for a listener is the right
-# test. Prefer ss, fall back to bash's /dev/tcp probe if ss is absent.
-port_in_use() {
-    if command -v ss >/dev/null 2>&1; then
-        ss -ltn "( sport = :$1 )" 2>/dev/null | grep -q ":$1 "
-    else
-        (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null && { exec 3>&- 3<&-; return 0; } || return 1
-    fi
-}
-
 usage() {
-    echo "usage: init-ts-mongo.sh <project-name> [target-dir] [--port N] [--verbose] [--no-color] [--debug]" >&2
+    echo "usage: init-ts-mongo.sh <project-name> [target-dir] [--verbose] [--no-color] [--debug]" >&2
     exit 2
 }
 
@@ -107,11 +101,8 @@ usage() {
 
 NAME=""
 DIR=""
-PORT=""
 while [ $# -gt 0 ]; do
     case "$1" in
-        --port)    PORT="${2:-}"; shift 2 ;;
-        --port=*)  PORT="${1#*=}"; shift ;;
         --verbose) VERBOSE=1; shift ;;
         --no-color|--no-colour) USE_COLOR=never; shift ;;
         --debug)   set -x; shift ;;
@@ -134,8 +125,8 @@ setup_color
 
 [ -z "$NAME" ] && usage
 
-# kebab-case: the name flows into a Mongo db name and a docker volume, both of
-# which dislike spaces and uppercase. Fail early rather than emit a broken repo.
+# kebab-case: the name becomes the Mongo db name and the npm package name, both
+# of which dislike spaces and uppercase. Fail early rather than emit a broken repo.
 case "$NAME" in
     *[!a-z0-9-]*) echo "project-name must be kebab-case (lowercase, digits, hyphens): '$NAME'" >&2; exit 2 ;;
 esac
@@ -146,37 +137,18 @@ if [ -e "$DIR" ]; then
     exit 1
 fi
 
-# Derived names. DB_NAME drops hyphens (cleaner as a Mongo database name); the
-# compose project and volume keep the hyphenated form.
-DB_NAME="$(echo "$NAME" | tr -d '-')"
-VOLUME="${NAME}-data"
-
-# Port: explicit and validated, or auto-picked as the first free one from 27017.
-if [ -n "$PORT" ]; then
-    case "$PORT" in
-        ''|*[!0-9]*) echo "--port must be a number: '$PORT'" >&2; exit 2 ;;
-    esac
-    if port_in_use "$PORT"; then
-        echo "requested port $PORT is already in use; pick another or omit --port to auto-pick" >&2
-        exit 1
-    fi
-else
-    PORT=27017
-    while port_in_use "$PORT"; do
-        note "port $PORT in use, trying next"
-        PORT=$((PORT + 1))
-        if [ "$PORT" -gt 27117 ]; then
-            echo "no free port found in 27017-27117; pass --port explicitly" >&2
-            exit 1
-        fi
-    done
-fi
+# Derived names. The kebab-case name is already a valid Mongo database name
+# (lowercase, digits, hyphens, none of which Mongo forbids and well under the
+# 63 byte limit), so it is used verbatim, no transform. The shared container and
+# volume are constant (shared-mongo, shared-mongo-data), not derived from the
+# project, because every project shares the one mongod.
+DB_NAME="$NAME"
 
 # ============================================================================
 # Scaffold
 # ============================================================================
 
-step "Scaffolding '$NAME' into '$DIR' (db: $DB_NAME, port: $PORT)"
+step "Scaffolding '$NAME' into '$DIR' (db: $DB_NAME)"
 mkdir -p "$DIR"/{src,scripts,docs,docs/modules}
 
 
@@ -272,11 +244,14 @@ import { MongoClient, type Db } from 'mongodb';
 
 // directConnection=true is required: a single node replica set advertises its
 // internal container hostname (port 27017), which the host cannot follow, so the
-// driver must be told not to chase that advertisement and to stay on the host
-// port this project mapped.
-const URI = 'mongodb://127.0.0.1:${PORT}/?directConnection=true';
+// driver must be told not to chase that advertisement and to stay on 127.0.0.1.
+// The port is fixed because every project shares one mongod (the shared-mongo
+// container), each in its own database.
+const URI = 'mongodb://127.0.0.1:27017/?directConnection=true';
 
-// Database the whole project uses. One place so all modules agree.
+// Database this project uses inside the shared server. One place so all modules
+// agree. Named after the project, so the shared server lists one database per
+// project.
 export const DB_NAME = '${DB_NAME}';
 
 // One shared MongoClient per process. MongoClient construction is lazy in the
@@ -312,32 +287,34 @@ export async function closeClient(): Promise<void> {
 EOF
 
 # ---------------------------------------------------------------------------
-# Infra: Docker Mongo (single node replica set) and its init script. The host
-# port, compose project, container and volume names are parameterised.
+# Infra: the shared Docker Mongo (single node replica set) and its init script.
+# The compose is constant and identical in every project: it defines the one
+# shared mongod that all projects use. The first project to run `make up`
+# creates it; later projects reuse it.
 # ---------------------------------------------------------------------------
 step "docker infra"
 
-write_file "$DIR/docker-compose.yml" <<EOF
-# name pins the compose project so the container and volume names are stable
-# regardless of the working directory (a git worktree is named after a number,
-# which would otherwise leak into the volume name and break \`make nuke\`).
-name: ${NAME}
+write_file "$DIR/docker-compose.yml" <<'EOF'
+# This compose is identical in every project. It defines the one shared mongod
+# that all projects share, each as its own database. The first project to run
+# `make up` creates the container; later projects reuse it. Nobody owns it, so
+# deleting it is a manual docker rm of shared-mongo, never a make target.
+name: shared-mongo
 services:
   mongo:
     image: mongo:8.0
-    container_name: ${NAME}
-    # --replSet is mandatory: the project models a single node replica set so
-    # change streams and transactions work. bind_ip_all lets the host reach it.
+    container_name: shared-mongo
+    # --replSet is mandatory: a single node replica set so change streams and
+    # transactions work. bind_ip_all lets the host reach it.
     command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     ports:
-      # host port is this project's own (instance per repo); container is always 27017
-      - "${PORT}:27017"
+      - "27017:27017"
     volumes:
       - data:/data/db
 volumes:
-  # fixed name so \`make nuke\` can verify the volume is gone deterministically
+  # fixed shared name; deterministic so a manual teardown can target it exactly
   data:
-    name: ${VOLUME}
+    name: shared-mongo-data
 EOF
 
 # rs-init.sh is constant (no project name inside; it targets the 'mongo' service).
@@ -372,7 +349,7 @@ docker compose exec -T "${SERVICE}" mongosh --quiet --eval '
 '
 
 # Poll rather than trust rs.initiate returning: election is asynchronous, so the
-# smoke test could connect before a PRIMARY exists. Block here to keep bootstrap
+# smoke test could connect before a PRIMARY exists. Block here to keep `make up`
 # race-free.
 echo "waiting for a PRIMARY to be elected..."
 for _ in $(seq 1 30); do
@@ -393,7 +370,7 @@ EOF
 chmod +x "$DIR/scripts/rs-init.sh"
 
 # ---------------------------------------------------------------------------
-# Build surface: Makefile targets and package.json scripts. The nuke volume
+# Build surface: Makefile targets and package.json scripts. The drop database
 # name and help banner are parameterised; only constant scripts are carried.
 # ---------------------------------------------------------------------------
 step "build surface (Makefile, package.json)"
@@ -402,19 +379,17 @@ write_file "$DIR/Makefile" <<EOF
 # help is the default goal so a bare \`make\` documents the project
 .DEFAULT_GOAL := help
 
-.PHONY: help up rs-init start seed down nuke bootstrap test test-unit test-integration lint typecheck graph graph-viz
+.PHONY: help up start seed down drop test test-unit test-integration lint typecheck graph graph-viz
 
 help: ## List available targets
 	@echo "${NAME} - available targets:"
 	@echo ""
 	@echo "  help        Show this list"
-	@echo "  up          Start MongoDB in Docker"
-	@echo "  rs-init     Initialise the single node replica set (idempotent)"
+	@echo "  up          Start the shared mongod (idempotent) and ensure the replica set"
 	@echo "  start       Run the entry point (src/index.ts)"
 	@echo "  seed        Generate and load faker seed data"
-	@echo "  down        Stop the container, keep data"
-	@echo "  nuke        Stop the container and delete the named volume"
-	@echo "  bootstrap   up + rs-init in one go"
+	@echo "  down        Stop the shared mongod, keep data (affects every project)"
+	@echo "  drop        Drop this project's database (${DB_NAME}) only"
 	@echo "  test-unit   Run the unit tier (no database needed)"
 	@echo "  test-integration  Run the integration tier (needs Mongo up)"
 	@echo "  test        Run unit then integration, in that order"
@@ -423,7 +398,7 @@ help: ## List available targets
 	@echo "  graph       Rebuild the knowledge graph (code + docs) and HTML"
 	@echo "  graph-viz   Regenerate graph.html and report from the existing graph"
 
-up: ## Start MongoDB in Docker
+up: ## Start the shared mongod (idempotent) and ensure the replica set
 	docker compose up -d
 	@echo "waiting for mongod to accept connections..."
 	@# poll the server rather than a fixed sleep: the image runs initdb on first
@@ -437,8 +412,7 @@ up: ## Start MongoDB in Docker
 	done; \\
 	echo "mongod did not become ready" >&2; \\
 	exit 1
-
-rs-init: ## Initialise the single node replica set (idempotent)
+	@# rs-init is a step inside up, not a separate verb: once per server, idempotent
 	./scripts/rs-init.sh
 
 start: ## Run the entry point (src/index.ts)
@@ -447,19 +421,16 @@ start: ## Run the entry point (src/index.ts)
 seed: ## Generate and load faker seed data
 	npm run seed
 
-down: ## Stop the container, keep data
+down: ## Stop the shared mongod, keep data
+	@# this stops the shared container for every project, not just this one; the
+	@# data survives. Deleting the shared server is a manual docker rm, never here.
 	docker compose down
 
-nuke: ## Stop the container and delete the named volume
-	docker compose down -v
-	@# confirm the volume is actually gone: a deterministic name lets us assert it
-	@if docker volume ls --format '{{.Name}}' | grep -qx ${VOLUME}; then \\
-		echo "volume ${VOLUME} still present" >&2; \\
-		exit 1; \\
-	fi
-	@echo "container and volume removed"
-
-bootstrap: up rs-init ## up + rs-init, no manual steps
+drop: ## Drop this project's database (${DB_NAME}) only
+	@# scoped to this project's database, so the shared server and every other
+	@# project's data are untouched. Same in-container path as rs-init, no host mongosh.
+	docker compose exec -T mongo mongosh --quiet --eval 'db.getSiblingDB("${DB_NAME}").dropDatabase()'
+	@echo "database ${DB_NAME} dropped"
 
 test-unit: ## Run the unit tier (no database needed)
 	npm run test:unit
@@ -596,7 +567,7 @@ EOF
 # Generic Mongo smoke test (integration tier). Not tied to any domain or to the
 # entry point's logic, it verifies the infrastructure: the app's own connection
 # path reaches a healthy single node replica set with a PRIMARY. It stays true
-# for the life of the project, run `make bootstrap` first. This also exercises
+# for the life of the project, run `make up` first. This also exercises
 # the db helper from birth.
 write_file "$DIR/src/smoke.integration.test.ts" <<'EOF'
 import { afterAll, describe, expect, it } from 'vitest';
@@ -755,9 +726,11 @@ TODO: one or two lines on what this project is and is not (its scope).
 - Shared test helpers, if any, in one support module under src/test-support/.
 
 ## Integration endpoints
-- Mongo at mongodb://127.0.0.1:${PORT} with directConnection=true. Readiness: a
+- Mongo at mongodb://127.0.0.1:27017 with directConnection=true, the shared
+  container shared-mongo. This project uses database ${DB_NAME}. Readiness: a
   connect succeeds, or \`docker compose ps\` shows the mongo service up. Bring up
-  with \`make bootstrap\`.
+  with \`make up\`. The shared server is an attended prerequisite; the loop does
+  not start it.
 EOF
 
 # Stub README.
@@ -769,7 +742,7 @@ A TypeScript MongoDB project.
 ## Quick start
 \`\`\`
 npm install
-make bootstrap     # start Mongo, init the replica set
+make up            # start the shared Mongo and init the replica set
 make test          # unit then integration
 \`\`\`
 EOF
@@ -804,7 +777,7 @@ printf '\n%sScaffolded %s%s\n' "$C_OK" "$NAME" "$C_RESET"
 echo "Next:"
 echo "  cd $DIR"
 echo "  npm install"
-echo "  make bootstrap          # start Mongo on port $PORT and init the replica set"
+echo "  make up                 # start the shared Mongo and init the replica set"
 echo "  make test               # unit (entry point) + integration (Mongo smoke test)"
 echo
 echo "Then build the project: grow src/index.ts into the real entry point, add your"

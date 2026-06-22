@@ -16,7 +16,7 @@
 <line x1="340" y1="168" x2="340" y2="198" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
 <rect x="190" y="198" width="300" height="50" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
 <text x="340" y="216" text-anchor="middle" dominant-baseline="central" fill="#444441" font-size="14" font-weight="500">You bring it up, then confirm</text>
-<text x="340" y="234" text-anchor="middle" dominant-baseline="central" fill="#5F5E5A" font-size="12">docker compose up -d</text>
+<text x="340" y="234" text-anchor="middle" dominant-baseline="central" fill="#5F5E5A" font-size="12">make up</text>
 <line x1="340" y1="248" x2="340" y2="278" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
 <rect x="190" y="278" width="300" height="50" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
 <text x="340" y="296" text-anchor="middle" dominant-baseline="central" fill="#085041" font-size="14" font-weight="500">Judge re-checks and continues</text>
