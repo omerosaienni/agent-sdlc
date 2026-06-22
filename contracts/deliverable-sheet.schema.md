@@ -1,6 +1,6 @@
 # Deliverable sheet schema
 
-Typed interface between design and build. Design emits a sheet conforming to this. Build refuses to start unless it validates. Single source of truth. Referenced by design-partner, build-judge-loop, parallel-build-loop.
+Typed interface between design and build. Design emits a sheet conforming to this. Build refuses to start unless it validates. Single source of truth. Referenced by design-partner and build-judge-loop.
 
 ## Document
 - goal: one paragraph. Context only, not built against.

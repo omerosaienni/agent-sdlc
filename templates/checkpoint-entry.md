@@ -1,0 +1,34 @@
+# Build loop checkpoint: entry
+
+<!-- Rendered VERBATIM by contracts/build-judge-loop.md on first entry, or when a
+     fresh conversation continues a run with no interruption to recover. Fill the
+     angle-bracket slots, change nothing else. The decision is the fixed widget in
+     the contract (Checkpoint, the decision widget), not prose. The STATE BLOCK is
+     byte-identical across checkpoint-entry, checkpoint-post-pr and
+     checkpoint-reclaim; do not let it drift. -->
+
+Build loop. Mode: <mode>. Sheet: <sheet path>.
+<degraded note, or blank: "Subagent dispatch unavailable: I build one deliverable inline then stop. To build or resume another, start a fresh conversation and I will reclaim.">
+
+<!-- STATE BLOCK START (byte-identical across the three checkpoint templates) -->
+main as it stands: <M> of <T> merged (<merged id list>).
+
+POSSIBLY STALLED (state is not pending, merged or pr-open):
+- <id> <title> <★ or blank> -- deliverable <id> is in state <status>, this may be stalled.
+<!-- one row per deliverable whose status is not pending/merged/pr-open, lowest id first. If none, write exactly: None. -->
+
+AWAITING MERGE (PR open, you merge):
+- <id> <title> <★ or blank> -- branch <branch>. Merge to unblock <dependent ids, or "no dependents">.
+<!-- one row per pr-open deliverable, lowest id first. If none, write exactly: None. -->
+
+READY (all deps merged):
+- <id> <title> <★ or blank> -- deps <satisfied dep ids> merged.
+<!-- one row per ready deliverable, lowest id first. If none, write exactly: None. -->
+
+BLOCKED (waiting on an unmerged dep):
+- <id> <title> <★ or blank> -- needs <unmerged dep ids, each with its status>.
+<!-- one row per blocked deliverable, lowest id first. If none, write exactly: None. -->
+
+Legend. ★ = on a longest dependency chain through the sheet, from a root to a terminal (a deliverable nothing depends on; there may be several terminals, and chains may tie). It marks the longest path to done, not importance or priority. Starred rows appear in every section so the whole critical path is visible.
+<!-- STATE BLOCK END -->
+$\n(Choose below; the decision widget is fixed, see the contract.)\n

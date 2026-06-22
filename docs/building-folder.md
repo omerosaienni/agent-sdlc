@@ -7,7 +7,7 @@ Everything the build loop generates while it works lives under one folder: `.bui
 ```
 .building/
   build/                          the loop's own state
-    state.json                    per-unit status, loop counts, branch names
+    state.json                    mode, sheet/conventions paths, per-unit status, loop counts, branch names
     setup-ok                      the setup receipt (proves the environment was ready)
   work/                           the agents' working files, one folder per unit
     d3-connection-helper/         keyed by the audit-named branch
@@ -28,7 +28,7 @@ Everything the build loop generates while it works lives under one folder: `.bui
 
 ## The three parts
 
-**build/** is the loop's own bookkeeping. `state.json` tracks where each unit is (its status, how many review and judge attempts it has had, its branch name). `setup-ok` is the receipt the setup gate writes to prove the environment was ready; the loop checks for it on entry.
+**build/** is the loop's own bookkeeping. `state.json` carries the project-level `mode` (sequential-attended or parallel-attended, set once and persisting across conversations) alongside the sheet and conventions paths, and tracks where each unit is (its status, how many review and judge attempts it has had, its branch name). `setup-ok` is the receipt the setup gate writes to prove the environment was ready; the loop checks for it on entry.
 
 **work/** is where the agents record what they did, one folder per unit, named after that unit's audit-named branch (so `d3-connection-helper`, not `build/3`). The builder, reviewer, judge, and document agent each write their file here. These files ARE the record: there is no second copy kept anywhere. Re-running a unit overwrites its folder, only the latest run is kept. Within one run, the review passes accumulate (review-pass-1, review-pass-2, and so on) so you can see the back-and-forth.
 
