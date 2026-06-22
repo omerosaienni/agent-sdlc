@@ -23,7 +23,3 @@ Repo-managed (installed from here, the source of truth):
 - omero-design-partner, points at contracts/design-partner.md
 - omero-project-setup, points at contracts/project-setup.md and runs scripts/project-setup.sh
 - omero-create-ts-mongo, runs scripts/init-ts-mongo.sh (the project generator, no contract: deterministic)
-
-## Conventions
-
-British English. No em dashes.

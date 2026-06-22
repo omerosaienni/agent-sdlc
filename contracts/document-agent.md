@@ -24,6 +24,3 @@ Missing builder slice: fill from the reports, mark absent fields "not provided".
 
 ## Excludes
 No verification metrics (the reports own those). No evaluation or verdict (it is not a judge). No standalone whole-project regeneration yet (a possible future skill, not built).
-
-## Conventions
-British English. No em dashes. Generated diagrams are Mermaid; the hand-built conceptual SVGs are maintained separately per the diagram spec.

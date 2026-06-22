@@ -242,14 +242,3 @@ ensure-report-tooling.sh --check    report only, never install (exit 2 if missin
 The gate's step 1 covers the same ground (it derives the required coverage major
 from the installed vitest). This script is the standalone, single-concern version
 for when you want to fix just the report tooling without running the whole gate.
-
----
-
-## Conventions
-
-All three follow `contracts/script-layout.md`: header, `set`, constants, helpers,
-arg parsing, input resolution, banner'd work sections, finish. They share colour
-handling (auto-detected, off when piped, `--no-color` to force) and flag-based
-options (never environment variables). The output idiom differs by job: the
-generator prints a step flow, the gate prints a check list. `init-ts-mongo.sh` is
-the reference implementation.

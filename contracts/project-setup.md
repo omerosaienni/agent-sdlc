@@ -30,6 +30,3 @@ Installs and pushes are side effects. Consent is explicit: a --yes flag, or an i
 
 ## Relationship to the build loop
 The build loop assumes setup has passed. The build loop keeps only the DYNAMIC endpoint-liveness check (is the endpoint up right now, the environment-block pause), because that can change during a run. All STATIC proving (tooling matches, commands select tests, configs load, git ready) belongs here and is not repeated per deliverable. Run setup once before building, and again any time the environment may have drifted.
-
-## Conventions
-British English. No em dashes.

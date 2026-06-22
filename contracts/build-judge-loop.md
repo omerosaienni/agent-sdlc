@@ -125,6 +125,3 @@ Written to .building/work/<branch-name>/escalations/<YYYY-MM-DD-HHMM>.md, with a
 
 ## Attended checkpoint
 The waiting PR per deliverable is the checkpoint (it replaces a per-level pause). The human reviews the reports in the PR and merges. After opening the PR, the orchestrator WAITS: it does not cut the next deliverable's branch until it has confirmed the PR is merged. It confirms either by the human saying so in-session or by checking the PR state (gh pr view --json state,mergedAt). Only a confirmed merge advances the loop; an open or closed-unmerged PR holds it. This is what makes the sequential-cut rule and the green-on-main guarantee real rather than nominal: the next branch is cut from a main that provably contains this deliverable.
-
-## Conventions
-British English. No em dashes.

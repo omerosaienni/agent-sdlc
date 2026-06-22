@@ -25,6 +25,3 @@ If the builder slice is absent or partial, the document agent fills what it can 
 
 ## Excludes
 No coverage tables, test inventories, or verification metrics. Those are the reports' job. The payload is what a reader needs to understand the module, not proof it works.
-
-## Conventions
-British English. No em dashes.

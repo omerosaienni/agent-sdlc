@@ -26,6 +26,3 @@ Typed interface between design and build. Design emits a sheet conforming to thi
 
 ## Excludes
 No severity, budgets, commit rules, parallelism, reports. Those are build-contract concerns. Schema describes only the seam. Parallelism is derived from depends_on by the build phase; the author never thinks about it here.
-
-## Conventions
-British English. No em dashes.

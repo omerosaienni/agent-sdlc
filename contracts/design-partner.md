@@ -25,6 +25,3 @@ Write the sheet to the user-specified path. That file is the build phase input.
 
 ## Excludes
 No roles beyond user and partner, no severity, no commit. Design produces the sheet; building it is the next contract.
-
-## Conventions
-British English. No em dashes.

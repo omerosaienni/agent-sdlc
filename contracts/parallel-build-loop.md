@@ -25,6 +25,3 @@ Integration is green after every individual merge. An escalation freezes only it
 
 ## Note
 This worktree layout differs from the sequential branch layout in build-judge-loop. Sequential is the live path; this is the deferred parallel design.
-
-## Conventions
-British English. No em dashes.

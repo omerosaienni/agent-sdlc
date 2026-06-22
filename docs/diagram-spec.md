@@ -68,6 +68,3 @@ Branch topology. One horizontal main line (grey). Each deliverable cuts a branch
 - "Update <name>": change one diagram; then update its catalogue entry here.
 - "Add a diagram of <X>": create it to the conventions, append a catalogue entry.
 - Generated (not hand-built) diagrams, such as the document agent's dependency graph, are Mermaid with classDef colours from the palette, not SVG.
-
-## Conventions
-British English. No em dashes.

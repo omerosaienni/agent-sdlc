@@ -99,12 +99,6 @@ What your environment is expected to provide for an attended run is short: git a
 
 One optional external tool is referenced by generated projects but is not required by the pipeline. The scaffolded Makefile carries `graph` and `graph-viz` targets that call [graphify](https://github.com/safishamsi/graphify), a local-first codebase knowledge-graph tool, pinned to a local Ollama backend. The build loop never invokes it; the targets are a convenience for exploring a project as a graph. If you do not have graphify, those two Make targets are the only thing that will not run, everything else works without it. Install is `uv tool install graphifyy` (note the double y in the package name; the CLI command is still `graphify`).
 
-## Conventions
-
-Conventions are defined where they are used, not restated here, so there is one source of truth:
-- A generated project's coding conventions (strict TypeScript, the db-helper and COLLECTIONS patterns, the runnable-module pattern, test-tier rules) live in that project's `CLAUDE.md`, written by `init-ts-mongo.sh`.
-- Script conventions (layout, colour, flags) live in [`contracts/script-layout.md`](contracts/script-layout.md).
-
 ## Where things live
 
 - `contracts/` the operating contracts (above), the agent-facing source of truth.
