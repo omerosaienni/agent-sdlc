@@ -54,7 +54,7 @@ printf '%s\n' "${content/"$old"/"$new"}" > "$src"
 # test never asserted the broken behaviour.
 # Capture without letting a non-zero runner exit trip set -e (a failing test is
 # the expected outcome here, not a script error).
-if out="$(./scripts/agent-tests.sh "$tier" "$testfile" 2>&1)"; then rc=0; else rc=$?; fi
+if out="$(.building/scripts/agent-tests.sh "$tier" "$testfile" 2>&1)"; then rc=0; else rc=$?; fi
 
 verdict=""
 if [ "$rc" -eq 0 ]; then
@@ -69,7 +69,7 @@ fi
 
 # Explicit restore now, then verify green before reporting (the trap is a backstop).
 restore; trap - EXIT
-if green="$(./scripts/agent-tests.sh "$tier" "$testfile" 2>&1)"; then grc=0; else grc=$?; fi
+if green="$(.building/scripts/agent-tests.sh "$tier" "$testfile" 2>&1)"; then grc=0; else grc=$?; fi
 [ "$grc" -eq 0 ] || { echo "HALT: $src did not return to green after restore"; printf '%s\n' "$green"; exit 3; }
 
 echo "hollow-check: $verdict"

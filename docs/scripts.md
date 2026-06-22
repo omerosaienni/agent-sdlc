@@ -200,7 +200,7 @@ The identity check is load-bearing for attribution: the loop's commits must be
 authored by an email on the allowlist so they map to the right GitHub account.
 Override the allowlist per machine with `GIT_IDENTITY_ALLOWLIST`.
 
-The agent test runner (`scripts/agent-tests.sh`) is part of the testing
+The agent test runner (`.building/scripts/agent-tests.sh`) is part of the testing
 convention the gate scaffolds and proves. It is the path the build loop's judge
 uses to run tests: terse one-line output on pass, full output on failure, so the
 judge's repeated verification runs cost a few tokens of context rather than the
@@ -211,7 +211,7 @@ date (step 2) and runs it to prove the agent path works before stamping ready
 (step 3). A project whose human tests pass but whose agent runner is broken is
 not loop-ready, because the judge depends on that path.
 
-The hollow-check runner (`scripts/agent-hollow.sh`) is placed and proven the same
+The hollow-check runner (`.building/scripts/agent-hollow.sh`) is placed and proven the same
 way. It is the single command the judge uses for the hollow-test negative run: it
 backs up the file, applies the judge's behavioural fault, runs the scoped tier,
 restores the file from an exit trap, then re-verifies green, returning a verdict

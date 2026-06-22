@@ -9,6 +9,9 @@ Everything the build loop generates while it works lives under one folder: `.bui
   build/                          the loop's own state
     state.json                    mode, sheet/conventions paths, per-unit status, loop counts, branch names
     setup-ok                      the setup receipt (proves the environment was ready)
+  scripts/                        the loop's own runners, placed by setup (never committed)
+    agent-tests.sh                the judge's terse test runner
+    agent-hollow.sh               the judge's hollow-check runner
   work/                           the agents' working files, one folder per unit
     d3-connection-helper/         keyed by the audit-named branch
       builder.md                  what the builder did
@@ -26,9 +29,11 @@ Everything the build loop generates while it works lives under one folder: `.bui
     2026-06-21-1430.md  ->  ../work/d4-crud/escalations/2026-06-21-1430.md
 ```
 
-## The three parts
+## The parts
 
 **build/** is the loop's own bookkeeping. `state.json` carries the project-level `mode` (sequential-attended or parallel-attended, set once and persisting across conversations) alongside the sheet and conventions paths, and tracks where each unit is (its status, how many review and judge attempts it has had, its branch name). `setup-ok` is the receipt the setup gate writes to prove the environment was ready; the loop checks for it on entry.
+
+**scripts/** holds the loop's own runners: the agent test runner the judge uses for its terse verification passes, and the hollow-check runner it uses for the negative run. The setup gate writes them here from the shared templates and proves them; they are loop machinery, not part of the project, so they live under gitignored `.building/` rather than the committed `scripts/`, which carries only the project's own scripts.
 
 **work/** is where the agents record what they did, one folder per unit, named after that unit's audit-named branch (so `d3-connection-helper`, not `build/3`). The builder, reviewer, judge, and document agent each write their file here. These files ARE the record: there is no second copy kept anywhere. Re-running a unit overwrites its folder, only the latest run is kept. Within one run, the review passes accumulate (review-pass-1, review-pass-2, and so on) so you can see the back-and-forth.
 

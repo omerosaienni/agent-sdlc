@@ -3,7 +3,7 @@ name: omero-build-loop
 description: Deliver a deliverable sheet as small, independently verified increments. Four roles, a review loop and a judge loop, one branch and one GitHub PR per deliverable into main. Attended, mode-driven (sequential-attended or parallel-attended, read from state.json). Judge runs unit then integration tiers.
 disable-model-invocation: true
 argument-hint: "[path to the deliverable sheet]"
-allowed-tools: Bash(git:*), Bash(gh:*), Bash(npm:*), Bash(npx:*), Bash(make:*), Bash(docker:*), Bash(cd:*), Bash(ls:*), Bash(cat:*), Bash(echo:*), Bash(mkdir:*), Bash(rm:*), Bash(find:*), Bash(grep:*), Bash(printf:*), Bash(chmod:*), Bash(tail:*), Bash(head:*), Bash(graphify query:*), Bash(./scripts/agent-tests.sh:*), Bash(./scripts/agent-hollow.sh:*), Read, Edit, Write
+allowed-tools: Bash(git:*), Bash(gh:*), Bash(npm:*), Bash(npx:*), Bash(make:*), Bash(docker:*), Bash(cd:*), Bash(ls:*), Bash(cat:*), Bash(echo:*), Bash(mkdir:*), Bash(rm:*), Bash(find:*), Bash(grep:*), Bash(printf:*), Bash(chmod:*), Bash(tail:*), Bash(head:*), Bash(graphify query:*), Bash(.building/scripts/agent-tests.sh:*), Bash(.building/scripts/agent-hollow.sh:*), Read, Edit, Write
 ---
 Operate the build-judge loop defined in
 {{SDLC_REPO}}/contracts/build-judge-loop.md. Read that contract now and follow it

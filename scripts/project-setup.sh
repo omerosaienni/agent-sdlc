@@ -61,15 +61,15 @@ run_tier(){ local s="$1" ep="$2" out rc
         else bad "$s failed (see output)"; fi; return; fi
     ok "$s selected tests and passed"; }
 
-# agent_check <tier>: prove the agent test runner (scripts/agent-tests.sh) works
+# agent_check <tier>: prove the agent test runner (.building/scripts/agent-tests.sh) works
 # for one tier. The judge runs tests through this runner, so a project is only
 # loop-ready if it produces a terse summary on a passing tier. exit 3 is an
 # environment problem (block), other non-zero is a real failure of the path.
 agent_check(){ local tier="$1" out rc
-    out=$(bash scripts/agent-tests.sh "$tier" 2>&1); rc=$?
+    out=$(bash .building/scripts/agent-tests.sh "$tier" 2>&1); rc=$?
     case "$rc" in
         0) if printf '%s' "$out" | grep -qE "^$tier: [0-9]+ passed"; then ok "agent test runner works for $tier (terse summary)"
-           else bad "agent test runner ran $tier but did not emit a terse summary; check scripts/agent-tests.sh"; fi ;;
+           else bad "agent test runner ran $tier but did not emit a terse summary; check .building/scripts/agent-tests.sh"; fi ;;
         2) note "agent runner reports $tier selects zero tests; section 3 above hard-fails a hollow declared tier, so this only defers, it does not excuse it" ;;
         3) block "agent test runner could not run $tier (environment); fix tooling and re-run" ;;
         *) bad "agent test runner failed for $tier (exit $rc); the judge depends on this path" ;;
@@ -82,9 +82,9 @@ agent_check(){ local tier="$1" out rc
 # can invoke it. The functional proof is the loop using it on a real deliverable.
 agent_hollow_check(){
     local rc
-    bash scripts/agent-hollow.sh >/dev/null 2>&1; rc=$?
+    bash .building/scripts/agent-hollow.sh >/dev/null 2>&1; rc=$?
     if [ "$rc" -eq 64 ]; then ok "agent hollow-check runner present and runnable"
-    else bad "scripts/agent-hollow.sh usage check failed (exit $rc, expected 64); the judge's hollow check depends on it"; fi
+    else bad ".building/scripts/agent-hollow.sh usage check failed (exit $rc, expected 64); the judge's hollow check depends on it"; fi
 }
 
 # format_check: prove the project is prettier-clean. Formatting is a convention
@@ -139,11 +139,11 @@ gaps=()
 [ "$have_fmt" = "1" ]  || gaps+=("npm script format:check")
 [ -f vitest.unit.config.ts ] || gaps+=("vitest.unit.config.ts")
 [ -f vitest.integration.config.ts ] || gaps+=("vitest.integration.config.ts")
-# scripts/agent-tests.sh is the agent test path the build loop's judge calls
+# .building/scripts/agent-tests.sh is the agent test path the build loop's judge calls
 # (terse on pass, full on failure). It is workflow tooling, not part of the
 # project proper, so the setup gate places it rather than the generator.
-cmp -s scripts/agent-tests.sh "$TEMPLATES_DIR/agent-tests.sh" || gaps+=("scripts/agent-tests.sh (absent or stale)")
-cmp -s scripts/agent-hollow.sh "$TEMPLATES_DIR/agent-hollow.sh" || gaps+=("scripts/agent-hollow.sh (absent or stale)")
+cmp -s .building/scripts/agent-tests.sh "$TEMPLATES_DIR/agent-tests.sh" || gaps+=(".building/scripts/agent-tests.sh (absent or stale)")
+cmp -s .building/scripts/agent-hollow.sh "$TEMPLATES_DIR/agent-hollow.sh" || gaps+=(".building/scripts/agent-hollow.sh (absent or stale)")
 if [ ${#gaps[@]} -gt 0 ]; then
     note "testing convention incomplete; missing: ${gaps[*]}"
     note "scaffold writes the two tier configs, the two npm scripts and the agent test runner (boilerplate)"
@@ -153,15 +153,15 @@ if [ ${#gaps[@]} -gt 0 ]; then
         [ "$have_unit" = "1" ] || npm pkg set "scripts.test:unit=vitest run -c vitest.unit.config.ts" >/dev/null
         [ "$have_int" = "1" ]  || npm pkg set "scripts.test:integration=vitest run -c vitest.integration.config.ts" >/dev/null
         [ "$have_fmt" = "1" ]  || npm pkg set "scripts.format:check=prettier --check ." >/dev/null
-        if ! cmp -s scripts/agent-tests.sh "$TEMPLATES_DIR/agent-tests.sh"; then
-            mkdir -p scripts
-            if copy_template agent-tests.sh scripts/agent-tests.sh; then chmod +x scripts/agent-tests.sh
-            else bad "could not write scripts/agent-tests.sh from template"; fi
+        if ! cmp -s .building/scripts/agent-tests.sh "$TEMPLATES_DIR/agent-tests.sh"; then
+            mkdir -p .building/scripts
+            if copy_template agent-tests.sh .building/scripts/agent-tests.sh; then chmod +x .building/scripts/agent-tests.sh
+            else bad "could not write .building/scripts/agent-tests.sh from template"; fi
         fi
-        if ! cmp -s scripts/agent-hollow.sh "$TEMPLATES_DIR/agent-hollow.sh"; then
-            mkdir -p scripts
-            if copy_template agent-hollow.sh scripts/agent-hollow.sh; then chmod +x scripts/agent-hollow.sh
-            else bad "could not write scripts/agent-hollow.sh from template"; fi
+        if ! cmp -s .building/scripts/agent-hollow.sh "$TEMPLATES_DIR/agent-hollow.sh"; then
+            mkdir -p .building/scripts
+            if copy_template agent-hollow.sh .building/scripts/agent-hollow.sh; then chmod +x .building/scripts/agent-hollow.sh
+            else bad "could not write .building/scripts/agent-hollow.sh from template"; fi
         fi
         ok "scaffolded testing convention (configs + scripts + agent test runner)"
         have_unit=$(has_script "test:unit"); have_int=$(has_script "test:integration"); have_fmt=$(has_script "format:check")
@@ -187,13 +187,13 @@ fi
 
 # ---------------------------------------------------------------------------
 # 3b. Prove the agent test path works. The judge runs tests through
-# scripts/agent-tests.sh, not the human npm scripts, so a project is only
+# .building/scripts/agent-tests.sh, not the human npm scripts, so a project is only
 # loop-ready if that path runs and reports a terse summary. Verify it against
 # each tier the project declares: unit if declared, integration if declared. An
 # integration-only project (no unit tier) must still have its agent path proven,
 # because the judge will use it for integration.
 # ---------------------------------------------------------------------------
-if [ -f scripts/agent-tests.sh ]; then
+if [ -f .building/scripts/agent-tests.sh ]; then
     # Mirror section 3: prove the agent path for each tier the project declares.
     # Skip integration if the run is already in a blocked state (fail=3): a block
     # means fix the environment and re-run, so the skipped check happens then.
@@ -203,7 +203,7 @@ fi
 
 # 3c. Prove the hollow-check runner (the judge's negative-run command) is present
 # and runnable, on the same loop-ready footing as the test runner above.
-[ -f scripts/agent-hollow.sh ] && agent_hollow_check
+[ -f .building/scripts/agent-hollow.sh ] && agent_hollow_check
 
 # 3d. Prove the tree is formatter-clean. Only meaningful if the project has the
 # format:check script (scaffolded above); skip silently if it somehow lacks it.
