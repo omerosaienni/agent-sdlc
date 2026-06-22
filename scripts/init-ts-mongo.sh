@@ -784,6 +784,11 @@ step "git repository"
     cd "$DIR"
     if [ ! -d .git ]; then
         git init -q
+        # default the unborn branch to main, the branch the pipeline builds into
+        # (setup proves main on the remote, the build loop PRs into main). Done via
+        # symbolic-ref so it is set before the first commit and works on any git
+        # version, regardless of the user's init.defaultBranch.
+        git symbolic-ref HEAD refs/heads/main
     fi
     git add -A
     # Only commit if there is no HEAD yet, so a repo with history is left as is.
