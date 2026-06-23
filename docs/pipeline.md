@@ -6,7 +6,7 @@ Three phases, two gates. Design and setup are independent prerequisites; both mu
 
 ## The three phases
 
-1. **Design** (`/omero-design-partner`) converges a fuzzy intent into a deliverable sheet, written to `.building/design/<slug>/deliverables.md` where `<slug>` is a short name you give the design. Gate: the sheet, validated against [`../contracts/deliverable-sheet.schema.md`](../contracts/deliverable-sheet.schema.md).
+1. **Design** (`/omero-design-partner`) converges a fuzzy intent into a deliverable sheet, written to `.building/design/<design-name>/deliverables.md` where `<design-name>` is a short kebab-case name you give the design. Gate: the sheet, validated against [`../contracts/deliverable-sheet.schema.md`](../contracts/deliverable-sheet.schema.md).
 2. **Setup** (`/omero-project-setup`) proves the environment is buildable by running things: tooling matches, the test tiers select non-zero tests, the agent test runner is placed and works, configs are valid, git is ready. It runs `scripts/project-setup.sh`. Gate: the receipt at `.building/build/setup-ok`. Idempotent, so it doubles as a re-runnable health check.
 3. **Build** (`/omero-build-loop`) delivers the sheet one increment at a time. It checks the receipt on entry, then for each deliverable runs builder, reviewer, tiered judge, document, PR, human merge. The loop runs in one of two modes, sequential-attended or parallel-attended, read from `mode` in `state.json`. See [`build-loops.md`](build-loops.md).
 

@@ -91,7 +91,7 @@ All loop output, plus the design sheets it builds from, lives under a single git
 ```
 .building/
   design/                         the design sheets (build input), one folder per design
-    <slug>/                       keyed by the design slug (e.g. greeting-spike)
+    <design-name>/                keyed by the design name (e.g. greeting-spike)
       deliverables.md             the schema-valid sheet the loop builds
   build/                          the loop's own state
     state.json
