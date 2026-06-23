@@ -1,6 +1,6 @@
 # agent-sdlc documentation
 
-The human entry point to the system. The contracts under [`../contracts/`](../contracts/) are the agent-facing source of truth, written dense for an agent to read; these pages explain the same system for a person.
+Explains the whole system, and the place to start. The contracts under [`../contracts/`](../contracts/) are the source of truth for behaviour.
 
 ## Start here
 

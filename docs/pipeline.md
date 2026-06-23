@@ -2,7 +2,7 @@
 
 Three phases, two gates. Design and setup are independent prerequisites; both must be done before build, in either order. Each produces a gate artifact, and the build loop refuses to start without both.
 
-See [`diagrams/pipeline-overview.svg`](diagrams/pipeline-overview.svg) for the phase shape.
+![The three phases and two gates](diagrams/pipeline-overview.svg)
 
 ## The three phases
 

@@ -5,7 +5,7 @@
 > Published so the ideas are visible and reusable; offered as-is, with no support
 > promised and no commitment to generalise it. Take what is useful. MIT licensed.
 
-Reusable AI agent operating contracts. Each contract is a project-agnostic rulebook for how an agent works; a project consumes a contract by supplying the small project-specific pieces it leaves open. The contracts under [`contracts/`](contracts/) are written dense for an agent to read. The [`docs/`](docs/README.md) folder is the human entry point and explains the whole system.
+Reusable AI agent operating contracts. Each contract is a project-agnostic rulebook for how an agent works; a project consumes a contract by supplying the small project-specific pieces it leaves open. The contracts under [`contracts/`](contracts/) are the source of truth for behaviour, dense reference. The [`docs/`](docs/README.md) folder explains the whole system; start there.
 
 ## How it works, in one breath
 
@@ -57,8 +57,8 @@ The build loop runs in one of two modes, sequential-attended or parallel-attende
 
 | Path | What lives here |
 | --- | --- |
-| [`contracts/`](contracts/) | The agent-facing operating contracts, written dense for an agent to read. The source of truth for behaviour. |
-| [`docs/`](docs/README.md) | The human-facing documentation: the same system explained for a person, plus the diagrams. |
+| [`contracts/`](contracts/) | The operating contracts. The source of truth for behaviour, dense reference. |
+| [`docs/`](docs/README.md) | The documentation pages and the diagrams. |
 | [`skills/`](skills/README.md) | The thin `/omero-*` skill wrappers and the installer that points them at this repo. |
 | [`scripts/`](scripts/) | The pipeline's own shell scripts: the project generator, the setup gate, the report-tooling helper. |
 | [`templates/`](templates/) | The shared constant files (agent runners, report and checkpoint templates, vitest configs) the scripts copy from so nothing drifts. |

@@ -6,7 +6,9 @@ Both modes are attended: a human merges every PR, and the merge is the final gat
 
 ## The per-deliverable cycle
 
-For each deliverable: the builder implements and writes tests; the reviewer reviews (budget 3, bounce on a critical or major finding with evidence); on approval the judge runs the unit tier then the integration tier and proves the tests are not hollow; on a pass the document agent runs; the orchestrator commits code and docs and opens a PR into main. Either the review or the judge loop exhausting three attempts escalates and freezes that deliverable's dependents. This cycle is identical in both modes. See [`diagrams/build-judge-loop.svg`](diagrams/build-judge-loop.svg) and the per-deliverable state machine [`diagrams/deliverable-states.svg`](diagrams/deliverable-states.svg).
+For each deliverable: the builder implements and writes tests; the reviewer reviews (budget 3, bounce on a critical or major finding with evidence); on approval the judge runs the unit tier then the integration tier and proves the tests are not hollow; on a pass the document agent runs; the orchestrator commits code and docs and opens a PR into main. Either the review or the judge loop exhausting three attempts escalates and freezes that deliverable's dependents. This cycle is identical in both modes. The per-deliverable state machine is [`diagrams/deliverable-states.svg`](diagrams/deliverable-states.svg).
+
+![The build and judge loop for one deliverable](diagrams/build-judge-loop.svg)
 
 ## Two modes, one difference
 

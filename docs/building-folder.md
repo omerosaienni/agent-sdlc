@@ -2,7 +2,7 @@
 
 Everything the build loop generates while it works, plus the design sheets it builds from, lives under one folder: `.building/`. It is gitignored in full, so none of it is ever committed. Your commits and pull requests carry only code and docs, the actual deliverable. `.building/` is the loop's private workspace on your machine.
 
-See [`diagrams/file-layout.svg`](diagrams/file-layout.svg) for the committed-versus-gitignored split at a glance.
+![Committed versus gitignored at a glance](diagrams/file-layout.svg)
 
 ## Structure
 
