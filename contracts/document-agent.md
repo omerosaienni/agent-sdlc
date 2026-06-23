@@ -6,7 +6,7 @@ Produce documentation for a verified deliverable, after the judge passes and bef
 After the judge passes a deliverable, before the orchestrator opens the PR. Its output (docs/) commits atomically with the deliverable, alongside the code. Reports are not committed; they stay local under .building/.
 
 ## Inputs (assemble, do not re-derive)
-- The doc payload at .building/work/<branch-name>/doc-payload.md (doc-payload.schema.md), the builder's slice.
+- The doc payload at .building/build/<design-name>/work/<branch-name>/doc-payload.md (doc-payload.schema.md), the builder's slice.
 - The approved reviewer report (architecture and design decisions).
 - The judge report (verified behaviour).
 A quick scan of the public interface to confirm, not a full re-read of the code.

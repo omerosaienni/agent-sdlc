@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="680" viewBox="0 0 680 470" role="img" font-family="sans-serif">
 <title>Pipeline: design and setup are parallel prerequisites that converge at build, then complete</title>
-<desc>Design converges on a deliverable sheet. Setup proves the environment and writes a receipt. Both are independent prerequisites. The build loop needs both, runs once per deliverable, and a final pull request to main completes the project.</desc>
+<desc>Design converges on a deliverable sheet. Setup proves the environment and writes a receipt. Both are independent prerequisites. The build loop needs both, runs once per deliverable, and a final pull request to main completes the design queue.</desc>
 <defs>
 <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
 </defs>
@@ -42,7 +42,7 @@
 <!-- build down to complete -->
 <line x1="595" y1="153" x2="595" y2="200" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
 <rect x="490" y="200" width="150" height="56" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
-<text x="565" y="221" text-anchor="middle" dominant-baseline="central" fill="#444441" font-size="13" font-weight="500">Project complete</text>
+<text x="565" y="221" text-anchor="middle" dominant-baseline="central" fill="#444441" font-size="13" font-weight="500">Queue complete</text>
 <text x="565" y="239" text-anchor="middle" dominant-baseline="central" fill="#5F5E5A" font-size="12">final PR to main</text>
 
 <!-- legend -->

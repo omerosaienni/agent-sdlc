@@ -1,6 +1,6 @@
 # The build loop
 
-The build phase delivers a sheet one increment at a time. It is a single loop with a single [per-deliverable cycle](roles.md), one set of gates, one `.building/` workspace and one checkpoint. A project-level `mode` selects between two behaviours that differ in exactly one thing: what the loop offers after a PR opens.
+The build phase delivers a sheet one increment at a time. It is a single loop with a single [per-deliverable cycle](roles.md), one set of gates, one `.building/` workspace and one checkpoint. A per-queue `mode` selects between two behaviours that differ in exactly one thing: what the loop offers after a PR opens.
 
 Both modes are attended: a human merges every PR, and the merge is the final gate.
 
@@ -12,7 +12,7 @@ For each deliverable: the builder implements and writes tests; the reviewer revi
 
 ## Two modes, one difference
 
-`mode` lives in `state.json`, set once per project and persisting across conversations. It is not an invocation flag. The loop reads it and never writes it; if it is absent the loop defaults to sequential-attended.
+`mode` lives in each design's `state.json`, set per deliverable queue and persisting across conversations. It is not an invocation flag. The loop reads it and never writes it; if it is absent the loop defaults to sequential-attended. One queue can run parallel-attended while another runs sequential-attended.
 
 | | sequential-attended (default) | parallel-attended |
 | --- | --- | --- |
@@ -31,6 +31,12 @@ Parallel-attended does not run builds at the same time. It is still one checkout
 The win is not a wall-clock speedup. It is decoupling build order from merge order: you can build 13, 14 and 15 back to back, leaving their PRs open, and merge them as a batch when you are ready. In sequential mode each build waits behind the previous merge. Same total work, different control over when merges happen.
 
 The trade is honest. In parallel mode green is per-branch, not per-main: each sibling is verified green only against the main it was cut from, in isolation. Two siblings that are each green alone can combine into a red main (a shared-file append, or a semantic collision the loop never sees because it never holds two siblings together). The combined suite is re-run at the next deliverable's judge run; when the merged siblings are terminal, the human runs the full suite once after the final combine. Sequential keeps main provably green after every merge and pays for it by serialising.
+
+## Multiple queues
+
+A project can hold several design queues at once, each a sheet under `.building/design/<design-name>/` with its own state at `.building/build/<design-name>/`. You pick the queue by the sheet path you pass the loop; queues are built, resumed and completed independently, and one never reads or writes another's state. `mode` is per queue, so a large queue can run parallel while a small one runs sequential.
+
+Three things stay project-wide. Setup is proven once for the project (the receipt and the runners are shared), so the receipt's head-drift warning is expected once a sibling queue has merged into the shared main, and is not a reason to re-run setup unless the tooling actually changed. main is one tree, so green is project-wide: every branch is cut from the shared main and the judge's accumulated suite spans all queues' merged work. And the board shows only the active queue, so each checkpoint also carries a one-line reminder of any other queue with open work (in flight, awaiting merge, escalated or blocked), so nothing is silently forgotten.
 
 ## The dependency graph
 

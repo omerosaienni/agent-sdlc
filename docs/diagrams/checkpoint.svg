@@ -8,7 +8,7 @@
 <!-- board node -->
 <rect x="40" y="46" width="600" height="150" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1.5"/>
 <text x="58" y="68" fill="#5F5E5A" font-size="12" font-weight="600">THE BOARD (rendered verbatim from the on-disk template)</text>
-<text x="58" y="90" fill="#5F5E5A" font-size="11">main as it stands: M of T merged.</text>
+<text x="58" y="90" fill="#5F5E5A" font-size="11">this queue: M of T merged to main.</text>
 <rect x="58" y="100" width="180" height="22" rx="4" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/>
 <text x="68" y="115" fill="#854F0B" font-size="10.5">POSSIBLY STALLED  (your call)</text>
 <rect x="248" y="100" width="180" height="22" rx="4" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/>

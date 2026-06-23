@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Project setup gate. Prove a project is ready to build, by execution not
 # assertion. Idempotent: safe to run any number of times. Acts only on the gap.
-# On READY it writes a receipt (.building/build/setup-ok) the build loop checks.
+# On READY it writes a receipt (.building/setup-ok) the build loop checks.
 #
 # Usage:
 #   project-setup.sh            check; ask before installing or scaffolding
@@ -254,13 +254,13 @@ fi
 # Verdict and receipt.
 # ---------------------------------------------------------------------------
 echo "========================"
-mkdir -p .building/build
+mkdir -p .building
 if [ "$fail" -eq 0 ]; then
     head=$(git rev-parse HEAD 2>/dev/null || echo unknown)
-    printf '{ "ready": true, "head": "%s", "at": "%s" }\n' "$head" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .building/build/setup-ok
-    echo "READY (receipt written to .building/build/setup-ok)"; exit 0
+    printf '{ "ready": true, "head": "%s", "at": "%s" }\n' "$head" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .building/setup-ok
+    echo "READY (receipt written to .building/setup-ok)"; exit 0
 else
-    rm -f .building/build/setup-ok   # stale receipt must not survive a non-ready result
+    rm -f .building/setup-ok   # stale receipt must not survive a non-ready result
     case "$fail" in
         2) echo "NOT READY: install/scaffold/push needed, re-run with --yes"; exit 2 ;;
         3) echo "BLOCKED: endpoint down, bring it up and re-run"; exit 3 ;;

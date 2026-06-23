@@ -152,7 +152,7 @@ generating, the project still needs install, bring-up, and the gate.
 ## project-setup.sh (the gate)
 
 Proves a project is ready to build, by execution not assertion. Idempotent, acts
-only on the gap. On READY it writes `.building/build/setup-ok`, the receipt the
+only on the gap. On READY it writes `.building/setup-ok`, the receipt the
 build loop checks.
 
 ```
@@ -170,7 +170,7 @@ Exit codes: 0 READY, 1 NOT READY (fix the FAIL lines), 2 needs `--yes`, 3 BLOCKE
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#e4edf4','primaryTextColor':'#1d2733','primaryBorderColor':'#5b6b7a','lineColor':'#5b6b7a','fontSize':'14px'}}}%%
 flowchart TD
     s1["1. report tooling<br/>coverage matches vitest major"]
-    s2["2. testing convention<br/>tier configs + npm scripts<br/>+ agent runners (test + hollow)"]
+    s2["2. testing convention<br/>tier configs + npm scripts<br/>+ agent runners (test, hollow, type-check)"]
     s3["3. run each tier<br/>non-zero selection + pass<br/>+ agent runners work"]
     s4["4. coverage runs"]
     s5["5. git, remote, gh, identity, main"]
@@ -217,6 +217,13 @@ backs up the file, applies the judge's behavioural fault, runs the scoped tier,
 restores the file from an exit trap, then re-verifies green, returning a verdict
 by exit code. Setup writes it from the template if absent or out of date (step 2) and
 proves it is runnable (step 3) on the same loop-ready footing as the test runner.
+
+The type-check runner (`.building/scripts/agent-typecheck.sh`) is placed and proven the
+same way, and the judge runs it first, before the tiers, because nothing else
+type-checks: the tiers run through esbuild and tsx, which strip types. A clean
+type-check (exit 0) is required to stamp ready; a type error (exit 1) is a hard
+fail like a failing test, and a type-check that cannot run at all (exit 3, no
+tsconfig or tsc absent) is an environment gap to fix before building.
 
 ### Modes
 

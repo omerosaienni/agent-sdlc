@@ -10,9 +10,10 @@
 
 PR opened for deliverable <id>, <title> (branch <branch>). Mode: <mode>. Stopped at the post-PR checkpoint; I have not cut the next branch.
 <degraded note, or blank: "Subagent dispatch unavailable: I built one deliverable inline and stopped. To build or resume another, start a fresh conversation and I will reclaim.">
+<OTHER QUEUES (sibling design queues with open work), one line each: "other queue <design-name>: <n> in flight, <n> awaiting merge, <n> escalated, <n> blocked"; or blank if none>
 
 <!-- STATE BLOCK START (byte-identical across the three checkpoint templates) -->
-main as it stands: <M> of <T> merged (<merged id list>).
+this queue: <M> of <T> merged to main (<merged id list>).
 
 POSSIBLY STALLED (state is not pending, merged or pr-open):
 - <id> <title> <★ or blank> -- deliverable <id> is in state <status>, this may be stalled.

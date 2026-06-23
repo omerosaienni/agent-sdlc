@@ -31,6 +31,7 @@ The operating contracts, each a project-agnostic rulebook a project consumes by 
 - [`../contracts/build-judge-loop.md`](../contracts/build-judge-loop.md): phase 3, the build loop (both modes).
 - [`../contracts/document-agent.md`](../contracts/document-agent.md): the document stage, a producer that never gates.
 - [`../contracts/doc-payload.schema.md`](../contracts/doc-payload.schema.md): the typed payload the agents fill for the document stage.
+- [`../contracts/state.schema.md`](../contracts/state.schema.md): the typed per-design state file the loop, the cross-queue scan and the reconstruction path read and write.
 - [`../contracts/script-layout.md`](../contracts/script-layout.md): the canonical layout every script follows.
 
 ## Skills

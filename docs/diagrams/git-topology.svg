@@ -10,7 +10,7 @@
 <line x1="170" y1="56" x2="250" y2="56" stroke="#185FA5" stroke-width="1.5"/>
 <circle cx="170" cy="56" r="4" fill="#185FA5"/><circle cx="250" cy="56" r="4" fill="#185FA5"/>
 <path d="M250 56 C275 75, 285 100, 300 122" fill="none" stroke="#444441" stroke-width="1.5" marker-end="url(#arrow)"/>
-<text x="150" y="44" fill="#185FA5" font-size="10">d03-connection-helper</text>
+<text x="150" y="44" fill="#185FA5" font-size="10">d3-connection-helper</text>
 <text x="278" y="92" fill="#444441" font-size="9">PR</text>
 <path d="M300 126 C320 90, 330 70, 350 56" fill="none" stroke="#185FA5" stroke-width="1.5"/>
 <line x1="350" y1="56" x2="430" y2="56" stroke="#185FA5" stroke-width="1.5"/>
