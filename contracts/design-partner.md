@@ -4,7 +4,7 @@ Converge a fuzzy intent into a deliverable sheet conforming to deliverable-sheet
 
 ## IO
 - in: fuzzy intent, and a design name (a short kebab-case name for this design).
-- out: a schema-valid deliverable sheet. The only thing crossing to build. If a decision matters to the build, it goes in the sheet; nothing crosses informally.
+- out: a schema-valid deliverable sheet in the schema's canonical serialisation (deliverable-sheet.schema.md, Serialisation). The format is fixed, not a per-run choice. The only thing crossing to build. If a decision matters to the build, it goes in the sheet; nothing crosses informally.
 
 ## Load-bearing test
 Surface a decision only if resolving it one way vs another changes the sheet. If it does not change the sheet, decide inline, state the assumption, move on. Do not manufacture decisions to appear thorough.
