@@ -164,7 +164,18 @@ seed            ## Generate and load seed data        (domain: npm run seed)
   integration endpoint.
 - **typecheck / lint / format / ci**: cross-workspace quality gates. `ci` is the
   single command a human or pipeline runs to prove the whole repo green. The
-  setup gate's checks overlap with `ci`, keep them consistent.
+  setup gate's checks overlap with `ci`, keep them consistent. `typecheck` MUST
+  cover every workspace including the backend `src` tree, not just the dashboard:
+  the test tiers run through esbuild and tsx, which strip types, so a strict-mode
+  type error in backend `src` passes the tests and reaches CI unless `tsc
+  --noEmit` runs over it. A common trap is a project that only has a
+  `dashboard:typecheck` script, leaving the backend unchecked. This is the
+  monorepo form of the judge's type-check gate: the `.building/scripts/agent-typecheck.sh`
+  runner the build loop places must point at a tsconfig that includes the backend
+  (or run per workspace), so the gate covers the same trees `ci` does. Whether the
+  fix is a root `typecheck` script or a per-workspace one depends on what CI
+  invokes (`npm run typecheck` at root, `npm run -ws typecheck`, or `tsc -p`
+  directly); pick the one that matches the CI line.
 - **graph / graph-viz**: constant, already designed. Code auto-refreshes via the
   post-commit hook; `make graph` refreshes docs (LLM) and rebuilds the HTML.
 

@@ -24,7 +24,7 @@ Informed context: it reads the codebase. It checks conventions, architecture and
 
 ## Judge (owns behaviour)
 
-Fresh context per review. It runs the tests itself rather than trusting reports: the unit tier first (cheap, fail fast), then the integration tier, and it passes only if both pass. It checks the acceptance criteria are met and proves the tests are not hollow with a negative run (a test must fail when the code is deliberately broken). It does not check conventions, style, or architecture; that is the reviewer's job.
+Fresh context per review. It type-checks first (a tsc gate, because nothing else type-checks: the tiers run through esbuild and tsx, which strip types), then runs the tests itself rather than trusting reports: the unit tier first (cheap, fail fast), then the integration tier, and it passes only if both pass. It checks the acceptance criteria are met and proves the tests are not hollow with a negative run (a test must fail when the code is deliberately broken). It does not check conventions, style, or architecture; that is the reviewer's job.
 
 ![Judge role card](diagrams/role-judge.svg)
 
