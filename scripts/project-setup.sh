@@ -224,9 +224,12 @@ if git rev-parse --git-dir >/dev/null 2>&1; then ok "git repository"
     # it is only needed to push branches and open PRs. So a missing remote is a
     # warning, never a hard FAIL: setup still reports READY, and adding the remote
     # stays the user's action before the loop's PRs can flow.
+    # One warning covers the whole missing-remote story: no remote means main
+    # cannot be pushed either, so the two are reported together here rather than
+    # split across this section and the main-branch check below.
     has_remote=0
     if git remote get-url origin >/dev/null 2>&1; then ok "origin remote"; has_remote=1
-    else note "no origin remote; local building works, but push/PR needs one (add a GitHub remote, your action)"; fi
+    else note "no origin remote; local building works, but push/PR (and pushing main) need one (add a GitHub remote, your action)"; fi
     gh auth status >/dev/null 2>&1 && ok "gh authenticated" || bad "gh not authenticated; run gh auth login"
     # commit identity must be on the allowlist, so the loop's commits attribute to the right account
     commit_email="$(git config user.email 2>/dev/null)"
@@ -239,10 +242,10 @@ if git rev-parse --git-dir >/dev/null 2>&1; then ok "git repository"
         esac
     fi
     if git show-ref --verify --quiet refs/heads/main; then ok "local main branch"
-        # Pushing main only makes sense with a remote. Without one, this is part of
-        # the same missing-remote warning above, not a separate NEED that would
-        # otherwise block READY on something the loop's PRs (not setup) require.
-        if [ "$has_remote" -ne 1 ]; then note "main not pushed (no remote); push it once a remote exists"
+        # Pushing main only makes sense with a remote. Without one, the missing-remote
+        # warning above already covers it, so stay silent here rather than emit a
+        # second warning for the same cause.
+        if [ "$has_remote" -ne 1 ]; then :
         elif git ls-remote --exit-code --heads origin main >/dev/null 2>&1; then ok "main on remote"
         elif consent; then git push -u origin main >/dev/null 2>&1 && ok "pushed main" || bad "push failed"
         else need "main not on remote; re-run with --yes to push"; fi
