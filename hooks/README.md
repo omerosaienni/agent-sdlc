@@ -19,7 +19,7 @@ The guards are installed globally, not per repo. One shared copy under `~/.confi
 
     scripts/setup-global-git-hooks.sh install --email '<your-commit-email>'
 
-This places both hooks, points global `core.hooksPath` at them, sets `sdlc.identityAllowlist` so the identity guard works immediately, and removes any known-stale copies of these guards it finds lingering in repos under `~/source-code` (so they don't sit dead in `.git/hooks`). It refuses to run if `core.hooksPath` already points somewhere else, rather than clobber a path you set for another tool.
+This places both hooks, points global `core.hooksPath` at them, sets `sdlc.identityAllowlist` so the identity guard works immediately, and removes any known-stale copies of these guards it finds lingering in existing repos (so they don't sit dead in `.git/hooks`). The stale-hook tidy scans a default root (`$HOME/source-code`); pass one or more directories as arguments to scan elsewhere. It refuses to run if `core.hooksPath` already points somewhere else, rather than clobber a path you set for another tool.
 
 `--email` is optional: omitted, install defaults the allowlist from your global `user.email`. Allow more than one identity by setting the key yourself: `git config --global sdlc.identityAllowlist '<email-a> <email-b>'`.
 

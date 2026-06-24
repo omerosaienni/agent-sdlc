@@ -38,16 +38,16 @@ VERBOSE=0
 USE_COLOR=auto   # auto | always | never (set by --no-color or detection in lib.sh)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-GENERATOR_DIR="$SCRIPT_DIR/../generator"
-TEMPLATES_DIR="$SCRIPT_DIR/../templates"
+GENERATOR_DIR="$SCRIPT_DIR/generator"
+TEMPLATES_DIR="$SCRIPT_DIR/../file-templates"
 
-# shellcheck source=../generator/lib.sh
+# shellcheck source=generator/lib.sh
 . "$GENERATOR_DIR/lib.sh"
-# shellcheck source=../generator/base.sh
+# shellcheck source=generator/base.sh
 . "$GENERATOR_DIR/base.sh"
-# shellcheck source=../generator/mongo.sh
+# shellcheck source=generator/mongo.sh
 . "$GENERATOR_DIR/mongo.sh"
-# shellcheck source=../generator/react.sh
+# shellcheck source=generator/react.sh
 . "$GENERATOR_DIR/react.sh"
 
 usage() {

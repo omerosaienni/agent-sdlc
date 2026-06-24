@@ -99,7 +99,7 @@ above still governs the orchestrator; the components follow these rules:
   header, `set` options, argument parsing, input validation, and the ordered work.
   It sources the components and calls them; it is the only file the user runs.
 - **Components are sourced, not executed.** They live together in a sibling
-  directory (e.g. `generator/`), each `#!/usr/bin/env bash` with a header comment
+  directory (e.g. `scripts/generator/`), each `#!/usr/bin/env bash` with a header comment
   saying it is sourced and what it provides. They define functions and set
   variables in the orchestrator's scope; they do not `set -e` or parse args.
 - **One shared-helpers file.** The output helpers, colour setup, and file
@@ -115,7 +115,7 @@ above still governs the orchestrator; the components follow these rules:
 ## Reference example
 
 `scripts/init-ts-project.sh` is the reference implementation: an orchestrator that
-sources `generator/lib.sh` (helpers) and the `generator/base.sh`, `generator/mongo.sh`,
-`generator/react.sh` layers, assembling the shared files from their fragments. A
+sources `scripts/generator/lib.sh` (helpers) and the `scripts/generator/base.sh`,
+`mongo.sh`, `react.sh` layers, assembling the shared files from their fragments. A
 single-file script should mirror the skeleton; a composed one should mirror this
 orchestrator-and-layers structure.

@@ -50,7 +50,7 @@ has_script(){ node -e "try{process.stdout.write(require('./package.json').script
 # templates (also used by init-ts-project.sh), so the two scripts never drift.
 # Resolve relative to this script's own location.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEMPLATES_DIR="$SCRIPT_DIR/../templates"
+TEMPLATES_DIR="$SCRIPT_DIR/../file-templates"
 copy_template(){ local src="$TEMPLATES_DIR/$1" dest="$2"
     if [ ! -f "$src" ]; then echo "missing template: $src" >&2; return 1; fi
     cp "$src" "$dest"; }

@@ -56,8 +56,8 @@ matching stack rules. It makes no domain assumptions; you grow `src/server/index
 and add your own modules.
 
 It is a small multi-file script (per `contracts/script-layout.md`): an orchestrator
-that sources the shared helpers (`generator/lib.sh`) and the `generator/base.sh`,
-`generator/mongo.sh`, `generator/react.sh` layers, assembling the shared files
+that sources the shared helpers (`scripts/generator/lib.sh`) and the
+`scripts/generator/base.sh`, `mongo.sh`, `react.sh` layers, assembling the shared files
 (package.json, tsconfig, Makefile) from the fragments each enabled layer contributes.
 
 ```

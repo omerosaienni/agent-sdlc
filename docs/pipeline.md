@@ -25,7 +25,7 @@ Two scripts back the pipeline itself, stack-agnostic:
 - `scripts/project-setup.sh` is the setup gate: it proves a project ready by execution and writes the receipt.
 - `scripts/ensure-report-tooling.sh` installs and verifies the coverage tooling the judge needs.
 
-All three scripts (the generator plus these two) follow a shared layout ([`../contracts/script-layout.md`](../contracts/script-layout.md)) and share pure-constant content through `templates/` so nothing drifts. See [`scripts.md`](scripts.md) for what each does and how they connect.
+These pipeline scripts follow a shared layout ([`../contracts/script-layout.md`](../contracts/script-layout.md)) and share pure-constant content through `file-templates/` so nothing drifts. See [`scripts.md`](scripts.md) for what each does and how they connect.
 
 ## Prerequisites for an attended run
 

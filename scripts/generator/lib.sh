@@ -43,7 +43,7 @@ write_file() {
 copy_template() {
     local src="$TEMPLATES_DIR/$1" dest="$2"
     if [ ! -f "$src" ]; then
-        echo "missing template: $src (is the templates/ directory present?)" >&2
+        echo "missing template: $src (is the file-templates/ directory present?)" >&2
         exit 1
     fi
     cp "$src" "$dest"

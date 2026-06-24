@@ -1,9 +1,9 @@
 # agent-sdlc
 
-> Personal AI-agent build system, shared as a working reference. It runs my own
-> projects and is opinionated toward my stack (TypeScript, MongoDB, vitest, GitHub).
-> Published so the ideas are visible and reusable; offered as-is, with no support
-> promised and no commitment to generalise it. Take what is useful. MIT licensed.
+> An AI-agent build system, shared as a working reference. It is opinionated toward
+> one stack (TypeScript, MongoDB, vitest, GitHub) and published so the ideas are
+> visible and reusable. Offered as-is, with no support promised and no commitment to
+> generalise it. Take what is useful. MIT licensed.
 
 Reusable AI agent operating contracts. Each contract is a project-agnostic rulebook for how an agent works; a project consumes a contract by supplying the small project-specific pieces it leaves open. The contracts under [`contracts/`](contracts/) are the source of truth for behaviour, dense reference. The [`docs/`](docs/README.md) folder explains the whole system; start there.
 
@@ -60,9 +60,11 @@ The build loop runs in one of two modes, sequential-attended or parallel-attende
 | [`contracts/`](contracts/) | The operating contracts. The source of truth for behaviour, dense reference. |
 | [`docs/`](docs/README.md) | The documentation pages and the diagrams. |
 | [`skills/`](skills/README.md) | The thin `/omero-*` skill wrappers and the installer that points them at this repo. |
-| [`scripts/`](scripts/) | The pipeline's own shell scripts: the project generator, the setup gate, the report-tooling helper. |
-| [`templates/`](templates/) | The shared constant files (agent runners, report and checkpoint templates, vitest configs) the scripts copy from so nothing drifts. |
-| [`hooks/`](hooks/README.md) | The per-commit git identity guard. |
+| [`scripts/`](scripts/) | The shell scripts: the layered project generator (and its `scripts/generator/` layers), the setup gate, the report-tooling helper, the per-project rules installer, and the global hooks and rules installers. |
+| [`file-templates/`](file-templates/) | The shared constant files (agent runners, report and checkpoint templates, vitest configs) the scripts copy from so nothing drifts. |
+| [`claude-rules/`](claude-rules/README.md) | The global Claude rules (conventions, branch naming), symlinked into `~/.claude/rules`. |
+| [`project-rules/`](project-rules/README.md) | The per-project stack rule templates (TypeScript, Mongo, React), copied into a repo's `.claude/rules`. |
+| [`hooks/`](hooks/README.md) | The global git guards: commit identity and branch naming. |
 | [`examples/`](examples/) | The smoke-test sheet for validating the loop itself. |
 
 ## Posture
