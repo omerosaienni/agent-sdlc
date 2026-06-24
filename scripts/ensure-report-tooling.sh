@@ -84,6 +84,6 @@ fi
 if npx vitest run --coverage --reporter=dot >/dev/null 2>&1; then
     echo "coverage runs"
 else
-    echo "coverage configured but a run failed; check vitest.config.ts" >&2
+    echo "coverage configured but a run failed; check the vitest tier config(s) (vitest.unit.config.ts, and vitest.integration.config.ts if present)" >&2
     exit 1
 fi

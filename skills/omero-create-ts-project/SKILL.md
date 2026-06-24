@@ -23,5 +23,7 @@ Mongo, make up; make test or make test-all). Report those to the user. On a non-
 exit, report the error line it printed (a name that is not kebab-case, a target that
 already exists, or a missing template) so the user can correct and re-run.
 This is the create step, separate from the pipeline. After the project exists, the
-user runs /omero-project-setup to prove it ready, then /omero-design-partner and
-/omero-build-loop. Do not run those here; this skill only creates the project.
+user runs /omero-design-partner and /omero-project-setup in either order (they are
+independent prerequisites: design writes the deliverable sheet, setup proves the
+project environment ready), then /omero-build-loop builds the sheet. Do not run those
+here; this skill only creates the project.

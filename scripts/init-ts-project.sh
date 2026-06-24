@@ -331,5 +331,8 @@ else
     echo "  make test               # the backend tier(s)"
 fi
 echo
-echo "Then grow src/server/index.ts into the real entry point, add your modules and"
-echo "their tests, write docs/deliverables.md, and run the setup gate (project-setup.sh)."
+echo "Then drive it through the pipeline. Two independent prerequisites, in either order:"
+echo "  /omero-design-partner   converges your intent into a deliverable sheet"
+echo "                          (.building/design/<design-name>/deliverables.md)"
+echo "  /omero-project-setup    proves the project environment ready (writes the receipt)"
+echo "Then /omero-build-loop builds the sheet (it needs both the sheet and the receipt)."

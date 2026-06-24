@@ -1,6 +1,6 @@
 # Build judge loop
 
-Deliver a schema-valid deliverable sheet as small, independently verified increments. Four roles, a review loop and a judge loop, objective gates. Attended: a human merges every PR. Two modes, sequential-attended and parallel-attended, read from `mode` in state.json (see Modes). Branch per deliverable, GitHub PR per deliverable. Consumes deliverable-sheet.schema.md (the sheet) and a project conventions file (CLAUDE.md).
+Deliver a schema-valid deliverable sheet as small, independently verified increments. Four agent roles (builder, reviewer, judge, document) plus a passive orchestrator, a review loop and a judge loop, objective gates. Attended: a human merges every PR. Two modes, sequential-attended and parallel-attended, read from `mode` in state.json (see Modes). Branch per deliverable, GitHub PR per deliverable. Consumes deliverable-sheet.schema.md (the sheet) and a project conventions file (CLAUDE.md).
 
 ## Posture
 - Attended only: a human is present and merges every PR, which is the final gate. Unattended operation (auto-merge on a green pass) is out of scope and not built.
