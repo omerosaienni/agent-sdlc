@@ -30,7 +30,7 @@ IDENTITY_ALLOWLIST="$(git config --get sdlc.identityAllowlist 2>/dev/null || tru
 # ============================================================================
 
 fail=0
-note(){ printf '  %s\n' "$1"; }
+note(){ printf 'WARN  %s\n' "$1"; }
 ok(){ printf 'OK    %s\n' "$1"; }
 bad(){ printf 'FAIL  %s\n' "$1"; fail=1; }
 block(){ printf 'BLOCK %s\n' "$1"; [ "$fail" -lt 3 ] && fail=3; }
