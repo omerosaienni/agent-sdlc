@@ -11,15 +11,16 @@ Explains the whole system, and the place to start. The contracts under [`../cont
 ## Reference
 
 - [`building-folder.md`](building-folder.md): the gitignored `.building/` workspace, what each file is.
-- [`scripts.md`](scripts.md): the three shell scripts and how they connect.
+- [`scripts.md`](scripts.md): the pipeline shell scripts (the generator, the setup gate, the report helper) and how they connect.
+- [`project-rules.md`](project-rules.md): the two rule layers (global conventions and per-project stack rules), the installers, and the path-scoping.
 - [`diagram-spec.md`](diagram-spec.md): the canonical definition of the visual set, and how to regenerate a diagram.
 - [`diagrams/`](diagrams/): the SVGs.
 
 ## Templates and examples
 
-- [`templates/ts-react-mongo.md`](templates/ts-react-mongo.md): a forward-looking roadmap for a full TypeScript / React / MongoDB monorepo template. The current generator is backend only; this page is the intended shape, not what ships today.
+- [`templates/ts-react-mongo.md`](templates/ts-react-mongo.md): the full TypeScript / React / MongoDB project the `init-ts-mongo-react.sh` generator produces (a single-package layout, not a monorepo), and what is constant versus domain.
 - [`../examples/smoke-test-sheet.md`](../examples/smoke-test-sheet.md): a one-deliverable sheet that exercises the whole build loop on a trivial case. Run it first to validate the orchestration itself.
-- [`../hooks/`](../hooks/README.md): the per-commit git identity guard, the runtime half of the commit-attribution defence the setup gate also enforces.
+- [`../hooks/`](../hooks/README.md): the global git guards (commit identity and branch naming), installed via `setup-global-git-hooks.sh`.
 
 ## Contracts
 
@@ -36,4 +37,4 @@ The operating contracts, each a project-agnostic rulebook a project consumes by 
 
 ## Skills
 
-The thin `/omero-*` wrappers, in [`../skills/`](../skills/). The create skill (`omero-create-ts-mongo`) runs the project generator; the pipeline skills (`omero-design-partner`, `omero-project-setup`, `omero-build-loop`) each reference a contract by path. All carry `disable-model-invocation: true`; invoke with `/omero-*`.
+The thin `/omero-*` wrappers, in [`../skills/`](../skills/). The create skills run the project generators (`omero-create-ts-mongo` for backend, `omero-create-ts-mongo-react` for full-stack); `omero-install-project-rules` installs stack rules into a repo; the pipeline skills (`omero-design-partner`, `omero-project-setup`, `omero-build-loop`) each reference a contract by path. All carry `disable-model-invocation: true`; invoke with `/omero-*`.

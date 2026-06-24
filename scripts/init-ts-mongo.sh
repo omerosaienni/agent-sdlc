@@ -101,10 +101,12 @@ usage() {
 
 NAME=""
 DIR=""
+WITH_REACT=0   # --with-react adds the src/client React+Vite layer (set by init-ts-mongo-react.sh)
 while [ $# -gt 0 ]; do
     case "$1" in
         --verbose) VERBOSE=1; shift ;;
         --no-color|--no-colour) USE_COLOR=never; shift ;;
+        --with-react) WITH_REACT=1; shift ;;
         --debug)   set -x; shift ;;
         -h|--help) usage ;;
         -*)        echo "unknown option: $1" >&2; usage ;;
@@ -155,6 +157,9 @@ DB_NAME="$NAME"
 # rule's directory glob has a real target.
 step "Scaffolding '$NAME' into '$DIR' (db: $DB_NAME)"
 mkdir -p "$DIR"/{src/server/db,scripts,docs,docs/modules}
+# React adds the client tree (omero-react.md scopes to src/client/**) and a shared
+# tree for types crossing the client/server boundary.
+[ "$WITH_REACT" = 1 ] && mkdir -p "$DIR"/{src/client,src/shared}
 
 
 # ---------------------------------------------------------------------------
@@ -167,13 +172,26 @@ step "tooling configs"
 copy_template vitest.unit.config.ts "$DIR/vitest.unit.config.ts"
 copy_template vitest.integration.config.ts "$DIR/vitest.integration.config.ts"
 
-write_file "$DIR/tsconfig.json" <<'EOF'
+# React needs DOM libs and the react-jsx transform; the client also imports Vite
+# config files, so those join the include set. Interpolated so the backend-only
+# tsconfig stays unchanged.
+TS_LIB='"ES2022"'
+TS_JSX=""
+TS_INCLUDE='"src", "vitest.unit.config.ts", "vitest.integration.config.ts", "eslint.config.js"'
+if [ "$WITH_REACT" = 1 ]; then
+    TS_LIB='"ES2022", "DOM", "DOM.Iterable"'
+    TS_JSX='
+    "jsx": "react-jsx",'
+    TS_INCLUDE='"src", "vitest.unit.config.ts", "vitest.integration.config.ts", "vitest.client.config.ts", "vite.config.ts", "eslint.config.js"'
+fi
+
+write_file "$DIR/tsconfig.json" <<EOF
 {
   "compilerOptions": {
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "lib": ["ES2022"],
+    "lib": [${TS_LIB}],${TS_JSX}
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -183,7 +201,7 @@ write_file "$DIR/tsconfig.json" <<'EOF'
     "forceConsistentCasingInFileNames": true,
     "types": ["node"]
   },
-  "include": ["src", "vitest.unit.config.ts", "vitest.integration.config.ts", "eslint.config.js"]
+  "include": [${TS_INCLUDE}]
 }
 EOF
 
@@ -466,6 +484,58 @@ graph-viz: ## Regenerate graph.html and the report from the existing graph
 	\$(GRAPHIFY_ENV) graphify cluster-only . --backend ollama
 EOF
 
+# Frontend Makefile targets, appended only with React. A separate append (not part
+# of the heredoc above) keeps the backend Makefile byte-identical when React is off.
+# test-all chains everything; the base `test` stays backend-only so a backend-only
+# habit still works, and test-client is the frontend tier (jsdom, no Mongo).
+if [ "$WITH_REACT" = 1 ]; then
+    cat >> "$DIR/Makefile" <<'EOF'
+
+.PHONY: dev-client build-client preview test-client test-all
+
+dev-client: ## Run the Vite dev server
+	npm run dev:client
+
+build-client: ## Production build of the client (vite build)
+	npm run build:client
+
+preview: ## Preview the production client build
+	npm run preview
+
+test-client: ## Frontend unit tier (vitest + Testing Library, jsdom; no Mongo)
+	npm run test:client
+
+# Everything: backend unit + integration, then the frontend tier.
+test-all: test test-client ## Run the backend tiers then the frontend tier
+EOF
+fi
+
+# React adds frontend scripts, runtime deps (react, react-dom) and dev deps (vite,
+# the react plugin, RTL, jsdom). Built as JSON fragments here so the package.json
+# heredoc stays valid whether or not React is on. The fragments carry their own
+# leading comma so they slot in after the constant entries.
+REACT_SCRIPTS=""
+REACT_DEPS=""
+REACT_DEV_DEPS=""
+if [ "$WITH_REACT" = 1 ]; then
+    REACT_SCRIPTS=',
+    "dev:client": "vite",
+    "build:client": "vite build",
+    "preview": "vite preview",
+    "test:client": "vitest run -c vitest.client.config.ts"'
+    REACT_DEPS=',
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"'
+    REACT_DEV_DEPS=',
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^25.0.1",
+    "vite": "^6.0.7"'
+fi
+
 write_file "$DIR/package.json" <<EOF
 {
   "name": "${NAME}",
@@ -480,10 +550,10 @@ write_file "$DIR/package.json" <<EOF
     "test:integration": "vitest run -c vitest.integration.config.ts",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check ."${REACT_SCRIPTS}
   },
   "dependencies": {
-    "mongodb": "^6.12.0"
+    "mongodb": "^6.12.0"${REACT_DEPS}
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
@@ -497,7 +567,7 @@ write_file "$DIR/package.json" <<EOF
     "tsx": "^4.22.4",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.18.1",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.9"${REACT_DEV_DEPS}
   }
 }
 EOF
@@ -611,6 +681,115 @@ describe('replica set smoke test', () => {
   );
 });
 EOF
+
+
+# ---------------------------------------------------------------------------
+# React client layer (only with --with-react). Vite + React under src/client/,
+# a shared types tree under src/shared/, and a jsdom vitest config for the
+# frontend unit tier (*.test.tsx). The client never touches Mongo: a frontend
+# test that needs data mocks the API boundary, it does not reach the database.
+# ---------------------------------------------------------------------------
+if [ "$WITH_REACT" = 1 ]; then
+    step "react client"
+
+    write_file "$DIR/vite.config.ts" <<'EOF'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+// Client root is src/client so the app sits beside the server, not at repo root.
+// Build output goes to dist/client to keep it clear of any backend build.
+export default defineConfig({
+  root: 'src/client',
+  plugins: [react()],
+  build: { outDir: '../../dist/client', emptyOutDir: true },
+});
+EOF
+
+    # Frontend tests are unit-class (jsdom, no Mongo), a third tier beside the two
+    # backend tiers. Scoped to *.test.tsx under src/client so it never picks up the
+    # backend *.test.ts files (those run under the backend vitest configs).
+    write_file "$DIR/vitest.client.config.ts" <<'EOF'
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    include: ['src/client/**/*.test.tsx'],
+    setupFiles: ['src/client/test-setup.ts'],
+  },
+});
+EOF
+
+    write_file "$DIR/src/client/test-setup.ts" <<'EOF'
+// Testing Library matchers (toBeInTheDocument etc.) for the jsdom frontend tier.
+import '@testing-library/jest-dom/vitest';
+EOF
+
+    write_file "$DIR/src/client/index.html" <<EOF
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${NAME}</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>
+EOF
+
+    write_file "$DIR/src/client/main.tsx" <<'EOF'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { App } from './App.js';
+
+// Mount point. The non-null assertion is safe: index.html always ships #root.
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+);
+EOF
+
+    write_file "$DIR/src/client/App.tsx" <<'EOF'
+// The root component. Grow this into the real app: routes, state, and components
+// under src/client. Data comes from the backend over its API, never from Mongo
+// directly.
+export function App() {
+  return <h1>app starting</h1>;
+}
+EOF
+
+    write_file "$DIR/src/client/App.test.tsx" <<'EOF'
+import { describe, expect, it } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { App } from './App.js';
+
+// Frontend unit tier (jsdom, no Mongo). Tests behaviour through the rendered
+// output, not implementation details.
+describe('App', () => {
+  it('renders the startup heading', () => {
+    render(<App />);
+    expect(screen.getByRole('heading', { name: 'app starting' })).toBeInTheDocument();
+  });
+});
+EOF
+
+    # Shared types cross the client/server boundary. One definition, imported by
+    # both sides, never duplicated.
+    write_file "$DIR/src/shared/types.ts" <<'EOF'
+// Types shared between the client and server. Keep API request/response shapes
+// here so both sides agree on one definition.
+export interface HealthResponse {
+  ok: boolean;
+}
+EOF
+fi
 
 
 # ---------------------------------------------------------------------------
@@ -754,12 +933,15 @@ step "git repository"
 
 # Stack convention rules: delegate to the installer rather than inline them, so
 # there is one source of truth for the conventions and the generator never carries
-# its own copy. TS + Mongo for this backend template. Runs after git init (the
-# installer requires a .git). Non-fatal: a rules hiccup must not fail an otherwise
-# good scaffold, so warn and continue rather than abort under set -e.
+# its own copy. TS + Mongo always; React too with --with-react. Runs after git init
+# (the installer requires a .git). Non-fatal: a rules hiccup must not fail an
+# otherwise good scaffold, so warn and continue rather than abort under set -e.
 step "stack rules"
+RULE_FLAGS="--typescript --mongo"
+[ "$WITH_REACT" = 1 ] && RULE_FLAGS="$RULE_FLAGS --react"
 rules_rc=0
-"$SCRIPT_DIR/install-project-rules.sh" "$DIR" --typescript --mongo || rules_rc=$?
+# shellcheck disable=SC2086 # RULE_FLAGS is a deliberate list of flags, word-split on purpose
+"$SCRIPT_DIR/install-project-rules.sh" "$DIR" $RULE_FLAGS || rules_rc=$?
 if [ "$rules_rc" -ne 0 ]; then
     err "stack-rule install failed (exit $rules_rc); scaffold is fine, run install-project-rules.sh manually"
 fi
@@ -779,7 +961,12 @@ echo "Next:"
 echo "  cd $DIR"
 echo "  npm install"
 echo "  make up                 # start the shared Mongo and init the replica set"
-echo "  make test               # unit (entry point) + integration (Mongo smoke test)"
+if [ "$WITH_REACT" = 1 ]; then
+    echo "  make test-all           # backend unit + integration, then the frontend tier"
+    echo "  make dev-client         # run the Vite dev server"
+else
+    echo "  make test               # unit (entry point) + integration (Mongo smoke test)"
+fi
 echo
 echo "Then build the project: grow src/server/index.ts into the real entry point, add your"
 echo "modules and their tests, write docs/deliverables.md, and run the setup gate"

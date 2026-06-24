@@ -1,216 +1,176 @@
 # TS / React / MongoDB project template
 
-> Roadmap, not shipped. This describes the intended full monorepo template. The
-> generator that exists today (`scripts/init-ts-mongo.sh`) is backend only. Treat
-> this page as the target shape to grow toward, not a description of the current
-> generator output.
+> Shipped. `scripts/init-ts-mongo-react.sh` generates this. It is a thin wrapper
+> over `scripts/init-ts-mongo.sh --with-react`, so the backend half has one source
+> of truth and never drifts from the backend-only generator. Single package, NOT a
+> monorepo: one package.json, one tsconfig, source split by directory under `src/`.
 
-The constant skeleton for a TypeScript + React + MongoDB monorepo, plus the
-parts that change per project. Start a new project from the constant layer and
-grow the template as each project teaches you what else is constant.
+The constant skeleton for a TypeScript + React + MongoDB project, plus the parts
+that change per project. The backend half is identical to what the backend-only
+generator produces; React adds the client and shared trees, a Vite config, a jsdom
+test tier, and the frontend dependencies.
 
-This is a v1 extracted from mongo-db-1 (backend) plus the known-wanted React
-layer. Treat it as living: when the next project copies a section unchanged, it
-is confirmed constant; when it changes a section, that section is domain, move
-it out of the constant layer here.
+Single package, not a monorepo, on purpose: the stack convention rules are
+path-scoped by directory (`omero-mongo.md` -> `src/server/db/**`, `omero-react.md`
+-> `src/client/**`). A directory glob binds cleanly on one source tree, with no
+workspace tooling to maintain.
 
 ---
 
-## Layout (monorepo)
+## Layout (single package)
 
 ```
 <project>/
-  Makefile                 constant (target set below)
-  docker-compose.yml       constant (shared-mongo, single-node replica set)
-  CLAUDE.md                mostly constant (conventions) + domain (this project's scope)
-  .graphifyignore          constant (config exclusions)
-  .gitignore               constant base + domain additions
-  package.json             root: workspaces + shared scripts (constant shape)
+  Makefile                       constant (backend targets; React adds frontend targets)
+  docker-compose.yml             constant (shared-mongo, single-node replica set)
+  CLAUDE.md                      domain scope + runtime facts (conventions live in .claude/rules)
+  .graphifyignore                constant (config exclusions)
+  .gitignore                     constant (includes .claude/, dist/)
+  package.json                   constant shape (React adds client scripts + deps)
+  tsconfig.json                  constant (React adds jsx + DOM libs)
+  vite.config.ts                 constant, React only (client root src/client)
+  vitest.unit.config.ts          constant (backend unit, *.test.ts)
+  vitest.integration.config.ts   constant (backend integration, *.integration.test.ts)
+  vitest.client.config.ts        constant, React only (frontend jsdom, *.test.tsx)
   scripts/
-    rs-init.sh             constant (idempotent replica set init)
-  packages/
-    backend/               Node + Mongo
-      src/
-        db.ts              constant pattern (one shared client, getDb/closeClient)
-        collections.ts     constant pattern (COLLECTIONS registry) + domain (the collections)
-        seed.ts            domain (what this project seeds)
-        examples/          domain (ex:<feature> modules)
-      vitest.unit.config.ts         constant (suffix glob)
-      vitest.integration.config.ts  constant (suffix glob)
-    frontend/              React + Vite
-      src/                 domain (the app)
-      vitest.config.ts     constant (RTL + jsdom)
-      vite.config.ts       constant base + domain
-    shared/               cross-cutting TS types shared front<->back
-      src/                 domain (the shared types) + constant (the workspace wiring)
+    rs-init.sh                   constant (idempotent replica set init)
+  src/
+    server/                      Node + Mongo backend
+      db/index.ts                constant pattern (one shared client, getDb/closeClient)
+      index.ts                   entry point (grow into the real bootstrap)
+      seed.ts                    domain (what this project seeds)
+      index.test.ts              backend unit tier
+      smoke.integration.test.ts  backend integration tier
+    client/                      React + Vite (React only)
+      index.html                 constant (the mount page)
+      main.tsx                   constant (mounts App into #root)
+      App.tsx                    domain (grow into the real app)
+      App.test.tsx               frontend tier (jsdom + Testing Library)
+      test-setup.ts              constant (RTL matchers)
+    shared/                      types crossing the client/server boundary (React only)
+      types.ts                   domain (the shared types)
+  .claude/rules/                 stack rules (TypeScript, Mongo, React); gitignored
   docs/
-    deliverables.md        domain (this project's sheet) — schema is constant (in sdlc repo)
-    ARCHITECTURE.md        domain
-    modules/               domain (per-deliverable docs)
-  graphify-out/            gitignored, generated
-  .building/               gitignored, loop working folder
+    ARCHITECTURE.md              domain
+    modules/                     domain (per-deliverable docs)
+  graphify-out/                  gitignored, generated
+  .building/                     gitignored, loop working folder
 ```
 
 ---
 
 ## Constant vs domain (the inventory)
 
-### Constant (template provides, do not re-derive)
+### Constant (the generator provides, do not re-derive)
 
 **Infra / tooling**
-- docker-compose.yml (shared-mongo, Mongo 8, single-node replica set, shared named volume)
-- scripts/rs-init.sh (idempotent, polls for PRIMARY; run by make up, once per server)
-- The full Makefile target set (below)
-- vitest tier configs and the suffix convention (`*.test.ts` unit, `*.integration.test.ts` integration)
-- graphify: the `graphify.mf` Ollama model, `.graphifyignore` config exclusions, and the `make graph`/`graph-viz` targets
-- Root package.json workspace wiring (front / back / shared)
-- tsconfig base (strict), eslint, prettier config
+- docker-compose.yml (shared-mongo, single-node replica set, shared named volume)
+- scripts/rs-init.sh (idempotent, polls for PRIMARY; run by `make up`, once per server)
+- The Makefile target set (backend always; frontend targets with React)
+- The three vitest configs and the suffix convention (`*.test.ts` backend unit,
+  `*.integration.test.ts` backend integration, `*.test.tsx` frontend)
+- graphify: the `.graphifyignore` exclusions and the `make graph`/`graph-viz` targets
+- package.json (one package; React adds client scripts and the react/vite/RTL deps)
+- tsconfig base (strict; React adds `jsx: react-jsx` and the DOM libs), eslint, prettier
+- vite.config.ts (client root `src/client`, build to `dist/client`)
 
 **Patterns (code shape, not code)**
-- db helper: one shared MongoClient per process, `getDb`/`closeClient`, never connect per query
-- COLLECTIONS registry: collection names come from a constant, never hardcoded strings
-- Example module pattern: `src/examples/<feature>.ts`, runnable via `ex:<feature>`, prints results, `import.meta.url` main-guard so importable from tests
-- Test tier rule: a test that touches Mongo is integration tier, never unit; no hollow placeholder tests
-- Shared types live in `packages/shared`, imported by both sides, never duplicated
+- db helper: one shared MongoClient per process, `getDb`/`closeClient`, never connect
+  per query. Lives at `src/server/db/index.ts`.
+- A runnable module (a seed, an example, a script) uses an npm script and an
+  `import.meta.url` main-guard so it runs when invoked directly but stays importable
+  from tests.
+- Test tier rule: a backend test that touches Mongo is the integration tier, never
+  the unit tier. Frontend tests never touch Mongo; if one needs backend data it mocks
+  the API boundary, it does not reach the database.
+- Shared types live in `src/shared`, imported by both sides, never duplicated.
 
-**Conventions (CLAUDE.md, mostly constant)**
-- British English, no em dashes, no Oxford commas, no hyphens in compound modifiers
-- Strict TypeScript, no `any`, interfaces as driver generics
-- async/await throughout, not raw promise chains
-- Comments explain WHY not WHAT, brief, only where a non-obvious decision needs one
-
-**Process (from the sdlc repo, already reusable)**
-- deliverable-sheet schema, build-judge-loop contract, project-setup gate, identity guard
+**Conventions (path-scoped rules in `.claude/rules/`, not CLAUDE.md)**
+- These are installed by `install-project-rules.sh` (`--typescript --mongo --react`),
+  not inlined. See [docs/project-rules.md](project-rules.md). CLAUDE.md carries only
+  this project's scope and runtime facts.
 
 ### Domain (changes per project, the template leaves holes)
 
-- The collections themselves (names + interfaces in collections.ts)
+- The collections (names + interfaces; introduce a COLLECTIONS registry as the
+  project grows, so names come from a constant rather than hardcoded strings)
 - seed.ts (what this project seeds, the counts, the shapes)
-- The `ex:<feature>` example modules and their `ex:*` npm scripts
-- The frontend app (components, routes, state)
-- The shared types' actual content
-- the design sheet at `.building/design/<design-name>/deliverables.md` (this project's sheet), `docs/ARCHITECTURE.md`, module docs
+- Example modules and their npm scripts
+- The frontend app (components, routes, state) under src/client
+- The shared types' actual content under src/shared
+- The design sheet at `.building/design/<design-name>/deliverables.md`,
+  `docs/ARCHITECTURE.md`, module docs
 - CLAUDE.md's scope section (what this project is and is not)
 
 ---
 
-## Full Makefile target set (monorepo)
+## Makefile targets
 
-mongo-db-1 had the backend half. A monorepo TS/React/Mongo app needs the union:
-backend (Mongo + test + graph), frontend (Vite), and combined (ci/lint/typecheck).
-Group by side so `make test` runs everything and `make test-backend` scopes.
+The backend targets are always present; the frontend targets are appended only with
+React.
 
 ```make
-.DEFAULT_GOAL := help
+# ---- infra (shared Mongo) ----
+up                 ## Start the shared mongod (idempotent) and ensure the replica set
+down               ## Stop the shared mongod, keep data (affects every project)
+drop               ## Drop this project's database only
 
-# ---- meta ----
-help            ## List available targets
-
-# ---- infra (backend, shared Mongo) — constant ----
-up              ## Start the shared mongod (idempotent) and ensure the replica set
-down            ## Stop the shared mongod, keep data (affects every project)
-drop            ## Drop this project's database only
-
-# ---- backend dev/build — constant ----
-dev-backend     ## Run the backend in watch mode (tsx watch)
-build-backend   ## Type-check and compile the backend
-
-# ---- frontend dev/build (React/Vite) — constant ----
-dev-frontend    ## Run the Vite dev server
-build-frontend  ## Production build (vite build)
-preview         ## Preview the production frontend build
-
-# ---- combined dev — constant ----
-dev             ## Run backend + frontend together (concurrently)
-build           ## Build backend + frontend
-
-# ---- tests, backend — constant ----
+# ---- backend ----
+start              ## Run the entry point (src/server/index.ts)
+seed               ## Generate and load faker seed data
 test-unit          ## Backend unit tier (no database)
 test-integration   ## Backend integration tier (needs Mongo up)
-test-backend       ## Backend: unit then integration
+test               ## Backend: unit then integration
 
-# ---- tests, frontend — constant ----
-test-frontend      ## Frontend unit tests (vitest + RTL, jsdom)
-# test-e2e         ## (optional later) Playwright end-to-end
+# ---- quality + graph ----
+lint               ## eslint over src
+typecheck          ## tsc --noEmit (covers server, client, shared under one tsconfig)
+graph / graph-viz  ## Knowledge graph (graphify)
 
-# ---- tests, combined — constant ----
-test            ## Everything: backend (unit+integration) then frontend
-
-# ---- quality gates — constant ----
-typecheck       ## tsc --noEmit across all workspaces
-lint            ## eslint across all workspaces
-format          ## prettier --write
-ci              ## typecheck + lint + test (the full gate, what CI runs)
-
-# ---- knowledge graph (graphify) — constant ----
-graph           ## Rebuild the knowledge graph (code + docs) and HTML
-graph-viz       ## Regenerate graph.html and report from the existing graph
-
-# ---- domain (per project) ----
-seed            ## Generate and load seed data        (domain: npm run seed)
-# ex:<feature>  ## Example modules                     (domain, one per feature)
+# ---- frontend (React only) ----
+dev-client         ## Run the Vite dev server
+build-client       ## Production build (vite build)
+preview            ## Preview the production client build
+test-client        ## Frontend unit tier (vitest + Testing Library, jsdom)
+test-all           ## Backend tiers then the frontend tier
 ```
 
-### Notes on the new (non-mongo-db-1) targets
+`typecheck` runs one `tsc --noEmit` over the whole `src` tree (server, client, and
+shared), so a strict-mode type error anywhere is caught even though the test tiers
+run through esbuild/tsx (which strip types). This is the project-level form of the
+judge's type-check gate.
 
-- **dev / dev-backend / dev-frontend**: mongo-db-1 is backend-only so it never
-  needed these. The monorepo runs both sides; `dev` uses `concurrently` (or
-  `npm-run-all -p`) to bring up backend watch + Vite together.
-- **build / build-backend / build-frontend**: the frontend has a real build step
-  (Vite); the backend may compile or run via tsx. `build` does both.
-- **test-frontend**: React component tests are a third tier alongside the two
-  backend tiers. They use jsdom + Testing Library, run via the frontend's own
-  vitest config. They are unit-class (no Mongo), so they never touch the
-  integration endpoint.
-- **typecheck / lint / format / ci**: cross-workspace quality gates. `ci` is the
-  single command a human or pipeline runs to prove the whole repo green. The
-  setup gate's checks overlap with `ci`, keep them consistent. `typecheck` MUST
-  cover every workspace including the backend `src` tree, not just the dashboard:
-  the test tiers run through esbuild and tsx, which strip types, so a strict-mode
-  type error in backend `src` passes the tests and reaches CI unless `tsc
-  --noEmit` runs over it. A common trap is a project that only has a
-  `dashboard:typecheck` script, leaving the backend unchecked. This is the
-  monorepo form of the judge's type-check gate: the `.building/scripts/agent-typecheck.sh`
-  runner the build loop places must point at a tsconfig that includes the backend
-  (or run per workspace), so the gate covers the same trees `ci` does. Whether the
-  fix is a root `typecheck` script or a per-workspace one depends on what CI
-  invokes (`npm run typecheck` at root, `npm run -ws typecheck`, or `tsc -p`
-  directly); pick the one that matches the CI line.
-- **graph / graph-viz**: constant, already designed. Code auto-refreshes via the
-  post-commit hook; `make graph` refreshes docs (LLM) and rebuilds the HTML.
+---
 
-### Test tiers in a monorepo (three, not two)
+## Test tiers (three with React, two without)
 
-1. backend unit (no Mongo) — `*.test.ts` under packages/backend
-2. backend integration (needs Mongo) — `*.integration.test.ts` under packages/backend
-3. frontend unit (jsdom + RTL) — `*.test.tsx` under packages/frontend
+1. backend unit (no Mongo) — `*.test.ts` under `src/server`
+2. backend integration (needs Mongo) — `*.integration.test.ts` under `src/server`
+3. frontend unit (jsdom + Testing Library) — `*.test.tsx` under `src/client`
 
-The "Mongo-touching test is integration tier" rule still holds on the backend.
-Frontend tests never touch Mongo; if a frontend test needs backend data it mocks
-the API boundary, it does not reach into the database.
+The "Mongo-touching test is the integration tier" rule holds on the backend.
+Frontend tests never touch Mongo; if a frontend test needs backend data it mocks the
+API boundary.
 
 ---
 
 ## How this plugs into the existing system
 
-- **Setup gate** (`project-setup.sh`): once the template is proven on a second
-  project, the gate can lay down the constant skeleton (Makefile, vitest configs,
-  db helper, docker-compose, graphify wiring) for a new repo, the same way it now
-  checks identity. Until then, copy the skeleton by hand and note what you change.
-- **Build-loop contract**: a graphify orientation rule (query the graph before
-  reading files wholesale) is NOT currently in the build-judge-loop contract. If
-  you want every project's agents to use the graph, add it there deliberately
-  rather than assuming it is already present.
-- **graphify.mf model**: machine-level, lives in the ollama repo with the
-  interactive-vs-batch-model note. Reused by every project, not per-repo.
+- **Stack rules**: the generator installs `omero-typescript.md`, `omero-mongo.md`, and
+  `omero-react.md` into `.claude/rules/` via `install-project-rules.sh`. See
+  [docs/project-rules.md](project-rules.md).
+- **Setup gate** (`project-setup.sh`): proves the project loop-ready the same way it
+  does for a backend project. The monorepo provisioning idea (the gate laying down the
+  skeleton) is not built; the generator is how a project gets the skeleton.
+- **Build-loop contract**: unchanged. The frontend tier is an extra unit-class tier;
+  it does not change the loop's gates.
 
 ---
 
-## Growing the template
+## Relationship to the backend generator
 
-This is v1 from one and a half projects (mongo-db-1 backend + known React intent).
-The discipline: build the next project by copying this skeleton, and watch the
-diff. Sections copied unchanged are confirmed constant. Sections you edit are
-domain, move them out of the constant layer here. After two real projects the
-template is battle-tested rather than assumed, and that is the point to wire it
-into the setup gate as automatic provisioning.
+`init-ts-mongo-react.sh` is `init-ts-mongo.sh --with-react`. Everything the backend
+generator produces is produced identically here; React is purely additive (the
+`src/client` and `src/shared` trees, the Vite and client-vitest configs, the frontend
+package.json entries and tsconfig jsx/DOM additions, the frontend Makefile targets,
+and the `--react` stack rule). There is no separate backend definition to drift.
