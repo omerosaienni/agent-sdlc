@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # generator/react.sh - the optional React client layer (--react). Sourced by
 # init-ts-project.sh. Writes the React-exclusive files (the src/client tree, the
-# src/shared types, the Vite and client-vitest configs) and exports fragment
+# src/common types, the Vite and client-vitest configs) and exports fragment
 # variables the orchestrator splices into the shared files (package.json, tsconfig,
 # Makefile). Also appends its config files to the project's .graphifyignore so they
 # stay out of the knowledge graph. Expects DIR, NAME, and the lib helpers in scope.
@@ -97,9 +97,9 @@ describe('App', () => {
 });
 EOF
 
-    # Shared types cross the client/server boundary. One definition, imported by
+    # Common types cross the client/server boundary. One definition, imported by
     # both sides, never duplicated.
-    write_file "$DIR/src/shared/types.ts" <<'EOF'
+    write_file "$DIR/src/common/types.ts" <<'EOF'
 // Types shared between the client and server. Keep API request/response shapes
 // here so both sides agree on one definition.
 export interface HealthResponse {
@@ -147,6 +147,7 @@ EOF
     # Makefile fragment: the frontend dev/build/test targets and their help lines.
     REACT_MAKE_HELP='	@echo "  dev-client  Run the Vite dev server"
 	@echo "  build-client  Production build of the client"
+	@echo "  preview     Preview the production client build"
 	@echo "  test-client  Frontend unit tier (jsdom)"
 	@echo "  test-all    Backend tiers then the frontend tier"'
 

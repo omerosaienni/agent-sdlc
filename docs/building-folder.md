@@ -9,7 +9,7 @@ Everything the build loop generates while it works, plus the design sheets it bu
 ```
 .building/
   setup-ok                        the setup receipt (project-level, proves the environment was ready)
-  scripts/                        the loop's own runners, placed by setup (project-level, never committed)
+  scripts/                        the loop's own runners (project-level, never committed; setup places the test and hollow-check runners, the judge places the type-check runner)
     agent-tests.sh                the judge's terse test runner
     agent-hollow.sh               the judge's hollow-check runner
     agent-typecheck.sh            the judge's type-check runner

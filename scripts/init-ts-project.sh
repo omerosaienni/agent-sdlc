@@ -8,7 +8,7 @@
 #   generator/lib.sh    shared helpers (output, colour, write_file, copy_template)
 #   generator/base.sh   always: TS tooling, entry point + unit test, editor, configs
 #   generator/mongo.sh  --mongo: db helper, docker infra, integration tier, seed
-#   generator/react.sh  --react: src/client React+Vite, src/shared, frontend tier
+#   generator/react.sh  --react: src/client React+Vite, src/common, frontend tier
 #
 # Any combination is valid: TS, TS+Mongo, TS+React, or all three. The base is always
 # TypeScript under src/server; Mongo and React are additive.
@@ -113,9 +113,9 @@ DB_NAME="$NAME"
 step "Scaffolding '$NAME' into '$DIR'$([ "$WITH_MONGO" = 1 ] && echo " (db: $DB_NAME)")"
 mkdir -p "$DIR"/{src/server,scripts,docs,docs/modules}
 [ "$WITH_MONGO" = 1 ] && mkdir -p "$DIR/src/server/db"
-# React adds the client tree (omero-react.md scopes to src/client/**) and a shared
+# React adds the client tree (omero-react.md scopes to src/client/**) and a common
 # tree for types crossing the client/server boundary.
-[ "$WITH_REACT" = 1 ] && mkdir -p "$DIR"/{src/client,src/shared}
+[ "$WITH_REACT" = 1 ] && mkdir -p "$DIR"/{src/client,src/common}
 
 # Base layer always runs; the optional layers write their exclusive files and set
 # the fragment variables the shared-file assembly below reads.
@@ -200,7 +200,8 @@ help: ## List available targets
 	@echo ""
 	@echo "  help        Show this list"
 	@echo "  start       Run the entry point (src/server/index.ts)"
-${MONGO_MAKE_HELP:-}${MONGO_MAKE_HELP:+$'\n'}	@echo "  test-unit   Run the unit tier (no external services)"
+${MONGO_MAKE_HELP:-}
+	@echo "  test-unit   Run the unit tier (no external services)"
 	@echo "  test        Run the backend tier(s)"
 	@echo "  lint        Run eslint over src"
 	@echo "  typecheck   Type-check without emitting (tsc --noEmit)"
@@ -265,7 +266,7 @@ A TypeScript project.
 ## Quick start
 \`\`\`
 npm install$([ "$WITH_MONGO" = 1 ] && printf '\nmake up            # start the shared Mongo and init the replica set')
-make test          # run the backend tier(s)
+$(if [ "$WITH_REACT" = 1 ]; then printf 'make test-all      # backend tier(s) then the frontend tier\nmake dev-client    # run the Vite dev server'; else printf 'make test          # run the backend tier(s)'; fi)
 \`\`\`
 EOF
 

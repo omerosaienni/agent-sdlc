@@ -8,7 +8,7 @@
 
 The constant skeleton for a TypeScript + React + MongoDB project, plus the parts
 that change per project. The base and Mongo layers are exactly what
-`init-ts-project.sh --mongo` produces; the React layer adds the client and shared
+`init-ts-project.sh --mongo` produces; the React layer adds the client and common
 trees, a Vite config, a jsdom test tier, and the frontend dependencies.
 
 Single package, not a monorepo, on purpose: the stack convention rules are
@@ -48,8 +48,8 @@ workspace tooling to maintain.
       App.tsx                    domain (grow into the real app)
       App.test.tsx               frontend tier (jsdom + Testing Library)
       test-setup.ts              constant (RTL matchers)
-    shared/                      types crossing the client/server boundary (React only)
-      types.ts                   domain (the shared types)
+    common/                      types crossing the client/server boundary (React only)
+      types.ts                   domain (the common types)
   .claude/rules/                 stack rules (TypeScript, Mongo, React); gitignored
   docs/
     ARCHITECTURE.md              domain
@@ -84,7 +84,7 @@ workspace tooling to maintain.
 - Test tier rule: a backend test that touches Mongo is the integration tier, never
   the unit tier. Frontend tests never touch Mongo; if one needs backend data it mocks
   the API boundary, it does not reach the database.
-- Shared types live in `src/shared`, imported by both sides, never duplicated.
+- Common types live in `src/common`, imported by both sides, never duplicated.
 
 **Conventions (path-scoped rules in `.claude/rules/`, not CLAUDE.md)**
 - These are installed by `install-project-rules.sh` (`--typescript --mongo --react`),
@@ -98,7 +98,7 @@ workspace tooling to maintain.
 - seed.ts (what this project seeds, the counts, the shapes)
 - Example modules and their npm scripts
 - The frontend app (components, routes, state) under src/client
-- The shared types' actual content under src/shared
+- The common types' actual content under src/common
 - The design sheet at `.building/design/<design-name>/deliverables.md`,
   `docs/ARCHITECTURE.md`, module docs
 - CLAUDE.md's scope section (what this project is and is not)
@@ -125,7 +125,7 @@ test               ## Backend: unit then integration
 
 # ---- quality + graph ----
 lint               ## eslint over src
-typecheck          ## tsc --noEmit (covers server, client, shared under one tsconfig)
+typecheck          ## tsc --noEmit (covers server, client, common under one tsconfig)
 graph / graph-viz  ## Knowledge graph (graphify)
 
 # ---- frontend (React only) ----
@@ -137,7 +137,7 @@ test-all           ## Backend tiers then the frontend tier
 ```
 
 `typecheck` runs one `tsc --noEmit` over the whole `src` tree (server, client, and
-shared), so a strict-mode type error anywhere is caught even though the test tiers
+common), so a strict-mode type error anywhere is caught even though the test tiers
 run through esbuild/tsx (which strip types). This is the project-level form of the
 judge's type-check gate.
 
@@ -172,8 +172,8 @@ API boundary.
 
 This full-stack project is `init-ts-project.sh --mongo --react`. It is not a separate
 generator: the base, Mongo, and React layers are the same ones every other
-combination uses (`generator/base.sh`, `generator/mongo.sh`, `generator/react.sh`),
+combination uses (`scripts/generator/base.sh`, `scripts/generator/mongo.sh`, `scripts/generator/react.sh`),
 so there is no separate full-stack definition to drift. React is purely additive on
-top of the base (and Mongo, if enabled): the `src/client` and `src/shared` trees, the
+top of the base (and Mongo, if enabled): the `src/client` and `src/common` trees, the
 Vite and client-vitest configs, the frontend package.json entries and tsconfig
 jsx/DOM additions, the frontend Makefile targets, and the `--react` stack rule.

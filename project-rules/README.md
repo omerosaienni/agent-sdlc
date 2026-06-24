@@ -25,7 +25,7 @@ touches matching files. Scope is by directory where that is the honest boundary
 ## Layout contract
 
 The directory scopes assume the canonical layout the generator produces. The base
-is always `src/server/`; the db, client, and shared trees are added by their layers:
+is always `src/server/`; the db, client, and common trees are added by their layers:
 
 ```
 src/
@@ -33,7 +33,7 @@ src/
     index.ts
     db/            <- omero-mongo.md  (added by --mongo)
   client/          <- omero-react.md  (added by --react)
-  shared/          (added by --react)
+  common/          (added by --react)
 ```
 
 ## Install

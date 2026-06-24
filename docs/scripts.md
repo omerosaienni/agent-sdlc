@@ -30,7 +30,7 @@ flowchart LR
 
     classDef script fill:#dbe7f0,stroke:#5b6b7a,color:#1d2733;
     classDef artifact fill:#dceadf,stroke:#5a8a66,color:#1d2733;
-    class init,gate,ensure script;
+    class init,gate,ensure,loop script;
     class proj,receipt artifact;
 ```
 
@@ -80,21 +80,21 @@ writes anything, then writes each area, then inits git.
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#e4edf4','primaryTextColor':'#1d2733','primaryBorderColor':'#5b6b7a','lineColor':'#5b6b7a','fontSize':'14px'}}}%%
 flowchart TD
     args["parse args<br/>name, dir, flags"] --> resolve["resolve + validate<br/>kebab-case name, derive db name,<br/>refuse if dir exists"]
-    resolve --> tooling["tooling configs<br/>vitest tiers, tsconfig, eslint,<br/>prettier, ignores"]
-    tooling --> db["database helper<br/>src/server/db/index.ts (db name baked in, shared 27017)"]
-    db --> infra["docker infra<br/>compose, rs-init"]
-    infra --> build["build surface<br/>Makefile, package.json"]
-    build --> entry["entry + seed<br/>src/server/index.ts + test + smoke test<br/>src/server/seed.ts (faker seed helper)"]
-    entry --> editor["editor<br/>.vscode debug configs"]
-    editor --> docs["docs<br/>CLAUDE.md (identity + runtime), README"]
+    resolve --> tooling["base: tooling configs<br/>vitest unit, tsconfig, eslint,<br/>prettier, ignores"]
+    tooling --> entry["base: entry point<br/>src/server/index.ts + unit test"]
+    entry --> editor["base: editor<br/>.vscode debug configs"]
+    editor --> mongo["--mongo (optional)<br/>db helper (src/server/db),<br/>docker infra, integration tier + seed"]
+    mongo --> react["--react (optional)<br/>src/client (Vite), src/common,<br/>frontend tier"]
+    react --> build["assemble shared files<br/>package.json, tsconfig, Makefile<br/>(from base + layer fragments)"]
+    build --> docs["docs<br/>CLAUDE.md (identity + runtime), README"]
     docs --> git["git init + initial commit<br/>(idempotent)"]
-    git --> rules["stack rules<br/>install-project-rules.sh --typescript --mongo"]
+    git --> rules["stack rules<br/>install-project-rules.sh --typescript [--mongo] [--react]"]
     rules --> done["print next steps"]
 
     classDef io fill:#fdeccd,stroke:#b8743d,color:#1d2733;
     classDef work fill:#e4edf4,stroke:#5b6b7a,color:#1d2733;
-    class args,resolve io;
-    class tooling,db,infra,build,entry,editor,docs,git work;
+    class args,resolve,done io;
+    class tooling,entry,editor,mongo,react,build,docs,git,rules work;
 ```
 
 ### Scaffold components
@@ -106,49 +106,56 @@ shared compose and the fixed port, is constant.
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#e4edf4','primaryTextColor':'#1d2733','primaryBorderColor':'#5b6b7a','lineColor':'#5b6b7a','fontSize':'14px'}}}%%
 flowchart TD
-    name(["project name"]) --> dbname(["db name (verbatim)"])
+    name(["project name"]) --> dbname(["db name, with --mongo"])
     dbname --> dbts
     dbname --> makefile
     name --> makefile
 
-    subgraph tooling["Tooling (constant)"]
-        vitest["vitest.unit/integration.config.ts"]
+    subgraph tooling["Base tooling (always)"]
+        vitest["vitest.unit.config.ts"]
         tsconfig["tsconfig.json"]
         lint["eslint + prettier"]
         ignores[".gitignore, .graphifyignore"]
     end
 
-    subgraph infra["Infra (constant, shared-mongo)"]
-        compose["docker-compose.yml"]
-        rsinit["scripts/rs-init.sh"]
-    end
-
-    subgraph source["Source (src/server/)"]
-        dbts["src/server/db/index.ts"]
+    subgraph base["Base source (always, src/server/)"]
         index["src/server/index.ts (entry point)"]
         indextest["src/server/index.test.ts (unit)"]
+    end
+
+    subgraph mongolayer["--mongo layer"]
+        dbts["src/server/db/index.ts"]
+        compose["docker-compose.yml + rs-init.sh"]
         smoke["src/server/smoke.integration.test.ts"]
         seed["src/server/seed.ts (faker seed helper)"]
     end
 
-    subgraph build["Build surface"]
+    subgraph reactlayer["--react layer"]
+        client["src/client (Vite app + jsdom tier)"]
+        common["src/common (shared types)"]
+    end
+
+    subgraph build["Build surface (assembled from fragments)"]
         makefile["Makefile"]
         pkg["package.json"]
     end
 
     subgraph docs["Docs + editor"]
         claude["CLAUDE.md (identity + runtime)"]
-        rules[".claude/rules/ (TS + Mongo stack rules)"]
+        rules[".claude/rules/ (TS + chosen layers)"]
         readme["README.md"]
         vscode[".vscode/launch.json (gitignored)"]
     end
 
-    dbts --> index
     dbts --> smoke
     dbts --> seed
 
     classDef param fill:#dceadf,stroke:#5a8a66,color:#1d2733;
+    classDef node fill:#e4edf4,stroke:#5b6b7a,color:#1d2733;
+    classDef group fill:#f4f6f8,stroke:#5b6b7a,color:#1d2733;
     class name,dbname param;
+    class vitest,tsconfig,lint,ignores,index,indextest,dbts,compose,smoke,seed,client,common,makefile,pkg,claude,rules,readme,vscode node;
+    class tooling,base,mongolayer,reactlayer,build,docs group;
 ```
 
 The entry point, the seed helper and the smoke test all use `src/server/db/index.ts`,
@@ -188,7 +195,7 @@ Exit codes: 0 READY, 1 NOT READY (fix the FAIL lines), 2 needs `--yes`, 3 BLOCKE
 flowchart TD
     s1["1. report tooling<br/>coverage matches vitest major"]
     s2["2. testing convention<br/>tier configs + npm scripts<br/>+ agent runners (test, hollow)"]
-    s3["3. run each tier<br/>non-zero selection + pass<br/>+ agent runners work"]
+    s3["3. run each tier<br/>non-zero selection + pass<br/>+ agent runners work + prettier --check clean"]
     s4["4. coverage runs"]
     s5["5. git, remote, gh, identity, main"]
     s6["6. .building is gitignored"]
@@ -203,9 +210,11 @@ flowchart TD
     classDef check fill:#e4edf4,stroke:#5b6b7a,color:#1d2733;
     classDef good fill:#dceadf,stroke:#5a8a66,color:#1d2733;
     classDef bad fill:#f7ddd7,stroke:#c0533b,color:#1d2733;
+    classDef decision fill:#fdeccd,stroke:#b8743d,color:#1d2733;
     class s1,s2,s3,s4,s5,s6 check;
     class ready good;
     class notready bad;
+    class verdict decision;
 ```
 
 Each check is one of OK (pass), FAIL (must fix, exit 1), NEED (needs `--yes` to

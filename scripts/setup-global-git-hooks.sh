@@ -45,7 +45,9 @@ HOOK_NAMES="pre-commit pre-push"
 #   caa572f... a dead pre-commit-framework shim (broken pipx path)
 STALE_MD5S="0e1a4bd2bb182e678e0aad3fde3ac24f caa572f5ad7c13c3af5210b82bcaa58f"
 
-# Where the stale-hook tidy looks for repos. Override by passing roots after the verb.
+# Where the stale-hook tidy looks for repos: a conventional dev root as the default.
+# If your repos live elsewhere (~/src, ~/code, ~/projects, ...), pass one or more
+# roots as arguments after the verb to scan those instead.
 SCAN_ROOTS_DEFAULT="$HOME/source-code"
 
 # ============================================================================

@@ -1,6 +1,6 @@
 # Conventions
 
-Universal conventions for all my projects. Terse on purpose — this loads every session.
+Universal conventions that apply to every project. Terse on purpose: this loads every session.
 
 ## Prose (comments, docs, output)
 - British English.
