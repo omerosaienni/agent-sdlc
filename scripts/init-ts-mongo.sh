@@ -620,8 +620,8 @@ write_file "$DIR/.vscode/launch.json" <<'EOF'
       "name": "Debug current file",
       "type": "node",
       "request": "launch",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["tsx", "${relativeFile}"],
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+      "runtimeArgs": ["${relativeFile}"],
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**"],
       "cwd": "${workspaceFolder}"
@@ -630,9 +630,8 @@ write_file "$DIR/.vscode/launch.json" <<'EOF'
       "name": "Debug current test file",
       "type": "node",
       "request": "launch",
-      "runtimeExecutable": "npx",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/vitest",
       "runtimeArgs": [
-        "vitest",
         "run",
         "${relativeFile}",
         "--no-file-parallelism"
@@ -645,9 +644,8 @@ write_file "$DIR/.vscode/launch.json" <<'EOF'
       "name": "Debug unit tier",
       "type": "node",
       "request": "launch",
-      "runtimeExecutable": "npx",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/vitest",
       "runtimeArgs": [
-        "vitest",
         "run",
         "-c",
         "vitest.unit.config.ts",
@@ -661,9 +659,8 @@ write_file "$DIR/.vscode/launch.json" <<'EOF'
       "name": "Debug integration tier (Mongo must be up)",
       "type": "node",
       "request": "launch",
-      "runtimeExecutable": "npx",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/vitest",
       "runtimeArgs": [
-        "vitest",
         "run",
         "-c",
         "vitest.integration.config.ts",
