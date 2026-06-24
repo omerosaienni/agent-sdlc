@@ -83,7 +83,7 @@ createRoot(document.getElementById('root')!).render(
 EOF
 
     write_file "$DIR/src/client/App.tsx" <<'EOF'
-// The root component. Grow this into the real app: routes, state, and components
+// The root component. Grow this into the real app: routes, state and components
 // under src/client. Data comes from the backend over its API, never from a
 // database directly.
 export function App() {

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="680" viewBox="0 0 680 560" role="img" font-family="sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="680" viewBox="0 0 680 580" role="img" font-family="sans-serif">
 <title>The checkpoint cycle, shared by both modes</title>
 <desc>After every PR, and on entry and on reclaim, the loop renders a board that sorts each increment by state into READY, AWAITING MERGE, BLOCKED and POSSIBLY STALLED with the critical path starred, then a fixed decision widget showing only the applicable verbs with Wait always. Every non-wait choice acts, reconciles and returns to the board. The only mode difference is when Carry on and Build a specific one appear.</desc>
 <defs><marker id="cka" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
@@ -68,4 +68,5 @@
 
 <!-- caption -->
 <text x="40" y="540" fill="#5F5E5A" font-size="11">If subagent dispatch is unavailable the loop degrades to one build per conversation; the fixed labels never reword between renders.</text>
+<text x="40" y="562" fill="#5F5E5A" font-size="11">With no GitHub remote the loop commits each increment to local main: Merge the PR never appears and AWAITING MERGE is always None.</text>
 </svg>

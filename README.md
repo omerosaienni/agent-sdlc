@@ -9,7 +9,7 @@ Reusable AI agent operating contracts. Each contract is a project-agnostic ruleb
 
 ## How it works, in one breath
 
-Three phases, two gates. **Design** converges intent into feature sheet(s); **setup** proves the environment buildable; **build** delivers the sheet one verified increment at a time, with four agent roles (builder, reviewer, judge, document) and a human merging every PR. Design and setup are independent prerequisites; the build loop refuses to start without both gate artifacts.
+Three phases, two gates. **Design** converges intent into feature sheet(s); **setup** proves the environment buildable; **build** delivers the sheet one verified increment at a time, with four agent roles (builder, reviewer, judge, document) and a human in control at every increment (merging each PR with a remote, or reviewing each local commit without one). Design and setup are independent prerequisites; the build loop refuses to start without both gate artifacts.
 
 ## Quick start
 
@@ -25,7 +25,7 @@ Then drive a project through these four `/omero-*` skills, in order:
 /omero-create-ts-project <project-name> [--mongo] [--react]  # 1. scaffold a TypeScript project (optional Mongo/React layers)
 /omero-design-partner "<intent>" <feature-name>  # 2. converge intent into feature sheet(s)
 /omero-project-setup                            # 3. prove the project ready (writes the setup receipt)
-/omero-build-loop <path-to-sheet>               # 4. deliver the sheet, one PR per increment
+/omero-build-loop <path-to-sheet>               # 4. deliver the sheet, one PR per increment (a local commit if no remote)
 ```
 
 Steps 2 and 3 are independent prerequisites and can run in either order; step 4 refuses to start without both the receipt and a schema-valid sheet. The feature name is a short kebab-case label you choose, for example `gym-tracker`. To exercise the loop itself before a real build, run it against [`examples/smoke-test-sheet.md`](examples/smoke-test-sheet.md), a one-increment sheet that runs the whole orchestration on a trivial case.
@@ -37,7 +37,7 @@ The work is driven by these four `/omero-*` skills (thin wrappers over the contr
 1. `omero-create-ts-project` scaffolds a TypeScript project, with optional Mongo and React layers (the generator, separate from the pipeline).
 2. `omero-design-partner` converges intent into validated feature sheet(s).
 3. `omero-project-setup` proves the project ready and writes the setup receipt.
-4. `omero-build-loop` delivers the sheet, one increment per branch and PR.
+4. `omero-build-loop` delivers the sheet, one increment per branch (one PR per increment with a GitHub remote, otherwise a local commit to main).
 
 The build loop runs in one of two modes, sequential-attended or parallel-attended, read from `mode` in `state.json`. They share every role, gate and the checkpoint; they differ only in what the loop offers after a PR opens. See [docs/build-loops.md](docs/build-loops.md).
 
@@ -60,7 +60,7 @@ The build loop runs in one of two modes, sequential-attended or parallel-attende
 | [`contracts/`](contracts/) | The operating contracts. The source of truth for behaviour, dense reference. |
 | [`docs/`](docs/README.md) | The documentation pages and the diagrams. |
 | [`skills/`](skills/README.md) | The thin `/omero-*` skill wrappers and the installer that points them at this repo. |
-| [`scripts/`](scripts/) | The shell scripts: the layered project generator (and its `scripts/generator/` layers), the setup gate, the report-tooling helper, the per-project rules installer, and the global hooks and rules installers. |
+| [`scripts/`](scripts/) | The shell scripts: the layered project generator (and its `scripts/generator/` layers), the setup gate, the report-tooling helper, the per-project rules installer and the global hooks and rules installers. |
 | [`file-templates/`](file-templates/) | The shared constant files (agent runners, report and checkpoint templates, vitest configs) the scripts copy from so nothing drifts. |
 | [`claude-rules/`](claude-rules/README.md) | The global Claude rules (conventions, branch naming), symlinked into `~/.claude/rules`. |
 | [`project-rules/`](project-rules/README.md) | The per-project stack rule templates (TypeScript, Mongo, React), copied into a repo's `.claude/rules`. |
@@ -70,7 +70,7 @@ The build loop runs in one of two modes, sequential-attended or parallel-attende
 
 ## Posture
 
-Attended only: the human merges every PR, and the merge is the final gate. Both build modes are attended. Unattended operation (auto-merge on a green pass) is out of scope and not built.
+Attended only: with a GitHub remote the human merges every PR, and the merge is the final gate; with no remote the build loop commits each increment to local main and the judge's pass is the gate, the human still deciding at every checkpoint. GitHub is optional: a missing remote warns and the loop continues locally, it never blocks. Both build modes are attended. Unattended operation (auto-merge on a green pass) is out of scope and not built.
 
 ## License
 

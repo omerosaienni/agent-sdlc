@@ -8,6 +8,7 @@
      checkpoint-reclaim; do not let it drift. -->
 
 Build loop. Mode: <mode>. Sheet: <sheet path>.
+<no-remote notice, or blank (only in the local-only flow): "No GitHub remote: I will build locally and commit each increment to local main; no push or PR until you add a remote.">
 <degraded note, or blank: "Subagent dispatch unavailable: I build one increment inline then stop. To build or resume another, start a fresh conversation and I will reclaim.">
 <OTHER QUEUES (sibling feature queues with open work), one line each: "other queue <feature-name>: <n> in flight, <n> awaiting merge, <n> escalated, <n> blocked"; or blank if none>
 

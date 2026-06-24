@@ -8,7 +8,7 @@ Three phases, two gates. Design and setup are independent prerequisites; both mu
 
 1. **Design** (`/omero-design-partner`) converges a fuzzy intent into a feature sheet, written to `.building/features/<feature-name>/increments.md` where `<feature-name>` is a short kebab-case name you give the feature. Gate: the sheet, validated against [`../contracts/increment-sheet.schema.md`](../contracts/increment-sheet.schema.md).
 2. **Setup** (`/omero-project-setup`) proves the environment is buildable by running things: tooling matches, the test tiers select non-zero tests, the agent test runner is placed and works, configs are valid, git is ready. It runs `scripts/project-setup.sh`. Gate: the receipt at `.building/setup-ok`. Idempotent, so it doubles as a re-runnable health check.
-3. **Build** (`/omero-build-loop`) delivers the sheet one increment at a time. It checks the receipt on entry, then for each increment runs builder, reviewer, tiered judge, document, PR, human merge. The loop runs in one of two modes, sequential-attended or parallel-attended, read from `mode` in `state.json`. See [`build-loops.md`](build-loops.md).
+3. **Build** (`/omero-build-loop`) delivers the sheet one increment at a time. It checks the receipt on entry, then for each increment runs builder, reviewer, tiered judge, document, then a PR and your merge with a remote, or a local commit integrated into main without one. The loop runs in one of two modes, sequential-attended or parallel-attended, read from `mode` in `state.json`. See [`build-loops.md`](build-loops.md).
 
 The two gates are independent: re-running design (a new sheet) does not invalidate the setup receipt, and a tooling change invalidates the receipt, not the sheet.
 
@@ -31,11 +31,11 @@ These pipeline scripts follow a shared layout ([`../contracts/script-layout.md`]
 
 Some prerequisites you provide; the rest the setup gate proves by execution.
 
-You provide (the gate does not install these): the integration endpoints up (e.g. Docker and Compose running the shared Mongo, brought up with `make up`), `gh` authenticated, and, before the loop opens any PR, a GitHub remote with main present (the gate never creates a remote, and only warns if it is missing).
+You provide (the gate does not install these): the integration endpoints up (e.g. Docker and Compose running the shared Mongo, brought up with `make up`), `gh` authenticated and, to push branches and open PRs, a GitHub remote with main present (the gate never creates a remote, and only warns if it is missing; without one the build loop still runs, committing each increment to local main instead, see [`build-loops.md`](build-loops.md#github-is-optional)).
 
 The gate proves, by running things, and scaffolds boilerplate on consent:
 
-- git is a repo with a local main branch, `gh` is authenticated, and the commit identity is on the allowlist. A missing remote is a warning, not a failure: local building works without one, but pushing branches and opening PRs need it, so adding the remote stays your action before the loop's PRs can flow.
+- git is a repo with a local main branch, `gh` is authenticated and the commit identity is on the allowlist. A missing remote is a warning, not a failure: local building works without one, but pushing branches and opening PRs need it. The build loop detects this and continues locally when no remote is present, committing each increment to local main; adding the remote later resumes the push/PR flow for subsequent increments.
 - report tooling matches (the coverage provider is derived from the installed test runner).
 - the project's declared test-tier commands select non-zero tests and pass.
 - the declared integration endpoint is reachable (it runs the integration tier; a downed endpoint is reported as BLOCKED, not a failure).

@@ -28,5 +28,7 @@ tree and not to server `.tsx`. Drafted from sensible defaults, refine to taste.
 - Prefer discriminated unions over optional-flag soup for variant components.
 
 ## Tests
-- Component tests use the unit tier (no Mongo, no network). Test behaviour through
-  the rendered output and user interaction, not implementation details.
+- Component tests are unit-class (no Mongo, no network) but run in the frontend tier
+  (jsdom), via `npm run test:client` / `make test-client`, not the backend unit tier.
+  Test behaviour through the rendered output and user interaction, not implementation
+  details.

@@ -6,7 +6,7 @@ The build loop runs four agent roles plus a passive orchestrator. The split is t
 
 ## Orchestrator (passive)
 
-Sequences increments by dependency order, is the sole writer of state.json, enforces the loop budgets, opens PRs, and halts on escalation. It writes no code and makes no judgement. In a normal run it spawns each of the roles below as a subagent with fresh context; see [`diagrams/sequence-spawn.svg`](diagrams/sequence-spawn.svg).
+Sequences increments by dependency order, is the sole writer of state.json, enforces the loop budgets, opens PRs (or, with no remote, integrates each increment into local main), and halts on escalation. It writes no code and makes no judgement. In a normal run it spawns each of the roles below as a subagent with fresh context; see [`diagrams/sequence-spawn.svg`](diagrams/sequence-spawn.svg).
 
 ![Orchestrator role card](diagrams/role-orchestrator.svg)
 

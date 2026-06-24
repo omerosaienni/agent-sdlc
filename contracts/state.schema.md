@@ -8,10 +8,10 @@ The build loop's per-feature recovery record and cross-conversation memory: one 
 - mode: string, OPTIONAL. `sequential-attended` or `parallel-attended`. Absent means sequential-attended. The loop NEVER writes this field; the human sets it (see Modes). The orchestrator is sole writer of everything else.
 - increments: object, keyed by increment id (the ids from the sheet, see increment-sheet.schema.md). Each value:
   - depends_on: list of increment ids. Mirrors the sheet's depends_on for this id.
-  - status: one of `pending`, `building`, `in-review`, `in-judgement`, `documented`, `pr-open`, `merged`, `escalated`, `blocked`. The canonical state set; the increment-states diagram renders exactly these and the contract's stage mapping uses exactly these.
+  - status: one of `pending`, `building`, `in-review`, `in-judgement`, `documented`, `pr-open`, `merged`, `escalated`, `blocked`. The canonical state set; the increment-states diagram renders exactly these and the contract's stage mapping uses exactly these. In the local-only flow (no remote, see build-judge-loop.md, Remote presence) `pr-open` never occurs: the loop integrates each increment into local main itself, so a documented increment goes straight to `merged`, which then means "on local main" rather than "merged via a remote PR".
   - review_count: integer, 0 to 3. Review-loop attempts spent (budget 3).
   - judge_count: integer, 0 to 3. Judge-loop attempts spent (budget 3).
-  - branch: string or null. The audit-named branch (`<id>-<kebab-title>`), also the PR lookup key. null until the branch is cut.
+  - branch: string or null. The audit-named branch (`feat/<id>-<kebab-title>`, per the project branch-naming standard, see build-judge-loop.md, Branch and PR), and the PR lookup key in the GitHub flow (in the local-only flow there is no PR and it is purely the audit name). null until the branch is cut.
 
 ## Example
 ```
@@ -20,7 +20,7 @@ The build loop's per-feature recovery record and cross-conversation memory: one 
   "conventions": "CLAUDE.md",
   "mode": "parallel-attended",
   "increments": {
-    "ci-workflow": { "depends_on": [], "status": "merged", "review_count": 1, "judge_count": 1, "branch": "ci-workflow-pr-to-main" }
+    "ci-workflow": { "depends_on": [], "status": "merged", "review_count": 1, "judge_count": 1, "branch": "feat/ci-workflow-pr-checks" }
   }
 }
 ```

@@ -50,4 +50,5 @@
 <text x="40" y="320" font-size="12" fill="#5F5E5A">Re-running design (new sheet) does not invalidate the setup receipt.</text>
 <text x="40" y="338" font-size="12" fill="#5F5E5A">A tooling or environment change invalidates the receipt, not the sheet.</text>
 <text x="40" y="356" font-size="12" fill="#5F5E5A">The build loop refuses to start without both the sheet and a valid receipt.</text>
+<text x="40" y="380" font-size="12" fill="#5F5E5A">GitHub is optional: with no remote the build loop runs locally, committing each increment to local main instead of opening PRs.</text>
 </svg>

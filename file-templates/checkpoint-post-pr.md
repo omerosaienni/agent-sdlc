@@ -1,14 +1,16 @@
 # Build loop checkpoint: post-PR
 
 <!-- Rendered VERBATIM by contracts/build-judge-loop.md immediately after the loop
-     opens a PR. The loop STOPS here; it does not cut the next branch until you
-     choose (and in sequential-attended, not until the PR merges). Fill the
-     angle-bracket slots, change nothing else. The decision is the fixed widget in
-     the contract (Checkpoint, the decision widget), not prose. The STATE BLOCK is
-     byte-identical across checkpoint-entry, checkpoint-post-pr and
-     checkpoint-reclaim; do not let it drift. -->
+     finishes an increment within the same conversation: opening a PR with a remote,
+     or integrating into local main in the local-only flow. The loop STOPS here; it
+     does not cut the next branch until you choose (and in sequential-attended with a
+     remote, not until the PR merges). Fill the angle-bracket slots, change nothing
+     else. The decision is the fixed widget in the contract (Checkpoint, the decision
+     widget), not prose. The STATE BLOCK is byte-identical across checkpoint-entry,
+     checkpoint-post-pr and checkpoint-reclaim; do not let it drift. -->
 
-PR opened for increment <id>, <title> (branch <branch>). Mode: <mode>. Stopped at the post-PR checkpoint; I have not cut the next branch.
+<increment-done line: with a remote, "PR opened for increment <id>, <title> (branch <branch>)"; in the local-only flow, "Committed increment <id>, <title> to local main (branch <branch>); no remote, so no PR">. Mode: <mode>. Stopped at the post-PR checkpoint; I have not cut the next branch.
+<no-remote notice, or blank (only in the local-only flow): "No GitHub remote: I am building locally and committing each increment to local main; no push or PR until you add a remote.">
 <degraded note, or blank: "Subagent dispatch unavailable: I built one increment inline and stopped. To build or resume another, start a fresh conversation and I will reclaim.">
 <OTHER QUEUES (sibling feature queues with open work), one line each: "other queue <feature-name>: <n> in flight, <n> awaiting merge, <n> escalated, <n> blocked"; or blank if none>
 

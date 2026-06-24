@@ -2,7 +2,7 @@
 # Run the judge's hollow-test negative check for ONE increment, as a single
 # committed command. The judge supplies the fault (an exact literal string in a
 # source file to flip, and what to flip it to); the script owns everything else:
-# backup, apply, scoped run, verdict, restore, and a green re-verify. The restore
+# backup, apply, scoped run, verdict, restore and a green re-verify. The restore
 # runs from an EXIT trap, so the file is put back however the script exits. The
 # backup is a plain filesystem copy under .building/ (gitignored), which works on
 # the UNTRACKED files a new increment adds, where git checkout/restore/stash
@@ -50,8 +50,9 @@ printf '%s\n' "${content/"$old"/"$new"}" > "$src"
 
 # Scoped negative run through the project's runner (single source of truth for
 # HOW tests run). Capture output: a real assertion failure prints "Tests N failed"
-# with N>=1; a build break prints "Tests no tests" (nothing ran); green means the
-# test never asserted the broken behaviour.
+# with N>=1; a fault that breaks the build so no test runs makes the runner report
+# zero selected tests ("0 tests selected (hollow suite)"); green means the test
+# never asserted the broken behaviour.
 # Capture without letting a non-zero runner exit trip set -e (a failing test is
 # the expected outcome here, not a script error).
 if out="$(.building/scripts/agent-tests.sh "$tier" "$testfile" 2>&1)"; then rc=0; else rc=$?; fi
@@ -61,7 +62,7 @@ if [ "$rc" -eq 0 ]; then
     verdict="HOLLOW"; code=1
 elif printf '%s' "$out" | grep -qE "Tests +[1-9][0-9]* failed"; then
     verdict="ASSERTS"; code=0
-elif printf '%s' "$out" | grep -qiE "Tests +no tests|No test files found"; then
+elif printf '%s' "$out" | grep -qiE "Tests +no tests|No test files found|0 tests selected"; then
     verdict="BAD FAULT (no tests ran; fault was not behavioural)"; code=2
 else
     verdict="BAD FAULT (tier did not run a test; treat as non-behavioural)"; code=2

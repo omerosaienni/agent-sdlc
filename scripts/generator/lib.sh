@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # generator/lib.sh - shared helpers for the project generator and its stack layers.
 # Sourced by init-ts-project.sh and the layer scripts (base.sh, mongo.sh, react.sh),
-# so every layer uses the same output idiom, colour handling, and file primitives.
-# Not executed directly. Expects DIR, VERBOSE, USE_COLOR, and TEMPLATES_DIR to be
+# so every layer uses the same output idiom, colour handling and file primitives.
+# Not executed directly. Expects DIR, VERBOSE, USE_COLOR and TEMPLATES_DIR to be
 # set by the orchestrator before use.
 
-# Colour is enabled only when stdout is a real terminal, TERM is not dumb, and the
+# Colour is enabled only when stdout is a real terminal, TERM is not dumb and the
 # user has not opted out (NO_COLOR convention or --no-color). Keeps escape codes out
 # of piped or redirected output.
 setup_color() {

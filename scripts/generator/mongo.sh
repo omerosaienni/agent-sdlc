@@ -3,7 +3,7 @@
 # init-ts-project.sh. Writes the Mongo-exclusive files (db helper, docker infra, the
 # integration tier and its config, the seed helper) and exports fragment variables
 # the orchestrator splices into the shared files (package.json, tsconfig include,
-# Makefile, CLAUDE.md). Expects DIR, NAME, DB_NAME, and the lib helpers in scope.
+# Makefile, CLAUDE.md). Expects DIR, NAME, DB_NAME and the lib helpers in scope.
 #
 # Mongo model: every project shares one mongod container (shared-mongo, fixed port
 # 27017, replica set rs0). A project lives in its own database inside it, named

@@ -1,7 +1,7 @@
 # Smoke test sheet
 
 ## Goal
-A minimal sheet that exercises the whole build loop end to end on a trivial increment, so the orchestration (branch cut, builder, reviewer, judge, document agent, PR, merge detection, resume) can be validated without the weight of a real project. Run this first when verifying the loop itself, not the code it produces.
+A minimal sheet that exercises the whole build loop end to end on a trivial increment, so the orchestration (branch cut, builder, reviewer, judge, document agent, integration into main as a PR and merge with a remote or a local commit without one, resume) can be validated without the weight of a real project. Run this first when verifying the loop itself, not the code it produces.
 
 ### smoke-answer: Answer function with a unit test
 - depends_on: []

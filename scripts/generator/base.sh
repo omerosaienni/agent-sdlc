@@ -3,7 +3,7 @@
 # init-ts-project.sh. Writes the exclusive base files (tooling, the entry point and
 # its unit test, editor configs, the CLAUDE.md skeleton, README). The shared files
 # assembled from layer fragments (package.json, tsconfig.json, Makefile) are owned
-# by the orchestrator, not here. Expects DIR, NAME, and the lib helpers in scope.
+# by the orchestrator, not here. Expects DIR, NAME and the lib helpers in scope.
 
 base_layer() {
     step "tooling configs"
