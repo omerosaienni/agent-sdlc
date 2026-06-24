@@ -1,18 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="680" viewBox="0 0 680 326" role="img" font-family="sans-serif">
 <title>Role card: Builder</title>
-<desc>Builder. Owns: implementing the current deliverable. Produces: code and tests, named per the convention, and its documentation slice. Cannot: self-certify, or touch another deliverable. Context: works to the acceptance criteria and CLAUDE.md.</desc>
+<desc>Builder. Owns: implementing the current increment. Produces: code and tests, named per the convention, and its documentation slice. Cannot: self-certify, or touch another increment. Context: works to the acceptance criteria and CLAUDE.md.</desc>
 <rect x="40" y="30" width="600" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
 <text x="60" y="51" dominant-baseline="central" fill="#0C447C" font-size="16" font-weight="500">Builder</text>
-<text x="60" y="71" dominant-baseline="central" fill="#185FA5" font-size="12">implements one deliverable at a time</text>
+<text x="60" y="71" dominant-baseline="central" fill="#185FA5" font-size="12">implements one increment at a time</text>
 <line x1="40" y1="142" x2="640" y2="142" stroke="#5F5E5A" stroke-width="0.3" opacity="0.4"/>
 <line x1="40" y1="198" x2="640" y2="198" stroke="#5F5E5A" stroke-width="0.3" opacity="0.4"/>
 <line x1="40" y1="254" x2="640" y2="254" stroke="#5F5E5A" stroke-width="0.3" opacity="0.4"/>
 <text x="60" y="114" dominant-baseline="central" fill="#444441" font-size="13" font-weight="500">Owns</text>
-<text x="200" y="114" dominant-baseline="central" fill="#5F5E5A" font-size="12">implementing the current deliverable</text>
+<text x="200" y="114" dominant-baseline="central" fill="#5F5E5A" font-size="12">implementing the current increment</text>
 <text x="60" y="170" dominant-baseline="central" fill="#444441" font-size="13" font-weight="500">Produces</text>
 <text x="200" y="170" dominant-baseline="central" fill="#5F5E5A" font-size="12">code and tests, named per the convention, and its doc slice</text>
 <text x="60" y="226" dominant-baseline="central" fill="#444441" font-size="13" font-weight="500">Cannot</text>
-<text x="200" y="226" dominant-baseline="central" fill="#5F5E5A" font-size="12">self-certify, or touch another deliverable</text>
+<text x="200" y="226" dominant-baseline="central" fill="#5F5E5A" font-size="12">self-certify, or touch another increment</text>
 <text x="60" y="282" dominant-baseline="central" fill="#444441" font-size="13" font-weight="500">Context</text>
 <text x="200" y="282" dominant-baseline="central" fill="#5F5E5A" font-size="12">works to the acceptance criteria and CLAUDE.md</text>
 </svg>

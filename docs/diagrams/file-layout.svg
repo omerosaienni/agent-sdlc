@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="680" viewBox="0 0 680 470" role="img" font-family="sans-serif">
 <title>File layout: committed code and docs versus the gitignored .building folder</title>
-<desc>The green box is what the commit and PR carry: code and docs. The grey box is the .building folder, all loop output, gitignored and never committed: project-level setup receipt and runners, then build state one folder per design (deliverable queue), each holding its own state.json, work files per unit, and a symlinked escalations index.</desc>
-<text x="40" y="26" fill="#444441" font-size="14" font-weight="500">mongo-db-1/  on a deliverable's branch</text>
+<desc>The green box is what the commit and PR carry: code and docs. The grey box is the .building folder, all loop output, gitignored and never committed: project-level setup receipt and runners, then build state one folder per feature (feature queue), each holding its own state.json, work files per unit, and a symlinked escalations index.</desc>
+<text x="40" y="26" fill="#444441" font-size="14" font-weight="500">mongo-db-1/  on an increment's branch</text>
 <rect x="40" y="42" width="270" height="150" rx="12" fill="#EAF3DE" stroke="#3B6D11" stroke-width="0.5"/>
-<text x="58" y="64" fill="#27500A" font-size="14" font-weight="500">committed: the deliverable</text>
+<text x="58" y="64" fill="#27500A" font-size="14" font-weight="500">committed: the increment</text>
 <text x="58" y="86" fill="#5F5E5A" font-size="12">src/server/db/index.ts, index.ts, seed.ts</text>
 <text x="58" y="106" fill="#5F5E5A" font-size="12">src/server/index.test.ts</text>
 <text x="58" y="126" fill="#5F5E5A" font-size="12">src/server/smoke.integration.test.ts</text>
@@ -13,7 +13,7 @@
 <text x="348" y="64" fill="#444441" font-size="14" font-weight="500">.building/  local only, gitignored</text>
 <text x="348" y="86" fill="#5F5E5A" font-size="12">setup-ok                  project-level</text>
 <text x="348" y="104" fill="#5F5E5A" font-size="12">scripts/  agent-*.sh      project-level</text>
-<text x="348" y="126" fill="#5F5E5A" font-size="12">build/&lt;design-name&gt;/      one per design</text>
+<text x="348" y="126" fill="#5F5E5A" font-size="12">build/&lt;feature-name&gt;/      one per feature</text>
 <text x="364" y="144" fill="#5F5E5A" font-size="12">state.json    mode, per-unit status</text>
 <text x="364" y="162" fill="#5F5E5A" font-size="12">work/</text>
 <text x="380" y="180" fill="#5F5E5A" font-size="12">d3-connection-helper/</text>

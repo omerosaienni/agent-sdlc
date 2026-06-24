@@ -12,7 +12,7 @@
 <line x1="475" y1="58" x2="475" y2="540" stroke="#0F6E56" stroke-width="0.6" stroke-dasharray="3 3"/>
 <rect x="540" y="20" width="100" height="38" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/><text x="590" y="39" text-anchor="middle" dominant-baseline="central" fill="#854F0B" font-size="12">Document</text>
 <line x1="590" y1="58" x2="590" y2="540" stroke="#854F0B" stroke-width="0.6" stroke-dasharray="3 3"/>
-<line x1="100" y1="84" x2="233" y2="84" stroke="#73726c" stroke-width="1.4" marker-end="url(#arrow)"/><text x="110" y="78" fill="#5F5E5A" font-size="10">spawn (deliverable spec)</text>
+<line x1="100" y1="84" x2="233" y2="84" stroke="#73726c" stroke-width="1.4" marker-end="url(#arrow)"/><text x="110" y="78" fill="#5F5E5A" font-size="10">spawn (increment spec)</text>
 <rect x="229" y="84" width="12" height="40" fill="#185FA5" opacity="0.25"/>
 <line x1="235" y1="124" x2="102" y2="124" stroke="#73726c" stroke-width="1.4" marker-end="url(#arrow)" stroke-dasharray="3 2"/><text x="110" y="118" fill="#5F5E5A" font-size="10">writes code + builder.md, ends</text>
 <line x1="100" y1="150" x2="353" y2="150" stroke="#73726c" stroke-width="1.4" marker-end="url(#arrow)"/><text x="110" y="144" fill="#5F5E5A" font-size="10">spawn (code, conventions)</text>
@@ -32,5 +32,5 @@
 <text x="116" y="436" fill="#5F5E5A" font-size="10">open PR, write state.json</text>
 <rect x="40" y="466" width="120" height="34" rx="8" fill="none" stroke="#444441" stroke-width="1.1"/><text x="100" y="483" text-anchor="middle" dominant-baseline="central" fill="#444441" font-size="12">Human</text>
 <line x1="160" y1="483" x2="100" y2="483" stroke="#73726c" stroke-width="1.4" marker-end="url(#arrow)"/>
-<text x="116" y="516" fill="#5F5E5A" font-size="10">human merges the PR, next deliverable</text>
+<text x="116" y="516" fill="#5F5E5A" font-size="10">human merges the PR, next increment</text>
 </svg>

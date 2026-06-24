@@ -53,7 +53,7 @@ workspace tooling to maintain.
   .claude/rules/                 stack rules (TypeScript, Mongo, React); gitignored
   docs/
     ARCHITECTURE.md              domain
-    modules/                     domain (per-deliverable docs)
+    modules/                     domain (per-increment docs)
   graphify-out/                  gitignored, generated
   .building/                     gitignored, loop working folder
 ```
@@ -99,7 +99,7 @@ workspace tooling to maintain.
 - Example modules and their npm scripts
 - The frontend app (components, routes, state) under src/client
 - The common types' actual content under src/common
-- The design sheet at `.building/design/<design-name>/deliverables.md`,
+- The feature sheet at `.building/features/<feature-name>/increments.md`,
   `docs/ARCHITECTURE.md`, module docs
 - CLAUDE.md's scope section (what this project is and is not)
 

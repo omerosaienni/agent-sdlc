@@ -1,8 +1,8 @@
 ---
 name: omero-build-loop
-description: Deliver a deliverable sheet as small, independently verified increments. Four agent roles (builder, reviewer, judge, document) plus a passive orchestrator, a review loop and a judge loop, one branch and one GitHub PR per deliverable into main. Attended, mode-driven (sequential-attended or parallel-attended, read from state.json). Judge type-checks, then runs unit then integration tiers.
+description: Deliver a feature sheet as small, independently verified increments. Four agent roles (builder, reviewer, judge, document) plus a passive orchestrator, a review loop and a judge loop, one branch and one GitHub PR per increment into main. Attended, mode-driven (sequential-attended or parallel-attended, read from state.json). Judge type-checks, then runs unit then integration tiers.
 disable-model-invocation: true
-argument-hint: "[path to the deliverable sheet]"
+argument-hint: "[path to the feature sheet]"
 allowed-tools: Bash(git:*), Bash(gh:*), Bash(npm:*), Bash(npx:*), Bash(make:*), Bash(docker:*), Bash(cd:*), Bash(ls:*), Bash(cat:*), Bash(echo:*), Bash(mkdir:*), Bash(rm:*), Bash(find:*), Bash(grep:*), Bash(printf:*), Bash(chmod:*), Bash(tail:*), Bash(head:*), Bash(graphify query:*), Bash(.building/scripts/agent-tests.sh:*), Bash(.building/scripts/agent-hollow.sh:*), Bash(.building/scripts/agent-typecheck.sh:*), Read, Edit, Write
 ---
 Operate the build-judge loop defined in
@@ -10,10 +10,10 @@ Operate the build-judge loop defined in
 exactly. It is the single source of truth for the workflow; this skill does not
 restate it.
 
-The deliverable sheet for this run is at: $ARGUMENTS
+The feature sheet for this run is at: $ARGUMENTS
 
 On entry, do exactly what the contract says: validate the sheet against
-{{SDLC_REPO}}/contracts/deliverable-sheet.schema.md, check the setup receipt,
+{{SDLC_REPO}}/contracts/increment-sheet.schema.md, check the setup receipt,
 read the project CLAUDE.md, and proceed per the contract. Do not build against an
 invalid sheet, and do not run setup yourself (the contract explains the receipt).
 

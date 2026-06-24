@@ -9,7 +9,7 @@ Reusable AI agent operating contracts. Each contract is a project-agnostic ruleb
 
 ## How it works, in one breath
 
-Three phases, two gates. **Design** converges intent into a deliverable sheet; **setup** proves the environment buildable; **build** delivers the sheet one verified increment at a time, with four agent roles (builder, reviewer, judge, document) and a human merging every PR. Design and setup are independent prerequisites; the build loop refuses to start without both gate artifacts.
+Three phases, two gates. **Design** converges intent into feature sheet(s); **setup** proves the environment buildable; **build** delivers the sheet one verified increment at a time, with four agent roles (builder, reviewer, judge, document) and a human merging every PR. Design and setup are independent prerequisites; the build loop refuses to start without both gate artifacts.
 
 ## Quick start
 
@@ -23,21 +23,21 @@ Then drive a project through the four `/omero-*` skills, in order:
 
 ```text
 /omero-create-ts-project <project-name> [--mongo] [--react]  # 1. scaffold a TypeScript project (optional Mongo/React layers)
-/omero-design-partner "<intent>" <design-name>  # 2. converge intent into a deliverable sheet
+/omero-design-partner "<intent>" <feature-name>  # 2. converge intent into feature sheet(s)
 /omero-project-setup                            # 3. prove the project ready (writes the setup receipt)
-/omero-build-loop <path-to-sheet>               # 4. deliver the sheet, one PR per deliverable
+/omero-build-loop <path-to-sheet>               # 4. deliver the sheet, one PR per increment
 ```
 
-Steps 2 and 3 are independent prerequisites and can run in either order; step 4 refuses to start without both the receipt and a schema-valid sheet. The design name is a short kebab-case label you choose, for example `gym-tracker`. To exercise the loop itself before a real build, run it against [`examples/smoke-test-sheet.md`](examples/smoke-test-sheet.md), a one-deliverable sheet that runs the whole orchestration on a trivial case.
+Steps 2 and 3 are independent prerequisites and can run in either order; step 4 refuses to start without both the receipt and a schema-valid sheet. The feature name is a short kebab-case label you choose, for example `gym-tracker`. To exercise the loop itself before a real build, run it against [`examples/smoke-test-sheet.md`](examples/smoke-test-sheet.md), a one-increment sheet that runs the whole orchestration on a trivial case.
 
 ## Using it
 
 The work is driven by four `/omero-*` skills (thin wrappers over the contracts):
 
 1. `omero-create-ts-project` scaffolds a TypeScript project, with optional Mongo and React layers (the generator, separate from the pipeline).
-2. `omero-design-partner` converges intent into a validated deliverable sheet.
+2. `omero-design-partner` converges intent into validated feature sheet(s).
 3. `omero-project-setup` proves the project ready and writes the setup receipt.
-4. `omero-build-loop` delivers the sheet, one deliverable per branch and PR.
+4. `omero-build-loop` delivers the sheet, one increment per branch and PR.
 
 The build loop runs in one of two modes, sequential-attended or parallel-attended, read from `mode` in `state.json`. They share every role, gate and the checkpoint; they differ only in what the loop offers after a PR opens. See [docs/build-loops.md](docs/build-loops.md).
 

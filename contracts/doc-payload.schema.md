@@ -1,9 +1,9 @@
 # Documentation payload schema
 
-The typed seam between the working agents and the document agent. Each deliverable accumulates a payload that the document agent assembles into docs. Each agent contributes only what it uniquely knows; no agent restates another's slice.
+The typed seam between the working agents and the document agent. Each increment accumulates a payload that the document agent assembles into docs. Each agent contributes only what it uniquely knows; no agent restates another's slice.
 
 ## Location
-`.building/build/<design-name>/work/<branch-name>/doc-payload.md`, gitignored working file, written as the agents work.
+`.building/build/<feature-name>/work/<branch-name>/doc-payload.md`, gitignored working file, written as the agents work.
 
 ## Fields (the durable essence, distinct from the verification record in the reports)
 - id, title: from the sheet.

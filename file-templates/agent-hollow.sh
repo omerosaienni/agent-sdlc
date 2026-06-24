@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Run the judge's hollow-test negative check for ONE deliverable, as a single
+# Run the judge's hollow-test negative check for ONE increment, as a single
 # committed command. The judge supplies the fault (an exact literal string in a
 # source file to flip, and what to flip it to); the script owns everything else:
 # backup, apply, scoped run, verdict, restore, and a green re-verify. The restore
 # runs from an EXIT trap, so the file is put back however the script exits. The
 # backup is a plain filesystem copy under .building/ (gitignored), which works on
-# the UNTRACKED files a new deliverable adds, where git checkout/restore/stash
+# the UNTRACKED files a new increment adds, where git checkout/restore/stash
 # silently no-op. The index is never touched.
 #
 # Usage:

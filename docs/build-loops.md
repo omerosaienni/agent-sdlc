@@ -1,66 +1,66 @@
 # The build loop
 
-The build phase delivers a sheet one increment at a time. It is a single loop with a single [per-deliverable cycle](roles.md), one set of gates, one `.building/` workspace and one checkpoint. A per-queue `mode` selects between two behaviours that differ in exactly one thing: what the loop offers after a PR opens.
+The build phase delivers a sheet one increment at a time. It is a single loop with a single [per-increment cycle](roles.md), one set of gates, one `.building/` workspace and one checkpoint. A per-queue `mode` selects between two behaviours that differ in exactly one thing: what the loop offers after a PR opens.
 
 Both modes are attended: a human merges every PR, and the merge is the final gate.
 
-## The per-deliverable cycle
+## The per-increment cycle
 
-For each deliverable: the builder implements and writes tests; the reviewer reviews (budget 3, bounce on a critical or major finding with evidence); on approval the judge runs the unit tier then the integration tier and proves the tests are not hollow; on a pass the document agent runs; the orchestrator commits code and docs and opens a PR into main. Either the review or the judge loop exhausting three attempts escalates and freezes that deliverable's dependents. This cycle is identical in both modes. The per-deliverable state machine is [`diagrams/deliverable-states.svg`](diagrams/deliverable-states.svg).
+For each increment: the builder implements and writes tests; the reviewer reviews (budget 3, bounce on a critical or major finding with evidence); on approval the judge runs the unit tier then the integration tier and proves the tests are not hollow; on a pass the document agent runs; the orchestrator commits code and docs and opens a PR into main. Either the review or the judge loop exhausting three attempts escalates and freezes that increment's dependents. This cycle is identical in both modes. The per-increment state machine is [`diagrams/increment-states.svg`](diagrams/increment-states.svg).
 
-![The build and judge loop for one deliverable](diagrams/build-judge-loop.svg)
+![The build and judge loop for one increment](diagrams/build-judge-loop.svg)
 
 ## Two modes, one difference
 
-`mode` lives in each design's `state.json`, set per deliverable queue and persisting across conversations. It is not an invocation flag. The loop reads it and never writes it; if it is absent the loop defaults to sequential-attended. One queue can run parallel-attended while another runs sequential-attended.
+`mode` lives in each feature's `state.json`, set per feature queue and persisting across conversations. It is not an invocation flag. The loop reads it and never writes it; if it is absent the loop defaults to sequential-attended. One queue can run parallel-attended while another runs sequential-attended.
 
 | | sequential-attended (default) | parallel-attended |
 | --- | --- | --- |
-| In flight at once | one deliverable | several |
+| In flight at once | one increment | several |
 | After a PR opens | wait; do not cut the next branch until that PR merges | you may build any ready sibling while open PRs sit unmerged |
 | Each branch cut from | updated origin/main (after the previous merge) | a freshly-fetched origin/main, never stacked on a sibling |
 | main greenness | green after every merge | green after the combined re-run (see below) |
-| When it fits | each deliverable builds on the previous one's merged code | a wide fan-out of independent deliverables |
+| When it fits | each increment builds on the previous one's merged code | a wide fan-out of independent increments |
 
 Everything else, the four roles, the gates, the budgets, the `.building/` layout, the hollow-test, the board and the widget mechanism, is the same. The single behavioural fork is the cut rule at the checkpoint. See [`diagrams/git-topology.svg`](diagrams/git-topology.svg) for the sequential topology and [`diagrams/parallel-topology.svg`](diagrams/parallel-topology.svg) for the parallel one.
 
 ## Parallel means eligible, not concurrent
 
-Parallel-attended does not run builds at the same time. It is still one checkout and one build at a time, with a checkpoint between each. What "parallel" names is that a deliverable becomes **eligible** the moment all its dependencies are merged, and the loop will offer every eligible deliverable rather than forcing you to merge one before starting the next.
+Parallel-attended does not run builds at the same time. It is still one checkout and one build at a time, with a checkpoint between each. What "parallel" names is that a increment becomes **eligible** the moment all its dependencies are merged, and the loop will offer every eligible increment rather than forcing you to merge one before starting the next.
 
 The win is not a wall-clock speedup. It is decoupling build order from merge order: you can build 13, 14 and 15 back to back, leaving their PRs open, and merge them as a batch when you are ready. In sequential mode each build waits behind the previous merge. Same total work, different control over when merges happen.
 
-The trade is honest. In parallel mode green is per-branch, not per-main: each sibling is verified green only against the main it was cut from, in isolation. Two siblings that are each green alone can combine into a red main (a shared-file append, or a semantic collision the loop never sees because it never holds two siblings together). The combined suite is re-run at the next deliverable's judge run; when the merged siblings are terminal, the human runs the full suite once after the final combine. Sequential keeps main provably green after every merge and pays for it by serialising.
+The trade is honest. In parallel mode green is per-branch, not per-main: each sibling is verified green only against the main it was cut from, in isolation. Two siblings that are each green alone can combine into a red main (a shared-file append, or a semantic collision the loop never sees because it never holds two siblings together). The combined suite is re-run at the next increment's judge run; when the merged siblings are terminal, the human runs the full suite once after the final combine. Sequential keeps main provably green after every merge and pays for it by serialising.
 
 ## Multiple queues
 
-A project can hold several design queues at once, each a sheet under `.building/design/<design-name>/` with its own state at `.building/build/<design-name>/`. You pick the queue by the sheet path you pass the loop; queues are built, resumed and completed independently, and one never reads or writes another's state. `mode` is per queue, so a large queue can run parallel while a small one runs sequential.
+A project can hold several feature queues at once, each a sheet under `.building/features/<feature-name>/` with its own state at `.building/build/<feature-name>/`. You pick the queue by the sheet path you pass the loop; queues are built, resumed and completed independently, and one never reads or writes another's state. `mode` is per queue, so a large queue can run parallel while a small one runs sequential.
 
 Three things stay project-wide. Setup is proven once for the project (the receipt and the runners are shared), so the receipt's head-drift warning is expected once a sibling queue has merged into the shared main, and is not a reason to re-run setup unless the tooling actually changed. main is one tree, so green is project-wide: every branch is cut from the shared main and the judge's accumulated suite spans all queues' merged work. And the board shows only the active queue, so each checkpoint also carries a one-line reminder of any other queue with open work (in flight, awaiting merge, escalated or blocked), so nothing is silently forgotten.
 
 ## The dependency graph
 
-The sheet's `depends_on` edges form a DAG: roots at the top (deliverables with no dependencies), edges fanning down to terminals (deliverables nothing depends on). It is acyclic by schema validation, which is what guarantees the loop can never deadlock, there is always a next eligible node until everything is merged.
+The sheet's `depends_on` edges form a DAG: roots at the top (increments with no dependencies), edges fanning down to terminals (increments nothing depends on). It is acyclic by schema validation, which is what guarantees the loop can never deadlock, there is always a next eligible node until everything is merged.
 
-A deliverable is eligible when all its dependencies are merged. Merging a deliverable frees its dependents. The loop offers any eligible node; in sequential it offers them one merge at a time, in parallel it offers the whole eligible set.
+A increment is eligible when all its dependencies are merged. Merging a increment frees its dependents. The loop offers any eligible node; in sequential it offers them one merge at a time, in parallel it offers the whole eligible set.
 
 The document agent already generates this graph as Mermaid into `docs/ARCHITECTURE.md` from `depends_on`. The checkpoint board is that same graph filtered by what is merged: the ready set is the eligible frontier, the blocked set is everything still waiting upstream, and the starred chain is the longest root-to-terminal path through it.
 
 ## The checkpoint
 
-After every PR, and on entry and on reclaim after an interruption, the loop renders a checkpoint: a board, rendered verbatim from an on-disk template so it reads identically across conversations, then a fixed decision widget. The board sorts every deliverable by state into READY, AWAITING MERGE, BLOCKED and POSSIBLY STALLED, with the critical-path chain starred. See [`diagrams/checkpoint.svg`](diagrams/checkpoint.svg).
+After every PR, and on entry and on reclaim after an interruption, the loop renders a checkpoint: a board, rendered verbatim from an on-disk template so it reads identically across conversations, then a fixed decision widget. The board sorts every increment by state into READY, AWAITING MERGE, BLOCKED and POSSIBLY STALLED, with the critical-path chain starred. See [`diagrams/checkpoint.svg`](diagrams/checkpoint.svg).
 
 The widget shows only the applicable verbs, with Wait always available:
 
-- **Carry on** builds the lowest-id ready deliverable, no choosing.
-- **Build a specific one** lets you name which ready deliverable.
+- **Carry on** builds the lowest-id ready increment, no choosing.
+- **Build a specific one** lets you name which ready increment.
 - **Merge the PR** merges (you are the gate), then the loop reconciles.
-- **Resume the stalled one** resumes a possibly-stalled deliverable, routed by its actual status.
+- **Resume the stalled one** resumes a possibly-stalled increment, routed by its actual status.
 - **Wait** stops safely; nothing changes.
 
 The only mode difference is when **Carry on** and **Build a specific one** appear. In parallel-attended they appear whenever the ready set is non-empty, so you can keep building while PRs sit open. In sequential-attended they appear only when nothing else is in flight, so an open PR suppresses them and you must merge first. The labels never reword between conversations; identical wording is the point.
 
-If subagent dispatch is unavailable the loop degrades to one deliverable per conversation (the roles run inline, so a second build would exhaust the context); you continue by starting a fresh conversation, which reclaims the run from `state.json` and the remote.
+If subagent dispatch is unavailable the loop degrades to one increment per conversation (the roles run inline, so a second build would exhaust the context); you continue by starting a fresh conversation, which reclaims the run from `state.json` and the remote.
 
 ## Tests
 
@@ -72,8 +72,8 @@ Everything the loop generates while building (state, the agents' working files, 
 
 ## Validating the loop itself
 
-Before a real build, exercise the orchestration on a trivial deliverable. [`../examples/smoke-test-sheet.md`](../examples/smoke-test-sheet.md) is a one-deliverable sheet (a function returning 42 with a unit test) that runs the whole loop quickly: branch cut, builder, reviewer, judge, document, PR, merge. If it passes cleanly the orchestration works; if it breaks you have found the problem on a trivial case.
+Before a real build, exercise the orchestration on a trivial increment. [`../examples/smoke-test-sheet.md`](../examples/smoke-test-sheet.md) is a one-increment sheet (a function returning 42 with a unit test) that runs the whole loop quickly: branch cut, builder, reviewer, judge, document, PR, merge. If it passes cleanly the orchestration works; if it breaks you have found the problem on a trivial case.
 
 ## Recovery
 
-The loop is robust to interruption and keeps you in control at both recovery points. After an interruption (crash, closed terminal, a new conversation continuing a run) re-running reads `state.json`, reconciles open PRs against the remote, finds where it stopped, and renders the checkpoint before doing anything; declining (Wait) is safe and changes nothing. When a deliverable escalates after three failed attempts the loop waits: you fix it on its existing branch and tell it to continue, and the fix re-enters verification from the reviewer (reviewed and judged, never waved through). Full resume and escalation-recovery behaviour is in [`../contracts/build-judge-loop.md`](../contracts/build-judge-loop.md).
+The loop is robust to interruption and keeps you in control at both recovery points. After an interruption (crash, closed terminal, a new conversation continuing a run) re-running reads `state.json`, reconciles open PRs against the remote, finds where it stopped, and renders the checkpoint before doing anything; declining (Wait) is safe and changes nothing. When a increment escalates after three failed attempts the loop waits: you fix it on its existing branch and tell it to continue, and the fix re-enters verification from the reviewer (reviewed and judged, never waved through). Full resume and escalation-recovery behaviour is in [`../contracts/build-judge-loop.md`](../contracts/build-judge-loop.md).

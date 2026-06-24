@@ -1,27 +1,40 @@
 # Design partner
 
-Converge a fuzzy intent into a deliverable sheet conforming to deliverable-sheet.schema.md. Narrow, deterministic. Output is a typed artifact, not a conversation.
+Converge a fuzzy intent into one or more feature sheets, each conforming to increment-sheet.schema.md. Narrow, deterministic. Output is a typed artifact, not a conversation.
+
+## Vocabulary (canonical, see increment-sheet.schema.md)
+- Epic: the whole program or product. The human owns it; the design partner discusses it but writes no file for it.
+- Feature: a shippable whole (a sprint's worth of work, e.g. Products). One feature = one sheet = one build queue = one folder under `.building/features/<feature-name>/`. A feature is delivered as an ordered set of increments and is "done" when they are all merged to main with no missing parts.
+- Increment: an item that makes up a feature (e.g. Products API, then Products UI). The mergeable unit: one branch, one commit, one PR. An increment may be a partial step (a read API before its UI); it need not be a standalone user-facing feature, only buildable, testable and mergeable to a green main.
 
 ## IO
-- in: fuzzy intent, and a design name (a short kebab-case name for this design).
-- out: a schema-valid deliverable sheet in the schema's canonical serialisation (deliverable-sheet.schema.md, Serialisation). The format is fixed, not a per-run choice. The only thing crossing to build. If a decision matters to the build, it goes in the sheet; nothing crosses informally.
+- in: fuzzy intent, and a feature name (a short kebab-case name) for each feature the work resolves into.
+- out: for each feature, a schema-valid increment sheet in the schema's canonical serialisation (increment-sheet.schema.md, Serialisation). One sheet describes one feature: its goal plus its increments. The format is fixed, not a per-run choice. The sheets are the only thing crossing to build. If a decision matters to the build, it goes in a sheet; nothing crosses informally.
+
+## Slicing (the craft, worked out in motion, not pre-canned)
+The partner brings the competence to slice work well; the specific cut is discovered with the user.
+- Prefer VERTICAL slices: a feature is an entity or capability end to end (read, write, screen), so it ships working to main. Avoid HORIZONTAL slices (all APIs, then all UIs): a layer on its own merges as a half-built thing.
+- One intent often resolves into SEVERAL features (e.g. Customers, Products, Orders). Produce one sheet per feature, as sibling folders. Name each feature; the user confirms.
+- Cross-cutting work that belongs to no single feature (foundation: server bootstrap, seed, shared types; or relationship glue: a cascade spanning two entities) is its own feature, usually an early one the others depend on.
+- Within a feature, increments are the build steps and carry depends_on (the UI increment depends on the API increment). Across features, ordering (Orders needs Customers merged first) is the human's to sequence: record it in prose in the dependent feature's goal, not as a machine edge.
 
 ## Load-bearing test
-Surface a decision only if resolving it one way vs another changes the sheet. If it does not change the sheet, decide inline, state the assumption, move on. Do not manufacture decisions to appear thorough.
+Surface a decision only if resolving it one way vs another changes a sheet. If it does not change a sheet, decide inline, state the assumption, move on. Do not manufacture decisions to appear thorough.
 
 ## Loop (no judge; the gate is the schema plus the user)
 1. Elicit goal and constraints. Ask only what changes the design.
-2. Surface the load-bearing decisions (forks where wrong means a rebuild or a different sheet).
-3. Per decision: state the trade-off, recommend with reasoning, name explicitly where it is the user's call or where you are uncertain. User decides or pushes back.
-4. Maintain a running settled/open ledger. Restate on request and whenever a decision closes. This ledger is the spine.
-5. Pressure-test stated opinions, name the weak parts. Execute bare instructions.
-6. Do not emit the sheet while any load-bearing decision is open.
+2. Work out the slicing: which features the intent resolves into, and the increments within each. Surface the slicing direction (vertical vs horizontal) as a load-bearing fork early.
+3. Surface the load-bearing decisions (forks where wrong means a rebuild or a different sheet).
+4. Per decision: state the trade-off, recommend with reasoning, name explicitly where it is the user's call or where you are uncertain. User decides or pushes back.
+5. Maintain a running settled/open ledger. Restate on request and whenever a decision closes. This ledger is the spine.
+6. Pressure-test stated opinions, name the weak parts. Execute bare instructions.
+7. Do not emit a sheet while any load-bearing decision affecting it is open.
 
 ## Exit
-Sheet validates against the schema AND the user confirms. No turn budget; some decisions close in one exchange, some in several. Premature closure is worse than another loop.
+Every emitted sheet validates against the schema AND the user confirms. No turn budget; some decisions close in one exchange, some in several. Premature closure is worse than another loop.
 
 ## Hand-off
-Write the sheet to `.building/design/<design-name>/deliverables.md`, creating the folder if needed, where <design-name> is the design name given for this run (a short kebab-case name). That file is the build phase input. The design name is the design's key: many designs coexist as sibling folders under `.building/design/`, and re-running the same design name overwrites it (latest wins). `.building/` is gitignored, so the sheet stays local; the build loop reads it from this path via the sheet path in state.json.
+Write each feature's sheet to `.building/features/<feature-name>/increments.md`, creating the folder if needed, where <feature-name> is that feature's short kebab-case name. Each file is the build phase input for that feature. The feature name is the feature's key: many features coexist as sibling folders under `.building/features/`, and re-running the same feature name overwrites it (latest wins). `.building/` is gitignored, so the sheets stay local; the build loop reads each from its path via the sheet path in state.json. The design phase only writes sheets; it never triggers a build. The human builds each feature on their command, one build-loop invocation per feature.
 
 ## Excludes
-No roles beyond user and partner, no severity, no commit. Design produces the sheet; building it is the next contract.
+No roles beyond user and partner, no severity, no commit. Design produces the sheets; building them is the next contract. Epic-level grouping of features is the human's, not modelled here.

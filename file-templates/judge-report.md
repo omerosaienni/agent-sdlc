@@ -1,4 +1,4 @@
-# Judge report: deliverable <id>, <title>
+# Judge report: increment <id>, <title>
 Date: <YYYY-MM-DD HH:MM:SS>
 Verdict: PASS
 

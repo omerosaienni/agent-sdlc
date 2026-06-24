@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="680" viewBox="0 0 680 648" role="img" font-family="sans-serif">
-<title>Per-deliverable build loop: orchestrator spawns subagents and does the git work</title>
+<title>Per-increment build loop: orchestrator spawns subagents and does the git work</title>
 <desc>The orchestrator is your build-loop session. It spawns the builder, reviewer, judge, and document agent as subagents with fresh context, sequences them, owns state.json, and commits and opens the PR itself. The reviewer bounces and the judge rejects up to three times. The human merges the PR as the final gate.</desc>
 <defs>
 <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
@@ -32,7 +32,7 @@
 <line x1="360" y1="502" x2="360" y2="538" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
 <rect x="265" y="538" width="190" height="44" rx="10" fill="none" stroke="#444441" stroke-width="1.2"/><text x="360" y="556" text-anchor="middle" dominant-baseline="central" fill="#444441" font-size="14" font-weight="500">Human merges the PR</text><text x="360" y="572" text-anchor="middle" dominant-baseline="central" fill="#5F5E5A" font-size="11">you, the final gate</text>
 <line x1="360" y1="582" x2="360" y2="602" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
-<text x="360" y="616" text-anchor="middle" fill="#73726c" font-size="12">advance to next deliverable</text>
+<text x="360" y="616" text-anchor="middle" fill="#73726c" font-size="12">advance to next increment</text>
 <path d="M455 200 C500 200, 500 124, 455 124" fill="none" stroke="#534AB7" stroke-width="1" marker-end="url(#arrow)"/><text x="512" y="162" text-anchor="middle" fill="#534AB7" font-size="12">bounce &#8804;3</text>
 <path d="M455 290 C540 290, 540 140, 455 140" fill="none" stroke="#0F6E56" stroke-width="1" marker-end="url(#arrow)"/><text x="556" y="215" text-anchor="middle" fill="#0F6E56" font-size="12">reject &#8804;3</text>
 </svg>

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="680" viewBox="0 0 680 330" role="img" font-family="sans-serif">
 <title>Roles comparison: orchestrator, builder, reviewer, judge, document by what they own, their context, and whether they can block</title>
-<desc>The orchestrator owns the sequence and state, is passive, cannot block. The builder owns the deliverable, is building, cannot block. The reviewer owns the code, is informed, can bounce up to three times. The judge owns the behaviour, is fresh, can reject up to three times. The document agent owns the docs, is a producer, cannot block. The reviewer and judge split on two axes, code versus behaviour and informed versus fresh, which is why neither is redundant; the document agent is the only agent that never gates.</desc>
+<desc>The orchestrator owns the sequence and state, is passive, cannot block. The builder owns the increment, is building, cannot block. The reviewer owns the code, is informed, can bounce up to three times. The judge owns the behaviour, is fresh, can reject up to three times. The document agent owns the docs, is a producer, cannot block. The reviewer and judge split on two axes, code versus behaviour and informed versus fresh, which is why neither is redundant; the document agent is the only agent that never gates.</desc>
 <text x="44" y="128" dominant-baseline="central" fill="#444441" font-size="13" font-weight="500">owns</text>
 <text x="44" y="190" dominant-baseline="central" fill="#444441" font-size="13" font-weight="500">context</text>
 <text x="44" y="232" dominant-baseline="central" fill="#444441" font-size="13" font-weight="500">can block?</text>
@@ -10,7 +10,7 @@
 <text x="177" y="139" text-anchor="middle" dominant-baseline="central" fill="#5F5E5A" font-size="10">sequence + state</text>
 <rect x="237" y="100" width="95" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
 <text x="284" y="121" text-anchor="middle" dominant-baseline="central" fill="#0C447C" font-size="12" font-weight="500">Builder</text>
-<text x="284" y="139" text-anchor="middle" dominant-baseline="central" fill="#185FA5" font-size="10">the deliverable</text>
+<text x="284" y="139" text-anchor="middle" dominant-baseline="central" fill="#185FA5" font-size="10">the increment</text>
 <rect x="344" y="100" width="95" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
 <text x="391" y="121" text-anchor="middle" dominant-baseline="central" fill="#3C3489" font-size="12" font-weight="500">Reviewer</text>
 <text x="391" y="139" text-anchor="middle" dominant-baseline="central" fill="#534AB7" font-size="10">the code</text>
@@ -38,5 +38,5 @@
 <line x1="40" y1="254" x2="653" y2="254" stroke="#5F5E5A" stroke-width="0.3" opacity="0.4"/>
 <text x="40" y="280" dominant-baseline="central" fill="#5F5E5A" font-size="12">The reviewer and judge split on two axes: code versus behaviour, and informed versus fresh.</text>
 <text x="40" y="298" dominant-baseline="central" fill="#5F5E5A" font-size="12">That split is why neither is redundant, and why no code reaches the judge without a review first.</text>
-<text x="40" y="316" dominant-baseline="central" fill="#5F5E5A" font-size="12">The document agent is the only agent that never gates: it produces, it never blocks a passed deliverable.</text>
+<text x="40" y="316" dominant-baseline="central" fill="#5F5E5A" font-size="12">The document agent is the only agent that never gates: it produces, it never blocks a passed increment.</text>
 </svg>

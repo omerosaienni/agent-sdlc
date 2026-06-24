@@ -81,7 +81,7 @@ agent_check(){ local tier="$1" out rc
 # agent_hollow_check: prove the hollow-check runner is present and runnable. A
 # full functional proof would need a planted break; verifying it parses and
 # answers its usage contract (no args -> exit 64) is enough to know the judge
-# can invoke it. The functional proof is the loop using it on a real deliverable.
+# can invoke it. The functional proof is the loop using it on a real increment.
 agent_hollow_check(){
     local rc
     bash .building/scripts/agent-hollow.sh >/dev/null 2>&1; rc=$?
@@ -220,7 +220,13 @@ fi
 # 5. Git, remote, gh, identity, main on remote.
 # ---------------------------------------------------------------------------
 if git rev-parse --git-dir >/dev/null 2>&1; then ok "git repository"
-    git remote get-url origin >/dev/null 2>&1 && ok "origin remote" || bad "no origin remote; add a GitHub remote (your action)"
+    # A remote is not required to build locally (commit and iterate work offline);
+    # it is only needed to push branches and open PRs. So a missing remote is a
+    # warning, never a hard FAIL: setup still reports READY, and adding the remote
+    # stays the user's action before the loop's PRs can flow.
+    has_remote=0
+    if git remote get-url origin >/dev/null 2>&1; then ok "origin remote"; has_remote=1
+    else note "no origin remote; local building works, but push/PR needs one (add a GitHub remote, your action)"; fi
     gh auth status >/dev/null 2>&1 && ok "gh authenticated" || bad "gh not authenticated; run gh auth login"
     # commit identity must be on the allowlist, so the loop's commits attribute to the right account
     commit_email="$(git config user.email 2>/dev/null)"
@@ -233,10 +239,14 @@ if git rev-parse --git-dir >/dev/null 2>&1; then ok "git repository"
         esac
     fi
     if git show-ref --verify --quiet refs/heads/main; then ok "local main branch"
-        if git ls-remote --exit-code --heads origin main >/dev/null 2>&1; then ok "main on remote"
+        # Pushing main only makes sense with a remote. Without one, this is part of
+        # the same missing-remote warning above, not a separate NEED that would
+        # otherwise block READY on something the loop's PRs (not setup) require.
+        if [ "$has_remote" -ne 1 ]; then note "main not pushed (no remote); push it once a remote exists"
+        elif git ls-remote --exit-code --heads origin main >/dev/null 2>&1; then ok "main on remote"
         elif consent; then git push -u origin main >/dev/null 2>&1 && ok "pushed main" || bad "push failed"
         else need "main not on remote; re-run with --yes to push"; fi
-    else bad "no local main branch; the build loop cuts each deliverable branch from main"; fi
+    else bad "no local main branch; the build loop cuts each increment branch from main"; fi
 else bad "not a git repository; init and add a GitHub remote"; fi
 
 # ---------------------------------------------------------------------------

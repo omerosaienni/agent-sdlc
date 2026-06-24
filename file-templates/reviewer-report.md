@@ -1,4 +1,4 @@
-# Review report: deliverable <id>, <title>
+# Review report: increment <id>, <title>
 Date: <YYYY-MM-DD>
 Reviewer pass: <N>
 
@@ -12,7 +12,7 @@ Reviewer pass: <N>
    - Why: <reasoning>
 
 ## Blocking findings
-- [critical|major] <category: conventions|architecture|scope|defect>, <cite evidence: CLAUDE.md rule, named anti-pattern, the other deliverable, the measured/known defect>
+- [critical|major] <category: conventions|architecture|scope|defect>, <cite evidence: CLAUDE.md rule, named anti-pattern, the other increment, the measured/known defect>
 - (or: none outstanding, approved)
 
 ## Suggestions (non-blocking, comprehension layer)

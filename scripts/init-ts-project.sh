@@ -332,7 +332,7 @@ else
 fi
 echo
 echo "Then drive it through the pipeline. Two independent prerequisites, in either order:"
-echo "  /omero-design-partner   converges your intent into a deliverable sheet"
-echo "                          (.building/design/<design-name>/deliverables.md)"
+echo "  /omero-design-partner   converges your intent into feature sheet(s)"
+echo "                          (.building/features/<feature-name>/increments.md)"
 echo "  /omero-project-setup    proves the project environment ready (writes the receipt)"
 echo "Then /omero-build-loop builds the sheet (it needs both the sheet and the receipt)."

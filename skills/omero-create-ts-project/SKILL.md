@@ -24,6 +24,6 @@ exit, report the error line it printed (a name that is not kebab-case, a target 
 already exists, or a missing template) so the user can correct and re-run.
 This is the create step, separate from the pipeline. After the project exists, the
 user runs /omero-design-partner and /omero-project-setup in either order (they are
-independent prerequisites: design writes the deliverable sheet, setup proves the
+independent prerequisites: design writes the feature sheet(s), setup proves the
 project environment ready), then /omero-build-loop builds the sheet. Do not run those
 here; this skill only creates the project.

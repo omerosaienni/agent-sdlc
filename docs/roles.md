@@ -6,13 +6,13 @@ The build loop runs four agent roles plus a passive orchestrator. The split is t
 
 ## Orchestrator (passive)
 
-Sequences deliverables by dependency order, is the sole writer of state.json, enforces the loop budgets, opens PRs, and halts on escalation. It writes no code and makes no judgement. In a normal run it spawns each of the roles below as a subagent with fresh context; see [`diagrams/sequence-spawn.svg`](diagrams/sequence-spawn.svg).
+Sequences increments by dependency order, is the sole writer of state.json, enforces the loop budgets, opens PRs, and halts on escalation. It writes no code and makes no judgement. In a normal run it spawns each of the roles below as a subagent with fresh context; see [`diagrams/sequence-spawn.svg`](diagrams/sequence-spawn.svg).
 
 ![Orchestrator role card](diagrams/role-orchestrator.svg)
 
 ## Builder
 
-Implements one deliverable against its acceptance criteria, writes the tests, follows the project conventions, and touches only that deliverable. It does not self-certify. It observes runtime behaviour only through the project's committed runnable surface, never a throwaway script the reviewer and judge cannot see. It also writes its documentation slice for the document agent.
+Implements one increment against its acceptance criteria, writes the tests, follows the project conventions, and touches only that increment. It does not self-certify. It observes runtime behaviour only through the project's committed runnable surface, never a throwaway script the reviewer and judge cannot see. It also writes its documentation slice for the document agent.
 
 ![Builder role card](diagrams/role-builder.svg)
 
@@ -30,7 +30,7 @@ Fresh context per review. It type-checks first (a tsc gate, because nothing else
 
 ## Document
 
-Runs after the judge passes, before the PR. It assembles per-module and project documentation from the builder's payload and the reports. It is a producer, not a gate: it never blocks a passed deliverable, and a missing input degrades gracefully with the gap marked.
+Runs after the judge passes, before the PR. It assembles per-module and project documentation from the builder's payload and the reports. It is a producer, not a gate: it never blocks a passed increment, and a missing input degrades gracefully with the gap marked.
 
 ![Document role card](diagrams/role-document.svg)
 
@@ -38,4 +38,4 @@ Runs after the judge passes, before the PR. It assembles per-module and project 
 
 No code reaches the judge without a prior reviewer pass. This holds on the first review and inside every judge cycle (a delta-review precedes each re-judge). Because the reviewer is the only conventions gate, relaxing this would reopen the conventions hole, so it is never relaxed for efficiency.
 
-Flow: builder, then the review loop (budget 3), then the judge loop (budget 3, with a delta-review inside each cycle). Either loop exhausting its three attempts escalates. A downed integration endpoint pauses the run (an environment block) rather than failing the deliverable. See [`diagrams/error-paths.svg`](diagrams/error-paths.svg) and [`diagrams/endpoint-block.svg`](diagrams/endpoint-block.svg).
+Flow: builder, then the review loop (budget 3), then the judge loop (budget 3, with a delta-review inside each cycle). Either loop exhausting its three attempts escalates. A downed integration endpoint pauses the run (an environment block) rather than failing the increment. See [`diagrams/error-paths.svg`](diagrams/error-paths.svg) and [`diagrams/endpoint-block.svg`](diagrams/endpoint-block.svg).

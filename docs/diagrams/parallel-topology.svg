@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="680" viewBox="0 0 680 330" role="img" font-family="sans-serif">
 <title>Parallel-attended topology: independent sibling branches cut from one main, you combine</title>
-<desc>In parallel-attended mode every dependency-eligible deliverable is cut fresh from the same origin/main, never stacked on a sibling. Each opens a PR back into main which the human merges in their own order, resolving any append conflicts. Each branch is green only in isolation against the main it was cut from; after combining the human re-runs the suite, because green is per-branch not per-main.</desc>
+<desc>In parallel-attended mode every dependency-eligible increment is cut fresh from the same origin/main, never stacked on a sibling. Each opens a PR back into main which the human merges in their own order, resolving any append conflicts. Each branch is green only in isolation against the main it was cut from; after combining the human re-runs the suite, because green is per-branch not per-main.</desc>
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <text x="40" y="28" fill="#444441" font-size="13" font-weight="500">parallel-attended: independent siblings, each cut fresh from the same origin/main, never stacked</text>
 
