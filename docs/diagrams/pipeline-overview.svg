@@ -11,7 +11,7 @@
 <text x="150" y="83" text-anchor="middle" dominant-baseline="central" fill="#534AB7" font-size="12">converges on the sheet</text>
 <line x1="260" y1="72" x2="300" y2="72" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
 <rect x="300" y="44" width="150" height="56" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
-<text x="375" y="65" text-anchor="middle" dominant-baseline="central" fill="#633806" font-size="13" font-weight="500">Deliverable sheet</text>
+<text x="375" y="65" text-anchor="middle" dominant-baseline="central" fill="#633806" font-size="13" font-weight="500">Feature sheet</text>
 <text x="375" y="83" text-anchor="middle" dominant-baseline="central" fill="#854F0B" font-size="12">typed seam</text>
 
 <!-- setup branch (bottom) -->

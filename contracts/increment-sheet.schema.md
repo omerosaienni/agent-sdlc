@@ -3,7 +3,7 @@
 Typed interface between design and build. Design emits a sheet conforming to this. Build refuses to start unless it validates. Single source of truth. Referenced by design-partner and build-judge-loop.
 
 ## Vocabulary (canonical, used across every contract)
-- Epic: the whole program or product. Held by the human, not modelled by the workflow. The design partner may discuss it but writes no file for it.
+- Epic: the whole program or product. Held by the human, not modelled by the design or build phases. The design partner may discuss it but writes no file for it.
 - Feature: a shippable whole (a sprint's worth of work, e.g. Products). One feature = one sheet = one build queue = one folder under `.building/features/<feature-name>/`. A feature is "done" when all its increments are merged to main with no missing parts.
 - Increment: an item that makes up a feature (e.g. Products API, then Products UI). The mergeable unit: one branch, one commit, one PR into main, with its own depends_on. A feature is delivered as an ordered set of increments.
 - depends_on: an ordering edge between increments WITHIN one feature sheet. Cross-feature order (Orders needs Customers merged first) is the human's to sequence and is recorded in prose in the feature's goal, not as a machine edge.

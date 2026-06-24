@@ -6,7 +6,7 @@ paths:
 # React
 
 Conventions for the React client. Scoped to `src/client/`, so it applies to the UI
-tree and not to server `.tsx`. Drafted from sensible defaults — refine to taste.
+tree and not to server `.tsx`. Drafted from sensible defaults, refine to taste.
 
 ## Components
 - Function components only, with hooks. No class components.
@@ -19,7 +19,7 @@ tree and not to server `.tsx`. Drafted from sensible defaults — refine to tast
 - Local state with `useState`/`useReducer`; do not reach for a global store until a
   value is genuinely shared across distant components.
 - Every `useEffect` has a correct dependency array. An effect with no cleanup that
-  subscribes or sets up anything is a bug — return the teardown.
+  subscribes or sets up anything is a bug, so return the teardown.
 - Derive, don't duplicate: compute from props/state during render rather than
   mirroring into more state.
 

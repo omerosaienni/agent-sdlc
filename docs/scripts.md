@@ -4,9 +4,11 @@ Three pipeline scripts stand a project up and prove it ready for the build loop:
 the generator, the setup gate, and a small dependency helper. This documents what
 each does and how they connect. (The repo also has scripts outside the pipeline:
 the per-project rules installer, documented in [`project-rules.md`](project-rules.md),
-and the global git-hooks and Claude-rules installers, documented in
-[`../hooks/`](../hooks/README.md) and [`project-rules.md`](project-rules.md). Those
-are not part of the create-verify-build flow described here.)
+the global git-hooks and Claude-rules installers, documented in
+[`../hooks/`](../hooks/README.md) and [`project-rules.md`](project-rules.md), and the
+skills installer (`skills/install-skills.sh`), documented in
+[`../skills/`](../skills/README.md). Those are not part of the create-verify-build
+flow described here.)
 
 They follow the layout in `contracts/script-layout.md`. The diagrams here are
 inline Mermaid (rendered by GitHub) rather than the SVGs catalogued in

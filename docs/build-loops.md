@@ -26,9 +26,9 @@ Everything else, the four roles, the gates, the budgets, the `.building/` layout
 
 ## Parallel means eligible, not concurrent
 
-Parallel-attended does not run builds at the same time. It is still one checkout and one build at a time, with a checkpoint between each. What "parallel" names is that a increment becomes **eligible** the moment all its dependencies are merged, and the loop will offer every eligible increment rather than forcing you to merge one before starting the next.
+Parallel-attended does not run builds at the same time. It is still one checkout and one build at a time, with a checkpoint between each. What "parallel" names is that an increment becomes **eligible** the moment all its dependencies are merged, and the loop will offer every eligible increment rather than forcing you to merge one before starting the next.
 
-The win is not a wall-clock speedup. It is decoupling build order from merge order: you can build 13, 14 and 15 back to back, leaving their PRs open, and merge them as a batch when you are ready. In sequential mode each build waits behind the previous merge. Same total work, different control over when merges happen.
+The win is not a wall-clock speedup. It is decoupling build order from merge order: you can build `gridfs-store`, `oplog-peek` and `rbac-roles` back to back, leaving their PRs open, and merge them as a batch when you are ready. In sequential mode each build waits behind the previous merge. Same total work, different control over when merges happen.
 
 The trade is honest. In parallel mode green is per-branch, not per-main: each sibling is verified green only against the main it was cut from, in isolation. Two siblings that are each green alone can combine into a red main (a shared-file append, or a semantic collision the loop never sees because it never holds two siblings together). The combined suite is re-run at the next increment's judge run; when the merged siblings are terminal, the human runs the full suite once after the final combine. Sequential keeps main provably green after every merge and pays for it by serialising.
 
@@ -42,7 +42,7 @@ Three things stay project-wide. Setup is proven once for the project (the receip
 
 The sheet's `depends_on` edges form a DAG: roots at the top (increments with no dependencies), edges fanning down to terminals (increments nothing depends on). It is acyclic by schema validation, which is what guarantees the loop can never deadlock, there is always a next eligible node until everything is merged.
 
-A increment is eligible when all its dependencies are merged. Merging a increment frees its dependents. The loop offers any eligible node; in sequential it offers them one merge at a time, in parallel it offers the whole eligible set.
+An increment is eligible when all its dependencies are merged. Merging an increment frees its dependents. The loop offers any eligible node; in sequential it offers them one merge at a time, in parallel it offers the whole eligible set.
 
 The document agent already generates this graph as Mermaid into `docs/ARCHITECTURE.md` from `depends_on`. The checkpoint board is that same graph filtered by what is merged: the ready set is the eligible frontier, the blocked set is everything still waiting upstream, and the starred chain is the longest root-to-terminal path through it.
 
@@ -76,4 +76,4 @@ Before a real build, exercise the orchestration on a trivial increment. [`../exa
 
 ## Recovery
 
-The loop is robust to interruption and keeps you in control at both recovery points. After an interruption (crash, closed terminal, a new conversation continuing a run) re-running reads `state.json`, reconciles open PRs against the remote, finds where it stopped, and renders the checkpoint before doing anything; declining (Wait) is safe and changes nothing. When a increment escalates after three failed attempts the loop waits: you fix it on its existing branch and tell it to continue, and the fix re-enters verification from the reviewer (reviewed and judged, never waved through). Full resume and escalation-recovery behaviour is in [`../contracts/build-judge-loop.md`](../contracts/build-judge-loop.md).
+The loop is robust to interruption and keeps you in control at both recovery points. After an interruption (crash, closed terminal, a new conversation continuing a run) re-running reads `state.json`, reconciles open PRs against the remote, finds where it stopped, and renders the checkpoint before doing anything; declining (Wait) is safe and changes nothing. When an increment escalates after three failed attempts the loop waits: you fix it on its existing branch and tell it to continue, and the fix re-enters verification from the reviewer (reviewed and judged, never waved through). Full resume and escalation-recovery behaviour is in [`../contracts/build-judge-loop.md`](../contracts/build-judge-loop.md).

@@ -9,7 +9,7 @@ paths:
 Conventions for TypeScript in this project. Terse; loads only for `.ts`/`.tsx` files.
 
 ## Types
-- Strict mode. Never `any` — supply interfaces and pass them as generics.
+- Strict mode. Never `any`: supply interfaces and pass them as generics.
 - Prefer `unknown` over `any` at boundaries, then narrow.
 
 ## Modules and files

@@ -20,7 +20,7 @@ The build loop's per-feature recovery record and cross-conversation memory: one 
   "conventions": "CLAUDE.md",
   "mode": "parallel-attended",
   "increments": {
-    "D1": { "depends_on": [], "status": "merged", "review_count": 1, "judge_count": 1, "branch": "D1-ci-workflow-for-pr-to-main" }
+    "ci-workflow": { "depends_on": [], "status": "merged", "review_count": 1, "judge_count": 1, "branch": "ci-workflow-pr-to-main" }
   }
 }
 ```

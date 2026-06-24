@@ -23,7 +23,7 @@ This places both hooks, points global `core.hooksPath` at them, sets `sdlc.ident
 
 `--email` is optional: omitted, install defaults the allowlist from your global `user.email`. Allow more than one identity by setting the key yourself: `git config --global sdlc.identityAllowlist '<email-a> <email-b>'`.
 
-Because `core.hooksPath` is a global redirect, git consults only that dir and stops auto-running each repo's own `.git/hooks`. To keep per-repo tooling working, each guard **chains**: after its own check passes, it execs the repo's own `.git/hooks/<name>` if one exists. So a tool installed later by `npm install` (husky, pre-commit, lefthook) still runs — our guard first, then the repo's hook. If our guard blocks, the local hook never runs.
+Because `core.hooksPath` is a global redirect, git consults only that dir and stops auto-running each repo's own `.git/hooks`. To keep per-repo tooling working, each guard **chains**: after its own check passes, it execs the repo's own `.git/hooks/<name>` if one exists. So a tool installed later by `npm install` (husky, pre-commit, lefthook) still runs, our guard first, then the repo's hook. If our guard blocks, the local hook never runs.
 
 ## Uninstall
 

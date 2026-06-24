@@ -14,8 +14,9 @@ automatically. Pass the repo path and one or more stack flags for the stacks tha
 repo actually uses (--typescript, --mongo, --react). At least one is required.
 These are the PER-PROJECT rule layer. The universal base conventions are a separate
 GLOBAL layer (installed once via setup-global-claude-rules.sh), not handled here.
-The rules are COPIED, not symlinked, so they travel with the repo's clones; if a
-template changes later, re-run this to re-sync.
+The rules are COPIED, not symlinked, so each repo gets its own copy. Generated
+projects gitignore .claude/, so the copy lives only in the local working tree, not
+in git; if a template changes later, re-run this to re-sync.
 Remove rules with --uninstall (all installed stack rules, or the named ones):
     {{SDLC_REPO}}/scripts/install-project-rules.sh <repo> --uninstall [--react ...]
 On success it prints the rules installed and that they take effect next session.

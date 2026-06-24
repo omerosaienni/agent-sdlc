@@ -16,9 +16,9 @@ nothing on files it does not apply to.
 Universal conventions that hold regardless of stack, version-controlled in
 `claude-rules/` as the source of truth and symlinked into `~/.claude/rules/`:
 
-- `omero-conventions.md` — prose style (British English, no em dashes) and comment
+- `omero-conventions.md`: prose style (British English, no em dashes) and comment
   discipline (why not what).
-- `omero-branch-naming.md` — `<type>/<kebab>` branch names (the git `pre-push` hook
+- `omero-branch-naming.md`: `<type>/<kebab>` branch names (the git `pre-push` hook
   enforces the same standard; see [hooks](../hooks/README.md)).
 
 Install (symlink, so an edit in the repo is live everywhere with no re-run):

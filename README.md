@@ -19,7 +19,7 @@ Install the skills once (idempotent; the repo is the source of truth, the instal
 ./skills/install-skills.sh
 ```
 
-Then drive a project through the four `/omero-*` skills, in order:
+Then drive a project through these four `/omero-*` skills, in order:
 
 ```text
 /omero-create-ts-project <project-name> [--mongo] [--react]  # 1. scaffold a TypeScript project (optional Mongo/React layers)
@@ -32,7 +32,7 @@ Steps 2 and 3 are independent prerequisites and can run in either order; step 4 
 
 ## Using it
 
-The work is driven by four `/omero-*` skills (thin wrappers over the contracts):
+The work is driven by these four `/omero-*` skills (thin wrappers over the contracts; a fifth, `omero-install-project-rules`, installs stack rules into a repo and is normally run for you by the generator, see [`skills/README.md`](skills/README.md)):
 
 1. `omero-create-ts-project` scaffolds a TypeScript project, with optional Mongo and React layers (the generator, separate from the pipeline).
 2. `omero-design-partner` converges intent into validated feature sheet(s).
@@ -50,7 +50,7 @@ The build loop runs in one of two modes, sequential-attended or parallel-attende
 | [docs/build-loops.md](docs/build-loops.md) | The one build loop, its two modes, the checkpoint, tests, recovery |
 | [docs/roles.md](docs/roles.md) | The four agent roles and the ordering invariant |
 | [docs/building-folder.md](docs/building-folder.md) | The gitignored `.building/` workspace |
-| [docs/scripts.md](docs/scripts.md) | The three shell scripts and how they connect |
+| [docs/scripts.md](docs/scripts.md) | The three pipeline shell scripts and how they connect |
 | [docs/diagram-spec.md](docs/diagram-spec.md) | The visual set and how to regenerate a diagram |
 
 ## Repository layout
@@ -66,6 +66,7 @@ The build loop runs in one of two modes, sequential-attended or parallel-attende
 | [`project-rules/`](project-rules/README.md) | The per-project stack rule templates (TypeScript, Mongo, React), copied into a repo's `.claude/rules`. |
 | [`hooks/`](hooks/README.md) | The global git guards: commit identity and branch naming. |
 | [`examples/`](examples/) | The smoke-test sheet for validating the loop itself. |
+| [`.github/`](.github/) | GitHub repo config: the `CODEOWNERS` file routing every change to the repo owner for review. |
 
 ## Posture
 

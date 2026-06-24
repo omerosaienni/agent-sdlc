@@ -145,9 +145,9 @@ judge's type-check gate.
 
 ## Test tiers (three with React, two without)
 
-1. backend unit (no Mongo) — `*.test.ts` under `src/server`
-2. backend integration (needs Mongo) — `*.integration.test.ts` under `src/server`
-3. frontend unit (jsdom + Testing Library) — `*.test.tsx` under `src/client`
+1. backend unit (no Mongo): `*.test.ts` under `src/server`
+2. backend integration (needs Mongo): `*.integration.test.ts` under `src/server`
+3. frontend unit (jsdom + Testing Library): `*.test.tsx` under `src/client`
 
 The "Mongo-touching test is the integration tier" rule holds on the backend.
 Frontend tests never touch Mongo; if a frontend test needs backend data it mocks the

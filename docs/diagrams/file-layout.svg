@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="680" viewBox="0 0 680 470" role="img" font-family="sans-serif">
 <title>File layout: committed code and docs versus the gitignored .building folder</title>
 <desc>The green box is what the commit and PR carry: code and docs. The grey box is the .building folder, all loop output, gitignored and never committed: project-level setup receipt and runners, then build state one folder per feature (feature queue), each holding its own state.json, work files per unit, and a symlinked escalations index.</desc>
-<text x="40" y="26" fill="#444441" font-size="14" font-weight="500">mongo-db-1/  on an increment's branch</text>
+<text x="40" y="26" fill="#444441" font-size="14" font-weight="500">what lands on an increment's branch</text>
 <rect x="40" y="42" width="270" height="150" rx="12" fill="#EAF3DE" stroke="#3B6D11" stroke-width="0.5"/>
 <text x="58" y="64" fill="#27500A" font-size="14" font-weight="500">committed: the increment</text>
 <text x="58" y="86" fill="#5F5E5A" font-size="12">src/server/db/index.ts, index.ts, seed.ts</text>
 <text x="58" y="106" fill="#5F5E5A" font-size="12">src/server/index.test.ts</text>
 <text x="58" y="126" fill="#5F5E5A" font-size="12">src/server/smoke.integration.test.ts</text>
-<text x="58" y="148" fill="#5F5E5A" font-size="12">docs/modules/3-db.md</text>
+<text x="58" y="148" fill="#5F5E5A" font-size="12">docs/modules/db-pool-db.md</text>
 <text x="58" y="168" fill="#5F5E5A" font-size="12">docs/ARCHITECTURE.md</text>
 <rect x="330" y="42" width="320" height="312" rx="12" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
 <text x="348" y="64" fill="#444441" font-size="14" font-weight="500">.building/  local only, gitignored</text>
@@ -16,14 +16,14 @@
 <text x="348" y="126" fill="#5F5E5A" font-size="12">build/&lt;feature-name&gt;/      one per feature</text>
 <text x="364" y="144" fill="#5F5E5A" font-size="12">state.json    mode, per-unit status</text>
 <text x="364" y="162" fill="#5F5E5A" font-size="12">work/</text>
-<text x="380" y="180" fill="#5F5E5A" font-size="12">d3-connection-helper/</text>
+<text x="380" y="180" fill="#5F5E5A" font-size="12">db-pool-connection-helper/</text>
 <text x="396" y="198" fill="#5F5E5A" font-size="12">builder.md  review-pass-1.md</text>
 <text x="396" y="216" fill="#5F5E5A" font-size="12">judge.md  doc-payload.md</text>
-<text x="380" y="234" fill="#5F5E5A" font-size="12">d4-crud/</text>
+<text x="380" y="234" fill="#5F5E5A" font-size="12">db-crud/</text>
 <text x="396" y="252" fill="#5F5E5A" font-size="12">review-pass-1..3.md</text>
 <text x="396" y="270" fill="#5F5E5A" font-size="12">escalations/2026-06-21-1430.md</text>
 <text x="364" y="290" fill="#5F5E5A" font-size="12">escalations/</text>
-<text x="380" y="308" fill="#5F5E5A" font-size="12">2026-06-21-1430.md  -&gt;  ../work/d4-crud/...</text>
+<text x="380" y="308" fill="#5F5E5A" font-size="12">2026-06-21-1430.md  -&gt;  ../work/db-crud/...</text>
 <text x="380" y="326" fill="#5F5E5A" font-size="12">(relative symlink, not a copy)</text>
 <text x="40" y="404" fill="#5F5E5A" font-size="12">Green = what lands in the PR and on main: code and docs only.</text>
 <text x="40" y="424" fill="#5F5E5A" font-size="12">Grey = everything the loop generates, one gitignored folder, never committed.</text>

@@ -6,7 +6,7 @@ paths:
 # MongoDB
 
 Conventions for MongoDB access. Scoped to the db layer (`src/server/db/`), so it is
-language-neutral by location, not by file type. Stated to stand alone — it does not
+language-neutral by location, not by file type. Stated to stand alone, it does not
 assume any particular language rule is also installed.
 
 ## Connection
@@ -17,7 +17,7 @@ assume any particular language rule is also installed.
 ## Collections
 - Centralise collection names in one place (a `COLLECTIONS` constant), never
   hardcode name strings at call sites.
-- Type your documents — pass the document shape to the driver so reads and writes
+- Type your documents: pass the document shape to the driver so reads and writes
   are checked, not `any`.
 
 ## Tests

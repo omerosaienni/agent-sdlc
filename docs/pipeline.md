@@ -20,7 +20,7 @@ A project is created by a stack-specific generator, separate from the pipeline. 
 
 ## Pipeline tooling
 
-Two scripts back the pipeline itself, stack-agnostic:
+Beyond the generator above, two more scripts back the pipeline itself, stack-agnostic (scripts.md counts all three together, generator included):
 
 - `scripts/project-setup.sh` is the setup gate: it proves a project ready by execution and writes the receipt.
 - `scripts/ensure-report-tooling.sh` installs and verifies the coverage tooling the judge needs.
@@ -31,11 +31,11 @@ These pipeline scripts follow a shared layout ([`../contracts/script-layout.md`]
 
 Some prerequisites you provide; the rest the setup gate proves by execution.
 
-You provide (the gate does not install these): the integration endpoints up (e.g. Docker and Compose running the shared Mongo, brought up with `make up`), `gh` authenticated, and a GitHub remote with main present (the gate never creates a remote).
+You provide (the gate does not install these): the integration endpoints up (e.g. Docker and Compose running the shared Mongo, brought up with `make up`), `gh` authenticated, and, before the loop opens any PR, a GitHub remote with main present (the gate never creates a remote, and only warns if it is missing).
 
 The gate proves, by running things, and scaffolds boilerplate on consent:
 
-- git is a repo, the remote and main are reachable, `gh` is authenticated, and the commit identity is on the allowlist.
+- git is a repo with a local main branch, `gh` is authenticated, and the commit identity is on the allowlist. A missing remote is a warning, not a failure: local building works without one, but pushing branches and opening PRs need it, so adding the remote stays your action before the loop's PRs can flow.
 - report tooling matches (the coverage provider is derived from the installed test runner).
 - the project's declared test-tier commands select non-zero tests and pass.
 - the declared integration endpoint is reachable (it runs the integration tier; a downed endpoint is reported as BLOCKED, not a failure).
@@ -45,4 +45,4 @@ The gate proves, by running things, and scaffolds boilerplate on consent:
 
 Most tooling is project-level, not installed by hand: a generated project lists vitest, typescript, eslint, prettier, tsx and the MongoDB driver in its package.json, and `npm install` plus the setup gate bring and prove them.
 
-One optional external tool is referenced by generated projects but is not required by the pipeline. The scaffolded Makefile carries `graph` and `graph-viz` targets that call [graphify](https://github.com/safishamsi/graphify), a local-first codebase knowledge-graph tool pinned to a local Ollama backend. The build loop never invokes it; the targets are a convenience for exploring a project as a graph. Without graphify those two Make targets are the only thing that will not run. Install is `uv tool install graphifyy` (note the double y in the package name; the CLI command is still `graphify`).
+One optional external tool is referenced by generated projects but is not required by the pipeline. The scaffolded Makefile carries `graph` and `graph-viz` targets that call [graphify](https://github.com/safishamsi/graphify), a local-first codebase knowledge-graph tool pinned to a local Ollama backend. The build loop never invokes it; the targets are a convenience for exploring a project as a graph. Without graphify those two Make targets are the only thing that will not run. Because the Makefile targets pin the Ollama backend, install the Ollama extra: `uv tool install "graphifyy[ollama]"`. Note the double y in the package name (the CLI command is still `graphify`), and the `[ollama]` extra: a bare `uv tool install graphifyy` installs the CLI but not the `openai` package the Ollama backend needs, so `make graph` then fails until the extra is added.
