@@ -19,6 +19,15 @@ export default defineConfig({
   root: 'src/client',
   plugins: [react()],
   build: { outDir: '../../dist/client', emptyOutDir: true },
+  // A bare `vitest run` (e.g. the coverage gate) resolves this config, not the
+  // tier ones, so the client tests need jsdom here too. Paths are relative to
+  // root (src/client), mirroring vitest.client.config.ts.
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    include: ['**/*.test.tsx'],
+    setupFiles: ['./test-setup.ts'],
+  },
 });
 EOF
 
