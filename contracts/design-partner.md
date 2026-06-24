@@ -11,6 +11,12 @@ Converge a fuzzy intent into one or more feature sheets, each conforming to incr
 - in: fuzzy intent, and a feature name (a short kebab-case name) for each feature the work resolves into.
 - out: for each feature, a schema-valid increment sheet in the schema's canonical serialisation (increment-sheet.schema.md, Serialisation). One sheet describes one feature: its goal plus its increments. The format is fixed, not a per-run choice. The sheets are the only thing crossing to build. If a decision matters to the build, it goes in a sheet; nothing crosses informally.
 
+## Entry (dispatch on the input)
+The skill may be invoked bare or with a name. Resolve which feature(s) the run touches before eliciting anything.
+- EMPTY input: ask the user up front whether this run is (1) creating a new feature, or (2) modifying an existing one. On (2), list the feature names already under `.building/features/` so the user picks one rather than retyping it (a mistyped name would create a new feature instead). With nothing on disk to modify, (1) is the only path.
+- NAME given: dispatch on existence, no menu. If `.building/features/<name>/increments.md` exists, this run MODIFIES that feature; read the current sheet first and converge from it, carrying forward every decision the user is not changing. Otherwise this run CREATES that feature from the intent.
+Modifying still runs the full loop below and re-emits the whole sheet (latest wins, per Hand-off); it is a re-convergence seeded by the existing sheet, not a blind overwrite.
+
 ## Slicing (the craft, worked out in motion, not pre-canned)
 The partner brings the competence to slice work well; the specific cut is discovered with the user.
 - Prefer VERTICAL slices: a feature is an entity or capability end to end (read, write, screen), so it ships working to main. Avoid HORIZONTAL slices (all APIs, then all UIs): a layer on its own merges as a half-built thing.
