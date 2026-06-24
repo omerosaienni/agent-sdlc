@@ -770,6 +770,16 @@ step "git repository"
     fi
 )
 
+# The git guards (identity + branch-name) are global via core.hooksPath, not
+# seeded per project: a per-repo copy would be ignored while the global path is
+# set and would drift. So we install nothing here, only nudge if it is unset.
+if [ -z "$(git config --global --get core.hooksPath || true)" ]; then
+    echo
+    echo "${C_NOTE}Note: global git hooks are not installed (core.hooksPath unset)."
+    echo "Run scripts/setup-global-git-hooks.sh install to enable the identity and"
+    echo "branch-name guards for every repo, including this one.${C_RESET}"
+fi
+
 printf '\n%sScaffolded %s%s\n' "$C_OK" "$NAME" "$C_RESET"
 echo "Next:"
 echo "  cd $DIR"

@@ -1,9 +1,28 @@
 #!/usr/bin/env bash
 # Refuse commits authored with an email not on the allowlist, so the loop's
-# commits attribute to the right GitHub account. Override with GIT_IDENTITY_ALLOWLIST.
-allowed="${GIT_IDENTITY_ALLOWLIST:-39497847+omerosaienni@users.noreply.github.com}"
+# commits attribute to the right GitHub account. The allowlist is your own, read
+# from git config (sdlc.identityAllowlist, space-separated), so no personal email
+# is baked into this repo. Set it once: git config --global sdlc.identityAllowlist '<email>'
+# (the hooks installer does this for you). Unset = fail closed, since an empty
+# allowlist that waved everything through would defeat the guard.
+allowed="$(git config --get sdlc.identityAllowlist || true)"
+if [ -z "$allowed" ]; then
+  echo "BLOCKED: sdlc.identityAllowlist is not set, so commit identity cannot be checked."
+  echo "Set it: git config --global sdlc.identityAllowlist '<your-commit-email> [more...]'"
+  exit 1
+fi
 email="$(git config user.email)"
 case " $allowed " in
   *" $email "*) ;;
   *) echo "BLOCKED: commit email '$email' is not on the allowlist."; echo "Set: git config user.email <one of: $allowed>"; exit 1 ;;
 esac
+
+# Guard passed. Chain to the repo's own hook if it has one, so a per-repo tool
+# (husky, pre-commit, lefthook) keeps working under our global core.hooksPath,
+# which otherwise makes git skip .git/hooks entirely. Resolve via --git-dir, not
+# --git-path hooks, which would point back at the global dir. The -ef guard avoids
+# re-running ourselves if this file IS the repo hook (a per-repo install).
+local_hook="$(git rev-parse --git-dir 2>/dev/null)/hooks/pre-commit"
+if [ -x "$local_hook" ] && ! [ "$local_hook" -ef "$0" ]; then
+  exec "$local_hook" "$@"
+fi

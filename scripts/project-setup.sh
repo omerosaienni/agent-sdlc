@@ -19,9 +19,11 @@ set -uo pipefail
 # ============================================================================
 
 # Git commit-identity allowlist: the loop's commits must be authored by one of
-# these emails, so they attribute to the right GitHub account. Override per
-# machine with GIT_IDENTITY_ALLOWLIST (space-separated) if your identity differs.
-IDENTITY_ALLOWLIST="${GIT_IDENTITY_ALLOWLIST:-39497847+omerosaienni@users.noreply.github.com}"
+# these emails, so they attribute to the right GitHub account. Read from your own
+# git config (sdlc.identityAllowlist, space-separated) so no personal email is
+# baked into this repo. Set it once: git config --global sdlc.identityAllowlist '<email>'
+# (the hooks installer, setup-global-git-hooks.sh, does this for you).
+IDENTITY_ALLOWLIST="$(git config --get sdlc.identityAllowlist 2>/dev/null || true)"
 
 # ============================================================================
 # Helpers
@@ -222,10 +224,14 @@ if git rev-parse --git-dir >/dev/null 2>&1; then ok "git repository"
     gh auth status >/dev/null 2>&1 && ok "gh authenticated" || bad "gh not authenticated; run gh auth login"
     # commit identity must be on the allowlist, so the loop's commits attribute to the right account
     commit_email="$(git config user.email 2>/dev/null)"
-    case " $IDENTITY_ALLOWLIST " in
-        *" $commit_email "*) ok "commit identity ($commit_email)";;
-        *) bad "commit email '$commit_email' not on the allowlist; set git config user.email to one of: $IDENTITY_ALLOWLIST";;
-    esac
+    if [ -z "$IDENTITY_ALLOWLIST" ]; then
+        bad "sdlc.identityAllowlist not set; run: git config --global sdlc.identityAllowlist '<your-commit-email>'"
+    else
+        case " $IDENTITY_ALLOWLIST " in
+            *" $commit_email "*) ok "commit identity ($commit_email)";;
+            *) bad "commit email '$commit_email' not on the allowlist; set git config user.email to one of: $IDENTITY_ALLOWLIST";;
+        esac
+    fi
     if git show-ref --verify --quiet refs/heads/main; then ok "local main branch"
         if git ls-remote --exit-code --heads origin main >/dev/null 2>&1; then ok "main on remote"
         elif consent; then git push -u origin main >/dev/null 2>&1 && ok "pushed main" || bad "push failed"

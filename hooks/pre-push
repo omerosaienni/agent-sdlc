@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Refuse a push from a branch whose name is off the standard, so every branch is
+# <type>/<kebab-description> (feat fix docs refactor rename chore test). No bypass:
+# rename the branch to conform. main/master are exempt (the trunk, never a work branch).
+branch="$(git symbolic-ref --short HEAD 2>/dev/null)"
+case "$branch" in
+    main | master | "")
+        ;;
+    *)
+        if ! printf '%s' "$branch" | grep -Eq '^(feat|fix|docs|refactor|rename|chore|test)/[a-z0-9]+(-[a-z0-9]+)*$'; then
+            echo "BLOCKED: branch '$branch' is off the naming standard." >&2
+            echo "Use <type>/<kebab-description>, type one of: feat fix docs refactor rename chore test" >&2
+            echo "Rename: git branch -m <type>/<description>" >&2
+            exit 1
+        fi
+        ;;
+esac
+
+# Guard passed. Chain to the repo's own pre-push if it has one, so a per-repo tool
+# (husky, pre-commit, lefthook) keeps working under our global core.hooksPath. exec
+# preserves the push args and the ref list on stdin the local hook expects. The -ef
+# guard avoids re-running ourselves in a per-repo install.
+local_hook="$(git rev-parse --git-dir 2>/dev/null)/hooks/pre-push"
+if [ -x "$local_hook" ] && ! [ "$local_hook" -ef "$0" ]; then
+    exec "$local_hook" "$@"
+fi
