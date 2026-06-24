@@ -4,9 +4,9 @@
 <text x="40" y="26" fill="#444441" font-size="14" font-weight="500">mongo-db-1/  on a deliverable's branch</text>
 <rect x="40" y="42" width="270" height="150" rx="12" fill="#EAF3DE" stroke="#3B6D11" stroke-width="0.5"/>
 <text x="58" y="64" fill="#27500A" font-size="14" font-weight="500">committed: the deliverable</text>
-<text x="58" y="86" fill="#5F5E5A" font-size="12">src/db.ts, collections.ts, seed.ts</text>
-<text x="58" y="106" fill="#5F5E5A" font-size="12">src/db.test.ts</text>
-<text x="58" y="126" fill="#5F5E5A" font-size="12">src/seed.integration.test.ts</text>
+<text x="58" y="86" fill="#5F5E5A" font-size="12">src/server/db/index.ts, index.ts, seed.ts</text>
+<text x="58" y="106" fill="#5F5E5A" font-size="12">src/server/index.test.ts</text>
+<text x="58" y="126" fill="#5F5E5A" font-size="12">src/server/smoke.integration.test.ts</text>
 <text x="58" y="148" fill="#5F5E5A" font-size="12">docs/modules/3-db.md</text>
 <text x="58" y="168" fill="#5F5E5A" font-size="12">docs/ARCHITECTURE.md</text>
 <rect x="330" y="42" width="320" height="312" rx="12" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>

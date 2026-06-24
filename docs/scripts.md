@@ -44,8 +44,9 @@ the loop consumes the stamp.
 ## init-ts-mongo.sh (the generator)
 
 Scaffolds a backend TypeScript + MongoDB project: tooling, infra, the db helper,
-an entry point, a faker seed helper, conventions, then inits git. It makes no
-domain assumptions; you grow `src/index.ts` and add your own modules.
+an entry point, a faker seed helper, then inits git and installs the TypeScript and
+Mongo stack rules. It makes no domain assumptions; you grow `src/server/index.ts`
+and add your own modules.
 
 ```
 init-ts-mongo.sh <project-name> [target-dir] [--verbose] [--no-color] [--debug]
@@ -66,14 +67,15 @@ writes anything, then writes each area, then inits git.
 flowchart TD
     args["parse args<br/>name, dir, flags"] --> resolve["resolve + validate<br/>kebab-case name, derive db name,<br/>refuse if dir exists"]
     resolve --> tooling["tooling configs<br/>vitest tiers, tsconfig, eslint,<br/>prettier, ignores"]
-    tooling --> db["database helper<br/>src/db.ts (db name baked in, shared 27017)"]
+    tooling --> db["database helper<br/>src/server/db/index.ts (db name baked in, shared 27017)"]
     db --> infra["docker infra<br/>compose, rs-init"]
     infra --> build["build surface<br/>Makefile, package.json"]
-    build --> entry["entry + seed<br/>src/index.ts + test + smoke test<br/>src/seed.ts (faker seed helper)"]
+    build --> entry["entry + seed<br/>src/server/index.ts + test + smoke test<br/>src/server/seed.ts (faker seed helper)"]
     entry --> editor["editor<br/>.vscode debug configs"]
-    editor --> docs["docs<br/>CLAUDE.md, README"]
+    editor --> docs["docs<br/>CLAUDE.md (identity + runtime), README"]
     docs --> git["git init + initial commit<br/>(idempotent)"]
-    git --> done["print next steps"]
+    git --> rules["stack rules<br/>install-project-rules.sh --typescript --mongo"]
+    rules --> done["print next steps"]
 
     classDef io fill:#fdeccd,stroke:#b8743d,color:#1d2733;
     classDef work fill:#e4edf4,stroke:#5b6b7a,color:#1d2733;
@@ -107,12 +109,12 @@ flowchart TD
         rsinit["scripts/rs-init.sh"]
     end
 
-    subgraph source["Source"]
-        dbts["src/db.ts"]
-        index["src/index.ts (entry point)"]
-        indextest["src/index.test.ts (unit)"]
-        smoke["src/smoke.integration.test.ts"]
-        seed["src/seed.ts (faker seed helper)"]
+    subgraph source["Source (src/server/)"]
+        dbts["src/server/db/index.ts"]
+        index["src/server/index.ts (entry point)"]
+        indextest["src/server/index.test.ts (unit)"]
+        smoke["src/server/smoke.integration.test.ts"]
+        seed["src/server/seed.ts (faker seed helper)"]
     end
 
     subgraph build["Build surface"]
@@ -121,7 +123,8 @@ flowchart TD
     end
 
     subgraph docs["Docs + editor"]
-        claude["CLAUDE.md (conventions)"]
+        claude["CLAUDE.md (identity + runtime)"]
+        rules[".claude/rules/ (TS + Mongo stack rules)"]
         readme["README.md"]
         vscode[".vscode/launch.json (gitignored)"]
     end
@@ -134,8 +137,8 @@ flowchart TD
     class name,dbname param;
 ```
 
-The entry point, the seed helper and the smoke test all use `src/db.ts`, so the
-database helper is exercised from birth: the unit tier tests the entry point, and
+The entry point, the seed helper and the smoke test all use `src/server/db/index.ts`,
+so the database helper is exercised from birth: the unit tier tests the entry point, and
 the integration tier runs a replica-set smoke test through the real helper (it
 asserts the set reports a PRIMARY, so it fails if mongod is down or the replica
 set was never initiated). The seed helper (`make seed`, faker-backed) proves the
@@ -198,7 +201,9 @@ without `set -e`.
 
 The identity check is load-bearing for attribution: the loop's commits must be
 authored by an email on the allowlist so they map to the right GitHub account.
-Override the allowlist per machine with `GIT_IDENTITY_ALLOWLIST`.
+The allowlist is read from git config `sdlc.identityAllowlist` (space-separated),
+so no email is baked into the repo; set it once globally, or via
+`setup-global-git-hooks.sh install`. Unset is a FAIL.
 
 The agent test runner (`.building/scripts/agent-tests.sh`) is part of the testing
 convention the gate scaffolds and proves. It is the path the build loop's judge

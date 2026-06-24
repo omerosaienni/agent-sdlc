@@ -2,7 +2,7 @@
 # init-ts-mongo.sh - scaffold a backend TypeScript + MongoDB project from the
 # constant template. Writes the stack files (tooling, infra, db helper, entry
 # point, conventions), parameterising the name-bearing ones, then inits git.
-# Makes no domain assumptions: you grow src/index.ts and add your own modules.
+# Makes no domain assumptions: you grow src/server/index.ts and add your own modules.
 #
 # This is the GENERATOR half of project provisioning. After it runs, the project
 # still needs: npm install, docker bring-up, and the setup gate (project-setup.sh)
@@ -148,8 +148,13 @@ DB_NAME="$NAME"
 # Scaffold
 # ============================================================================
 
+# Layout: source lives under src/server/ (with the db helper at src/server/db/),
+# not a flat src/. This is the canonical layout the stack rules scope to
+# (omero-mongo.md -> src/server/db/**) and the shape a project grows a src/client/
+# into when it adds a frontend. The db helper sits in its own folder so the Mongo
+# rule's directory glob has a real target.
 step "Scaffolding '$NAME' into '$DIR' (db: $DB_NAME)"
-mkdir -p "$DIR"/{src,scripts,docs,docs/modules}
+mkdir -p "$DIR"/{src/server/db,scripts,docs,docs/modules}
 
 
 # ---------------------------------------------------------------------------
@@ -239,7 +244,9 @@ EOF
 # ---------------------------------------------------------------------------
 step "database helper"
 
-write_file "$DIR/src/db.ts" <<EOF
+# At src/server/db/index.ts so the db layer is a folder (importable as
+# './db/index.js' from src/server, and the directory the Mongo stack rule scopes to).
+write_file "$DIR/src/server/db/index.ts" <<EOF
 import { MongoClient, type Db } from 'mongodb';
 
 // directConnection=true is required: a single node replica set advertises its
@@ -386,7 +393,7 @@ help: ## List available targets
 	@echo ""
 	@echo "  help        Show this list"
 	@echo "  up          Start the shared mongod (idempotent) and ensure the replica set"
-	@echo "  start       Run the entry point (src/index.ts)"
+	@echo "  start       Run the entry point (src/server/index.ts)"
 	@echo "  seed        Generate and load faker seed data"
 	@echo "  down        Stop the shared mongod, keep data (affects every project)"
 	@echo "  drop        Drop this project's database (${DB_NAME}) only"
@@ -415,7 +422,7 @@ up: ## Start the shared mongod (idempotent) and ensure the replica set
 	@# rs-init is a step inside up, not a separate verb: once per server, idempotent
 	./scripts/rs-init.sh
 
-start: ## Run the entry point (src/index.ts)
+start: ## Run the entry point (src/server/index.ts)
 	npm start
 
 seed: ## Generate and load faker seed data
@@ -467,8 +474,8 @@ write_file "$DIR/package.json" <<EOF
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "tsx src/index.ts",
-    "seed": "tsx src/seed.ts",
+    "start": "tsx src/server/index.ts",
+    "seed": "tsx src/server/seed.ts",
     "test:unit": "vitest run -c vitest.unit.config.ts",
     "test:integration": "vitest run -c vitest.integration.config.ts",
     "lint": "eslint src",
@@ -503,7 +510,7 @@ EOF
 # ---------------------------------------------------------------------------
 step "entry point"
 
-write_file "$DIR/src/index.ts" <<'EOF'
+write_file "$DIR/src/server/index.ts" <<'EOF'
 // The program entry point. Grow this into the real bootstrap: for a backend that
 // usually means connecting to Mongo via getDb() and starting the server.
 export function main(): string {
@@ -517,9 +524,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 }
 EOF
 
-write_file "$DIR/src/seed.ts" <<'EOF'
+write_file "$DIR/src/server/seed.ts" <<'EOF'
 import { faker } from '@faker-js/faker';
-import { getDb, closeClient } from './db.js';
+import { getDb, closeClient } from './db/index.js';
 
 // Generate and load development seed data. A domain-free starting point that
 // proves the faker to Mongo path works end to end; grow it into the collections
@@ -552,7 +559,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 }
 EOF
 
-write_file "$DIR/src/index.test.ts" <<'EOF'
+write_file "$DIR/src/server/index.test.ts" <<'EOF'
 import { describe, expect, it } from 'vitest';
 import { main } from './index.js';
 
@@ -569,9 +576,9 @@ EOF
 # path reaches a healthy single node replica set with a PRIMARY. It stays true
 # for the life of the project, run `make up` first. This also exercises
 # the db helper from birth.
-write_file "$DIR/src/smoke.integration.test.ts" <<'EOF'
+write_file "$DIR/src/server/smoke.integration.test.ts" <<'EOF'
 import { afterAll, describe, expect, it } from 'vitest';
-import { getDb, closeClient } from './db.js';
+import { getDb, closeClient } from './db/index.js';
 
 // replSetGetStatus returns a typed members array. We only care about state.
 interface ReplSetMember {
@@ -685,42 +692,17 @@ write_file "$DIR/CLAUDE.md" <<EOF
 
 TODO: one or two lines on what this project is and is not (its scope).
 
-## Layout and entry point
-- Entry point: src/index.ts. Every program has at least one main; this is it.
-  Runnable via \`npm start\`. Grow it into the real bootstrap (for a backend that
-  usually means connecting to Mongo via getDb() and starting the server).
-- All source under src/. One module per file, named after what it does, lower
-  case. A module's test sits beside it (see Test tiers).
-- TypeScript, strict. Node, native MongoDB driver. vitest two tier (unit and
-  integration).
-
-## Database access (the pattern)
-- One shared MongoClient per process via the db helper at src/db.ts. Never connect
-  per query. Import getDb/closeClient from './db.js'.
-- When the project needs named collections, put the names in one place (a
-  COLLECTIONS constant, conventionally src/collections.ts) and import them. Never
-  hardcode collection name strings. Pass document interfaces as driver generics,
-  e.g. db.collection<Item>(COLLECTIONS.items).
-
-## Runnable modules (the pattern)
-- A module meant to be run on its own (a seed, an example, a script) is runnable
-  via an npm script and an \`import.meta.url\` main-guard so it runs when invoked
-  directly but stays importable from tests. Name an example script ex:<feature>
-  and have it print its results.
+## Layout
+- Backend source under src/server/, the db helper at src/server/db/. A frontend, if
+  added, lives under src/client/. Entry point: src/server/index.ts, run via
+  \`npm start\`. Grow it into the real bootstrap (usually: connect to Mongo via
+  getDb() and start the server).
 
 ## Conventions
-- Strict TypeScript. Supply interfaces and pass them as driver generics. Do NOT use \`any\`.
-- async/await throughout, not raw promise chains.
-- British English in comments and output. No em dashes (restructure instead). No
-  Oxford commas. No hyphens in compound modifiers.
-- Comments explain WHY not WHAT. Be brief. A why only where a non-obvious decision
-  needs one. Do not restate the code.
-
-## Test tiers
-- A test that touches Mongo MUST be in the integration tier (*.integration.test.ts),
-  never the unit tier. One file per module per tier, named after the module,
-  co-located, tier by suffix (foo.ts -> foo.test.ts and/or foo.integration.test.ts).
-- Shared test helpers, if any, in one support module under src/test-support/.
+- Stack conventions (TypeScript, Mongo, and any others) are path-scoped rules under
+  .claude/rules/, installed by install-project-rules.sh and read automatically.
+  Universal conventions (prose, comments) come from the global rules. This file
+  carries only what is specific to THIS project: its scope and runtime facts.
 
 ## Integration endpoints
 - Mongo at mongodb://127.0.0.1:27017 with directConnection=true, the shared
@@ -770,6 +752,18 @@ step "git repository"
     fi
 )
 
+# Stack convention rules: delegate to the installer rather than inline them, so
+# there is one source of truth for the conventions and the generator never carries
+# its own copy. TS + Mongo for this backend template. Runs after git init (the
+# installer requires a .git). Non-fatal: a rules hiccup must not fail an otherwise
+# good scaffold, so warn and continue rather than abort under set -e.
+step "stack rules"
+rules_rc=0
+"$SCRIPT_DIR/install-project-rules.sh" "$DIR" --typescript --mongo || rules_rc=$?
+if [ "$rules_rc" -ne 0 ]; then
+    err "stack-rule install failed (exit $rules_rc); scaffold is fine, run install-project-rules.sh manually"
+fi
+
 # The git guards (identity + branch-name) are global via core.hooksPath, not
 # seeded per project: a per-repo copy would be ignored while the global path is
 # set and would drift. So we install nothing here, only nudge if it is unset.
@@ -787,6 +781,6 @@ echo "  npm install"
 echo "  make up                 # start the shared Mongo and init the replica set"
 echo "  make test               # unit (entry point) + integration (Mongo smoke test)"
 echo
-echo "Then build the project: grow src/index.ts into the real entry point, add your"
+echo "Then build the project: grow src/server/index.ts into the real entry point, add your"
 echo "modules and their tests, write docs/deliverables.md, and run the setup gate"
 echo "(project-setup.sh) to prove it loop-ready."

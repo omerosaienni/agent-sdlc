@@ -16,7 +16,7 @@ The two gates are independent: re-running design (a new sheet) does not invalida
 
 A project is created by a stack-specific generator, separate from the pipeline. The generator decides the stack; the pipeline runs on whatever project exists and passes setup. This keeps the pipeline stack-agnostic: the same design, setup and build work on any project a generator produces.
 
-`scripts/init-ts-mongo.sh` scaffolds a backend TypeScript and MongoDB project from the constant template (tooling, infra, the db helper, an entry point, a faker seed helper, conventions, then git init). It makes no domain assumptions; you grow `src/index.ts` and add your own modules. Generators are named for the stack they create, so each is honest about what it produces and more can be added without renaming.
+`scripts/init-ts-mongo.sh` scaffolds a backend TypeScript and MongoDB project from the constant template (tooling, infra, the db helper at `src/server/db/`, an entry point, a faker seed helper, then git init and the TypeScript and Mongo stack rules into `.claude/rules/`). It makes no domain assumptions; you grow `src/server/index.ts` and add your own modules. Generators are named for the stack they create, so each is honest about what it produces and more can be added without renaming.
 
 ## Pipeline tooling
 
