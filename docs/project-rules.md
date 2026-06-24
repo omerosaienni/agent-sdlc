@@ -59,5 +59,6 @@ Or invoke the skill `/omero-install-project-rules`, which wraps the installer.
 Stack rules are copied, not symlinked. Because `.claude/` is gitignored, they live
 only in the local working copy. A copy that drifts from its template does not
 re-sync on its own; re-run the installer to refresh it. The generators install the
-stack rules for you (`init-ts-mongo.sh` installs TypeScript + Mongo;
-`init-ts-mongo-react.sh` adds React), so a freshly generated project starts current.
+stack rules for you (`init-ts-project.sh` installs the `--typescript` rule always,
+plus `--mongo` and/or `--react` for the layers you enable), so a freshly generated
+project starts current.

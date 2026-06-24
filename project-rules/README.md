@@ -2,8 +2,9 @@
 
 The PER-PROJECT rule layer: stack conventions installed into a repo's own
 `.claude/rules/` by `install-project-rules.sh`. These are templates (the source of
-truth); the installer copies the chosen ones into a target repo so they travel with
-that repo's clones.
+truth); the installer copies the chosen ones into a target repo. Because generated
+projects gitignore `.claude/`, the copies live only in the local working tree, not
+in git; re-run the installer to re-sync a copy that has drifted from its template.
 
 Distinct from the GLOBAL layer in `claude-rules/` (universal conventions that apply
 everywhere via `~/.claude/rules`). Stack rules are project-specific and copied, not
@@ -23,15 +24,16 @@ touches matching files. Scope is by directory where that is the honest boundary
 
 ## Layout contract
 
-The directory scopes assume the canonical layout the generators produce:
+The directory scopes assume the canonical layout the generator produces. The base
+is always `src/server/`; the db, client, and shared trees are added by their layers:
 
 ```
 src/
-  server/
-    db/          <- omero-mongo.md
+  server/          always (the TypeScript base)
     index.ts
-  client/        <- omero-react.md
-  shared/
+    db/            <- omero-mongo.md  (added by --mongo)
+  client/          <- omero-react.md  (added by --react)
+  shared/          (added by --react)
 ```
 
 ## Install

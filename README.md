@@ -22,7 +22,7 @@ Install the skills once (idempotent; the repo is the source of truth, the instal
 Then drive a project through the four `/omero-*` skills, in order:
 
 ```text
-/omero-create-ts-mongo <project-name>           # 1. scaffold a TypeScript + MongoDB project
+/omero-create-ts-project <project-name> [--mongo] [--react]  # 1. scaffold a TypeScript project (optional Mongo/React layers)
 /omero-design-partner "<intent>" <design-name>  # 2. converge intent into a deliverable sheet
 /omero-project-setup                            # 3. prove the project ready (writes the setup receipt)
 /omero-build-loop <path-to-sheet>               # 4. deliver the sheet, one PR per deliverable
@@ -34,7 +34,7 @@ Steps 2 and 3 are independent prerequisites and can run in either order; step 4 
 
 The work is driven by four `/omero-*` skills (thin wrappers over the contracts):
 
-1. `omero-create-ts-mongo` scaffolds a TypeScript and MongoDB project (the generator, separate from the pipeline).
+1. `omero-create-ts-project` scaffolds a TypeScript project, with optional Mongo and React layers (the generator, separate from the pipeline).
 2. `omero-design-partner` converges intent into a validated deliverable sheet.
 3. `omero-project-setup` proves the project ready and writes the setup receipt.
 4. `omero-build-loop` delivers the sheet, one deliverable per branch and PR.

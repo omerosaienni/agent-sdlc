@@ -1,7 +1,12 @@
 # Scripts
 
-The repo has three shell scripts that stand a project up and prove it ready for
-the build loop. This documents what each does and how they connect.
+Three pipeline scripts stand a project up and prove it ready for the build loop:
+the generator, the setup gate, and a small dependency helper. This documents what
+each does and how they connect. (The repo also has scripts outside the pipeline:
+the per-project rules installer, documented in [`project-rules.md`](project-rules.md),
+and the global git-hooks and Claude-rules installers, documented in
+[`../hooks/`](../hooks/README.md) and [`project-rules.md`](project-rules.md). Those
+are not part of the create-verify-build flow described here.)
 
 They follow the layout in `contracts/script-layout.md`. The diagrams here are
 inline Mermaid (rendered by GitHub) rather than the SVGs catalogued in
@@ -10,14 +15,14 @@ when the diagram lives as text beside the prose.
 
 ## How they connect
 
-Three scripts, three jobs: one creates a project, one proves it ready, one is a
-small dependency helper the gate also uses. The relationship is create, then
+Three pipeline scripts, three jobs: one creates a project, one proves it ready, one
+is a small dependency helper the gate also uses. The relationship is create, then
 verify, then the loop consumes the receipt.
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#e4edf4','primaryTextColor':'#1d2733','primaryBorderColor':'#5b6b7a','lineColor':'#5b6b7a','fontSize':'14px'}}}%%
 flowchart LR
-    init["init-ts-mongo.sh<br/>(create)"] -->|writes a project| proj["project on disk"]
+    init["init-ts-project.sh<br/>(create)"] -->|writes a project| proj["project on disk"]
     proj --> gate["project-setup.sh<br/>(verify)"]
     ensure["ensure-report-tooling.sh<br/>(dependency helper)"] -.->|coverage tooling| gate
     gate -->|on READY writes| receipt["setup-ok receipt"]
@@ -29,7 +34,7 @@ flowchart LR
     class proj,receipt artifact;
 ```
 
-- **init-ts-mongo.sh** scaffolds a new project from the constant template.
+- **init-ts-project.sh** scaffolds a new project: a TypeScript base, plus optional Mongo and React layers.
 - **project-setup.sh** proves a project is ready by execution, and on success
   writes the `setup-ok` receipt the build loop refuses to start without.
 - **ensure-report-tooling.sh** is a focused helper that installs and verifies the
@@ -41,16 +46,25 @@ the loop consumes the stamp.
 
 ---
 
-## init-ts-mongo.sh (the generator)
+## init-ts-project.sh (the generator)
 
-Scaffolds a backend TypeScript + MongoDB project: tooling, infra, the db helper,
-an entry point, a faker seed helper, then inits git and installs the TypeScript and
-Mongo stack rules. It makes no domain assumptions; you grow `src/server/index.ts`
+Scaffolds a TypeScript project with optional Mongo and React layers. The base is
+always TypeScript (tooling, an entry point, a unit tier under `src/server`); `--mongo`
+adds the db helper, docker infra, the integration tier and a faker seed; `--react`
+adds the React + Vite client under `src/client`. It inits git and installs the
+matching stack rules. It makes no domain assumptions; you grow `src/server/index.ts`
 and add your own modules.
 
+It is a small multi-file script (per `contracts/script-layout.md`): an orchestrator
+that sources the shared helpers (`generator/lib.sh`) and the `generator/base.sh`,
+`generator/mongo.sh`, `generator/react.sh` layers, assembling the shared files
+(package.json, tsconfig, Makefile) from the fragments each enabled layer contributes.
+
 ```
-init-ts-mongo.sh <project-name> [target-dir] [--verbose] [--no-color] [--debug]
+init-ts-project.sh <project-name> [target-dir] [--mongo] [--react] [--verbose] [--no-color] [--debug]
 ```
+
+- `--mongo` adds the MongoDB layer; `--react` adds the React client layer; any combination is valid.
 
 - `--verbose` prints each file as it is written.
 - `--no-color` forces plain output (colour is auto-detected and on only at a
@@ -173,7 +187,7 @@ Exit codes: 0 READY, 1 NOT READY (fix the FAIL lines), 2 needs `--yes`, 3 BLOCKE
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#e4edf4','primaryTextColor':'#1d2733','primaryBorderColor':'#5b6b7a','lineColor':'#5b6b7a','fontSize':'14px'}}}%%
 flowchart TD
     s1["1. report tooling<br/>coverage matches vitest major"]
-    s2["2. testing convention<br/>tier configs + npm scripts<br/>+ agent runners (test, hollow, type-check)"]
+    s2["2. testing convention<br/>tier configs + npm scripts<br/>+ agent runners (test, hollow)"]
     s3["3. run each tier<br/>non-zero selection + pass<br/>+ agent runners work"]
     s4["4. coverage runs"]
     s5["5. git, remote, gh, identity, main"]
@@ -223,12 +237,13 @@ restores the file from an exit trap, then re-verifies green, returning a verdict
 by exit code. Setup writes it from the template if absent or out of date (step 2) and
 proves it is runnable (step 3) on the same loop-ready footing as the test runner.
 
-The type-check runner (`.building/scripts/agent-typecheck.sh`) is placed and proven the
-same way, and the judge runs it first, before the tiers, because nothing else
+The type-check runner (`.building/scripts/agent-typecheck.sh`, from the shared
+template) is the judge's gate, run first before the tiers because nothing else
 type-checks: the tiers run through esbuild and tsx, which strip types. A clean
-type-check (exit 0) is required to stamp ready; a type error (exit 1) is a hard
-fail like a failing test, and a type-check that cannot run at all (exit 3, no
-tsconfig or tsc absent) is an environment gap to fix before building.
+type-check (exit 0) is required to pass; a type error (exit 1) is a hard fail like a
+failing test, and a type-check that cannot run at all (exit 3, no tsconfig or tsc
+absent) is an environment block. The build loop's judge places and runs it; the
+setup gate (today) places and proves only the test and hollow-check runners.
 
 ### Modes
 

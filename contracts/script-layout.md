@@ -1,5 +1,5 @@
 ---
-version: 1.0.0
+version: 1.1.0
 status: active
 ---
 
@@ -89,7 +89,33 @@ structure. Only the per-line idiom differs.
   `--verbose` for detail, `--debug` for a `set -x` trace, `--no-color` to force
   plain output.
 
+## Multi-file scripts (orchestrator and layers)
+
+A script that grows large or composes optional parts may split into an
+orchestrator plus sourced component files, rather than one monolith. The skeleton
+above still governs the orchestrator; the components follow these rules:
+
+- **One orchestrator.** The entry-point script (in `scripts/`) owns the skeleton:
+  header, `set` options, argument parsing, input validation, and the ordered work.
+  It sources the components and calls them; it is the only file the user runs.
+- **Components are sourced, not executed.** They live together in a sibling
+  directory (e.g. `generator/`), each `#!/usr/bin/env bash` with a header comment
+  saying it is sourced and what it provides. They define functions and set
+  variables in the orchestrator's scope; they do not `set -e` or parse args.
+- **One shared-helpers file.** The output helpers, colour setup, and file
+  primitives live in a single sourced lib the orchestrator and every component
+  use, so there is one definition of each helper (the "single place" rule above,
+  across files).
+- **Layers own their exclusive files; the orchestrator assembles shared ones.**
+  When several layers contribute to one output file (e.g. a `package.json` the
+  base, Mongo, and React layers all add to), the layer exports a named fragment
+  and the orchestrator splices it in. A layer never hard-codes another layer's
+  content, and never edits a file another layer owns.
+
 ## Reference example
 
-`scripts/init-ts-mongo.sh` is the reference implementation of this layout. New
-scripts should mirror its structure.
+`scripts/init-ts-project.sh` is the reference implementation: an orchestrator that
+sources `generator/lib.sh` (helpers) and the `generator/base.sh`, `generator/mongo.sh`,
+`generator/react.sh` layers, assembling the shared files from their fragments. A
+single-file script should mirror the skeleton; a composed one should mirror this
+orchestrator-and-layers structure.

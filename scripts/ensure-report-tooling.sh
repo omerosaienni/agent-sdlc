@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Ensure this repo has the tooling the judge report needs: coverage and json
-# reporters. Idempotent. Run from the project root.
+# Ensure this repo has the tooling the judge report needs: the coverage provider
+# (@vitest/coverage-v8). Idempotent. Run from the project root.
 #
 # Usage:
 #   ensure-report-tooling.sh            ask before installing (if at a terminal)

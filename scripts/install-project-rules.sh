@@ -2,10 +2,11 @@
 # install-project-rules.sh - install stack convention rules into one repo's
 # .claude/rules/, so Claude Code follows them when working in that project.
 #
-# These are the PER-PROJECT rule layer. They are COPIED (not symlinked) so they
-# travel with the repo's clones and can be committed with the project. The repo
-# at project-rules/ is the source of truth; copies will drift if a template
-# changes - re-run install to re-sync.
+# These are the PER-PROJECT rule layer. They are COPIED (not symlinked) so each
+# repo gets its own independent copy. Generated projects gitignore .claude/, so the
+# copies live only in the local working tree, not in git. The repo at project-rules/
+# is the source of truth; a copy drifts if a template changes - re-run install to
+# re-sync.
 #
 # Stack rules only. The universal base conventions are a separate GLOBAL layer
 # (claude-rules/, installed by setup-global-claude-rules.sh), not installed here.
@@ -83,8 +84,7 @@ done
 
 [ -n "$REPO" ] || usage
 
-# The target must be a git repo, so .claude/rules sits at a real project root and
-# the rules can be committed with the project.
+# The target must be a git repo, so .claude/rules sits at a real project root.
 if [ ! -d "$REPO/.git" ]; then
     err "not a git repository: $REPO (rules install at a project root)"
     exit 1

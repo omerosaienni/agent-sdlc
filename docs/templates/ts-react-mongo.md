@@ -1,14 +1,15 @@
 # TS / React / MongoDB project template
 
-> Shipped. `scripts/init-ts-mongo-react.sh` generates this. It is a thin wrapper
-> over `scripts/init-ts-mongo.sh --with-react`, so the backend half has one source
-> of truth and never drifts from the backend-only generator. Single package, NOT a
-> monorepo: one package.json, one tsconfig, source split by directory under `src/`.
+> Shipped. `scripts/init-ts-project.sh --mongo --react` generates this. The
+> generator is layered (a TypeScript base plus optional Mongo and React layers), so
+> the full-stack project is just all three layers enabled and there is one source of
+> truth per layer. Single package, NOT a monorepo: one package.json, one tsconfig,
+> source split by directory under `src/`.
 
 The constant skeleton for a TypeScript + React + MongoDB project, plus the parts
-that change per project. The backend half is identical to what the backend-only
-generator produces; React adds the client and shared trees, a Vite config, a jsdom
-test tier, and the frontend dependencies.
+that change per project. The base and Mongo layers are exactly what
+`init-ts-project.sh --mongo` produces; the React layer adds the client and shared
+trees, a Vite config, a jsdom test tier, and the frontend dependencies.
 
 Single package, not a monorepo, on purpose: the stack convention rules are
 path-scoped by directory (`omero-mongo.md` -> `src/server/db/**`, `omero-react.md`
@@ -87,7 +88,7 @@ workspace tooling to maintain.
 
 **Conventions (path-scoped rules in `.claude/rules/`, not CLAUDE.md)**
 - These are installed by `install-project-rules.sh` (`--typescript --mongo --react`),
-  not inlined. See [docs/project-rules.md](project-rules.md). CLAUDE.md carries only
+  not inlined. See [docs/project-rules.md](../project-rules.md). CLAUDE.md carries only
   this project's scope and runtime facts.
 
 ### Domain (changes per project, the template leaves holes)
@@ -158,7 +159,7 @@ API boundary.
 
 - **Stack rules**: the generator installs `omero-typescript.md`, `omero-mongo.md`, and
   `omero-react.md` into `.claude/rules/` via `install-project-rules.sh`. See
-  [docs/project-rules.md](project-rules.md).
+  [docs/project-rules.md](../project-rules.md).
 - **Setup gate** (`project-setup.sh`): proves the project loop-ready the same way it
   does for a backend project. The monorepo provisioning idea (the gate laying down the
   skeleton) is not built; the generator is how a project gets the skeleton.
@@ -167,10 +168,12 @@ API boundary.
 
 ---
 
-## Relationship to the backend generator
+## Relationship to the other stack combinations
 
-`init-ts-mongo-react.sh` is `init-ts-mongo.sh --with-react`. Everything the backend
-generator produces is produced identically here; React is purely additive (the
-`src/client` and `src/shared` trees, the Vite and client-vitest configs, the frontend
-package.json entries and tsconfig jsx/DOM additions, the frontend Makefile targets,
-and the `--react` stack rule). There is no separate backend definition to drift.
+This full-stack project is `init-ts-project.sh --mongo --react`. It is not a separate
+generator: the base, Mongo, and React layers are the same ones every other
+combination uses (`generator/base.sh`, `generator/mongo.sh`, `generator/react.sh`),
+so there is no separate full-stack definition to drift. React is purely additive on
+top of the base (and Mongo, if enabled): the `src/client` and `src/shared` trees, the
+Vite and client-vitest configs, the frontend package.json entries and tsconfig
+jsx/DOM additions, the frontend Makefile targets, and the `--react` stack rule.

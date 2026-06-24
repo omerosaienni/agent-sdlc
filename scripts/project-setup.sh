@@ -47,7 +47,7 @@ node_major(){ node -e "try{console.log(require('$1/package.json').version.split(
 has_script(){ node -e "try{process.stdout.write(require('./package.json').scripts['$1']?'1':'')}catch(e){}" 2>/dev/null; }
 
 # Templates: the vitest tier configs the scaffold path writes come from shared
-# templates (also used by init-ts-mongo.sh), so the two scripts never drift.
+# templates (also used by init-ts-project.sh), so the two scripts never drift.
 # Resolve relative to this script's own location.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATES_DIR="$SCRIPT_DIR/../templates"

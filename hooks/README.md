@@ -33,4 +33,4 @@ Unsets `core.hooksPath` (restoring git's default of each repo's own `.git/hooks`
 
 ## Generated projects
 
-The project generator (`scripts/init-ts-mongo.sh`) installs no hooks: the global install already covers every repo the moment it exists, and a seeded per-repo copy would be ignored and would drift. If `core.hooksPath` is unset, the generator's closing output nudges you to run the install once.
+The project generator (`scripts/init-ts-project.sh`) installs no hooks: the global install already covers every repo the moment it exists, and a seeded per-repo copy would be ignored and would drift. If `core.hooksPath` is unset, the generator's closing output nudges you to run the install once.

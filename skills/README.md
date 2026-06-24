@@ -22,4 +22,5 @@ Repo-managed (installed from here, the source of truth):
 - omero-build-loop, points at contracts/build-judge-loop.md
 - omero-design-partner, points at contracts/design-partner.md
 - omero-project-setup, points at contracts/project-setup.md and runs scripts/project-setup.sh
-- omero-create-ts-mongo, runs scripts/init-ts-mongo.sh (the project generator, no contract: deterministic)
+- omero-create-ts-project, runs scripts/init-ts-project.sh (the project generator, no contract: deterministic; TypeScript base, optional --mongo and --react layers)
+- omero-install-project-rules, runs scripts/install-project-rules.sh (installs stack rules into a repo's .claude/rules/)

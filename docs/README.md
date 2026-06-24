@@ -18,7 +18,7 @@ Explains the whole system, and the place to start. The contracts under [`../cont
 
 ## Templates and examples
 
-- [`templates/ts-react-mongo.md`](templates/ts-react-mongo.md): the full TypeScript / React / MongoDB project the `init-ts-mongo-react.sh` generator produces (a single-package layout, not a monorepo), and what is constant versus domain.
+- [`templates/ts-react-mongo.md`](templates/ts-react-mongo.md): the full TypeScript / React / MongoDB project `init-ts-project.sh --mongo --react` produces (a single-package layout, not a monorepo), and what is constant versus domain.
 - [`../examples/smoke-test-sheet.md`](../examples/smoke-test-sheet.md): a one-deliverable sheet that exercises the whole build loop on a trivial case. Run it first to validate the orchestration itself.
 - [`../hooks/`](../hooks/README.md): the global git guards (commit identity and branch naming), installed via `setup-global-git-hooks.sh`.
 
@@ -37,4 +37,4 @@ The operating contracts, each a project-agnostic rulebook a project consumes by 
 
 ## Skills
 
-The thin `/omero-*` wrappers, in [`../skills/`](../skills/). The create skills run the project generators (`omero-create-ts-mongo` for backend, `omero-create-ts-mongo-react` for full-stack); `omero-install-project-rules` installs stack rules into a repo; the pipeline skills (`omero-design-partner`, `omero-project-setup`, `omero-build-loop`) each reference a contract by path. All carry `disable-model-invocation: true`; invoke with `/omero-*`.
+The thin `/omero-*` wrappers, in [`../skills/`](../skills/). `omero-create-ts-project` runs the project generator (TypeScript base, optional `--mongo` and `--react` layers); `omero-install-project-rules` installs stack rules into a repo; the pipeline skills (`omero-design-partner`, `omero-project-setup`, `omero-build-loop`) each reference a contract by path. All carry `disable-model-invocation: true`; invoke with `/omero-*`.
