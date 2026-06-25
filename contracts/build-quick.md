@@ -13,7 +13,9 @@ Invocation and neutralising the profile machinery:
 ## Per-increment verification (type-check and unit only)
 - After the reviewer approves, the judge runs the type-check gate (agent-typecheck.sh) then the unit tier (agent-tests.sh unit), and proves the unit tests are not hollow (agent-hollow.sh).
 - Does NOT run the integration tier and does NOT check endpoint readiness, so no live endpoint or Docker is ever needed.
-- An increment is gated by the type-check, the unit tier and the hollow-test only. There is no integration tier in this contract at all (not deferred, not run).
+- An increment is gated by the type-check, the unit tier and the hollow-test only. The judge does not run the integration tier.
+- Integration and client/jsdom are separately-gated tiers here, on the footing the core gives the CI-gated client tier (build-judge-loop.md, Test tiers). The core's coverage check and hollow-by-omission hard fail (Test tiers), the judge's "acceptance criteria met" check (Roles, Judge) and the reviewer's declared-tier reachability check (Test tiers) are all scoped to the unit tier. Acceptance criteria whose tests are integration (server:test:integration) or client (client:test:unit) are not gated by this loop, never trip it, and are not flagged as judge-unreachable; their proof is the human's, outside the loop.
+- The unit tier is NOT exempt: the hollow-suite and hollow-test checks stay live on it. A build-quick green means type-check passed and the unit tier (scaffold unit tests plus any this increment added) passed; it does not assert integration or client behaviour.
 
 ## Documentation and commit (no documentation)
 - The document agent does NOT run, and the builder does NOT write a doc-payload.md slice. No docs/modules/ files are produced and docs/ARCHITECTURE.md is never touched. The core's missing-slice reviewer suggestion (build-judge-loop.md, Roles) does not apply: no slice is expected, so the reviewer does not flag its absence.
