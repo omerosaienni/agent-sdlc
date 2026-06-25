@@ -59,18 +59,26 @@ import { closeClient } from './db/index.js';"
 import type { Server } from 'node:http';
 import { createApp } from './app.js';${close_import}
 
-// Fixed default so a fresh checkout runs with no config; PORT overrides it for
-// running several instances or dodging a clash.
+// Host and port come from config/services.yaml via scripts/config-env.sh, which
+// writes .env (loaded with --env-file-if-exists in the start script). The fixed
+// defaults keep a fresh checkout running with no config and MUST match the
+// services.yaml defaults; SERVER_HOST and SERVER_PORT override them.
+const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_PORT = 3000;
 
+export function resolveHost(env: NodeJS.ProcessEnv = process.env): string {
+  const raw = env.SERVER_HOST;
+  return raw === undefined || raw === '' ? DEFAULT_HOST : raw;
+}
+
 export function resolvePort(env: NodeJS.ProcessEnv = process.env): number {
-  const raw = env.PORT;
+  const raw = env.SERVER_PORT;
   if (raw === undefined || raw === '') {
     return DEFAULT_PORT;
   }
   const parsed = Number(raw);
   if (!Number.isInteger(parsed) || parsed < 0) {
-    throw new Error(\`PORT must be a non-negative integer, got '\${raw}'\`);
+    throw new Error(\`SERVER_PORT must be a non-negative integer, got '\${raw}'\`);
   }
   return parsed;
 }
@@ -90,9 +98,10 @@ export async function shutdown(
 
 export function main(): Server {
   const app = createApp();
+  const host = resolveHost();
   const port = resolvePort();
-  const server = app.listen(port, () => {
-    console.log(\`${NAME} listening on http://127.0.0.1:\${port}\`);
+  const server = app.listen(port, host, () => {
+    console.log(\`${NAME} listening on http://\${host}:\${port}\`);
   });
 
   // Both signals route through one clean shutdown: SIGTERM from an orchestrator
@@ -118,7 +127,7 @@ import type { Server } from 'node:http';
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import { createApp, API_BASE } from './app.js';
-import { shutdown, resolvePort } from './index.js';
+import { shutdown, resolvePort, resolveHost } from './index.js';
 
 // Unit tier: no live endpoint. The health route is dependency-free and shutdown
 // takes injected close/exit functions, so both run here without a server signal.
@@ -156,12 +165,22 @@ describe('shutdown', () => {
 });
 
 describe('resolvePort', () => {
-  it('defaults to 3000 when PORT is unset', () => {
+  it('defaults to 3000 when SERVER_PORT is unset', () => {
     expect(resolvePort({})).toBe(3000);
   });
 
-  it('honours PORT when set', () => {
-    expect(resolvePort({ PORT: '4000' })).toBe(4000);
+  it('honours SERVER_PORT when set', () => {
+    expect(resolvePort({ SERVER_PORT: '4000' })).toBe(4000);
+  });
+});
+
+describe('resolveHost', () => {
+  it('defaults to 127.0.0.1 when SERVER_HOST is unset', () => {
+    expect(resolveHost({})).toBe('127.0.0.1');
+  });
+
+  it('honours SERVER_HOST when set', () => {
+    expect(resolveHost({ SERVER_HOST: '0.0.0.0' })).toBe('0.0.0.0');
   });
 });
 EOF
@@ -176,4 +195,12 @@ EOF
     "@types/express": "^5.0.6",
     "@types/supertest": "^7.2.0",
     "supertest": "^7.2.2"'
+
+    # config/services.yaml fragment: the HTTP server's address and port. The loop's
+    # config-env.sh turns this into SERVER_HOST/SERVER_PORT; index.ts reads them.
+    SERVER_YAML="# the HTTP server (npm start)
+server:
+  host: 127.0.0.1
+  port: 3000
+"
 }

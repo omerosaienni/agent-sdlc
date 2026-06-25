@@ -18,12 +18,16 @@ mongo_layer() {
     write_file "$DIR/src/server/db/index.ts" <<EOF
 import { MongoClient, type Db } from 'mongodb';
 
+// Host and port come from config/services.yaml via scripts/config-env.sh (which
+// writes .env). The defaults are the shared-mongo container on loopback and MUST
+// match services.yaml; MONGO_HOST and MONGO_PORT override them (a non-default port
+// points at a dedicated mongod rather than the shared one).
+const HOST = process.env.MONGO_HOST ?? '127.0.0.1';
+const PORT = process.env.MONGO_PORT ?? '27017';
 // directConnection=true is required: a single node replica set advertises its
-// internal container hostname (port 27017), which the host cannot follow, so the
-// driver must be told not to chase that advertisement and to stay on 127.0.0.1.
-// The port is fixed because every project shares one mongod (the shared-mongo
-// container), each in its own database.
-const URI = 'mongodb://127.0.0.1:27017/?directConnection=true';
+// internal container hostname, which the host cannot follow, so the driver must be
+// told not to chase that advertisement and to stay on the configured host.
+const URI = \`mongodb://\${HOST}:\${PORT}/?directConnection=true\`;
 
 // Database this project uses inside the shared server. One place so all modules
 // agree. Named after the project, so the shared server lists one database per
@@ -77,8 +81,11 @@ services:
     # --replSet is mandatory: a single node replica set so change streams and
     # transactions work. bind_ip_all lets the host reach it.
     command: ['mongod', '--replSet', 'rs0', '--bind_ip_all']
+    # Host port from config/services.yaml (compose reads MONGO_PORT from the .env
+    # that config-env.sh writes; defaults to 27017, the shared port). The container
+    # side stays 27017. A non-default host port is a dedicated mongod, not shared.
     ports:
-      - '27017:27017'
+      - '${MONGO_PORT:-27017}:27017'
     volumes:
       - data:/data/db
 volumes:
@@ -241,8 +248,16 @@ EOF
     MONGO_DEPS=',
     "mongodb": "^6.12.0"'
     MONGO_SCRIPTS=',
-    "seed": "tsx src/server/seed.ts",
+    "seed": "tsx --env-file-if-exists=.env src/server/seed.ts",
     "test:integration": "vitest run -c vitest.integration.config.ts"'
+
+    # config/services.yaml fragment: the Mongo address and port. config-env.sh turns
+    # this into MONGO_HOST/MONGO_PORT, read by the db layer and the compose mapping.
+    MONGO_YAML="# the shared mongod (db layer + docker compose)
+mongo:
+  host: 127.0.0.1
+  port: 27017
+"
 
     # CLAUDE.md section documenting the runtime endpoint (this project's DB facts).
     MONGO_CLAUDE_MD="
@@ -250,10 +265,11 @@ EOF
 ## Integration endpoints
 
 - Mongo at mongodb://127.0.0.1:27017 with directConnection=true, the shared
-  container shared-mongo. This project uses database ${DB_NAME}. Readiness: a
-  connect succeeds, or \`docker compose ps\` shows the mongo service up. Bring up
-  with \`make up\`. The shared server is an attended prerequisite; the loop does
-  not start it."
+  container shared-mongo. The host and port come from the mongo block of
+  config/services.yaml (defaults to 127.0.0.1:27017). This project uses database
+  ${DB_NAME}. Readiness: a connect succeeds, or \`docker compose ps\`
+  shows the mongo service up. Bring up with \`make up\`. The shared server is an
+  attended prerequisite; the loop does not start it."
 
     # Makefile fragment: the infra and integration targets, plus the help lines for
     # them. The orchestrator appends MONGO_MAKE_TARGETS after the base targets and
