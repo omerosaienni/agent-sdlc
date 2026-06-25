@@ -102,52 +102,49 @@ EOF
 
     step "editor configs"
     mkdir -p "$DIR/.vscode"
-    write_file "$DIR/.vscode/launch.json" <<'EOF'
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug current file",
-      "type": "node",
-      "request": "launch",
-      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
-      "runtimeArgs": ["${relativeFile}"],
-      "console": "integratedTerminal",
-      "skipFiles": ["<node_internals>/**"],
-      "cwd": "${workspaceFolder}"
-    },
-    {
-      "name": "Debug current test file",
-      "type": "node",
-      "request": "launch",
-      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/vitest",
-      "runtimeArgs": [
-        "run",
-        "${relativeFile}",
-        "--no-file-parallelism"
-      ],
-      "console": "integratedTerminal",
-      "skipFiles": ["<node_internals>/**"],
-      "cwd": "${workspaceFolder}"
-    },
-    {
-      "name": "Debug unit tier",
-      "type": "node",
-      "request": "launch",
-      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/vitest",
-      "runtimeArgs": [
-        "run",
-        "-c",
-        "vitest.unit.config.ts",
-        "--no-file-parallelism"
-      ],
-      "console": "integratedTerminal",
-      "skipFiles": ["<node_internals>/**"],
-      "cwd": "${workspaceFolder}"
-    }
-  ]
-}
-EOF
+
+    # launch.json is generated (not a static heredoc) so envFile is conditional and the
+    # Mongo/React layers can append their configs to valid JSON (mongo.sh, react.sh). It
+    # is gitignored as personal debug config, regenerated on each scaffold.
+    #
+    # Debugger correctness, why this is not the obvious shim setup: the node debugger
+    # must launch the process that runs the code. The .bin/tsx and .bin/vitest shims
+    # fork a child and the debugger only attaches to the parent, so breakpoints never
+    # bind. So run `node --import tsx <file>` for code (tsx as an in-process loader) and
+    # `node node_modules/vitest/vitest.mjs` for tests, with autoAttachChildProcesses to
+    # follow vitest's workers. envFile mirrors the start script (present only once a
+    # service layer has seeded .env); sourceMaps so stepping lands in the .ts.
+    LAUNCH_ENV_FILE=""
+    if [ "$WITH_MONGO" = 1 ] || [ "$WITH_REACT" = 1 ] || [ "$WITH_EXPRESS" = 1 ]; then
+        LAUNCH_ENV_FILE='${workspaceFolder}/.env'
+    fi
+    node -e '
+      const fs = require("fs");
+      const dir = process.argv[1];
+      const envFile = process.argv[2];
+      const base = {
+        type: "node",
+        request: "launch",
+        console: "integratedTerminal",
+        autoAttachChildProcesses: true,
+        sourceMaps: true,
+        skipFiles: ["<node_internals>/**"],
+        cwd: "${workspaceFolder}",
+      };
+      if (envFile) base.envFile = envFile;
+      const tsx = { runtimeExecutable: "node", runtimeArgs: ["--import", "tsx"] };
+      const vitest = "${workspaceFolder}/node_modules/vitest/vitest.mjs";
+      const j = {
+        version: "0.2.0",
+        configurations: [
+          { name: "Run server", ...base, ...tsx, program: "${workspaceFolder}/src/server/index.ts", presentation: { group: "1-run", order: 1 } },
+          { name: "Debug server unit tier", ...base, program: vitest, args: ["run", "-c", "vitest.unit.config.ts", "--no-file-parallelism"], presentation: { group: "2-server-tests", order: 1 } },
+          { name: "Debug current test file", ...base, program: vitest, args: ["run", "${relativeFile}", "--no-file-parallelism"], presentation: { group: "4-current-file", order: 1 } },
+          { name: "Debug current file (tsx)", ...base, ...tsx, program: "${file}", presentation: { group: "4-current-file", order: 2 } },
+        ],
+      };
+      fs.writeFileSync(dir + "/.vscode/launch.json", JSON.stringify(j, null, 2) + "\n");
+    ' "$DIR" "$LAUNCH_ENV_FILE"
 
     # Format on save with Prettier, and recommend the extension so the formatter is
     # present. Committed (the .gitignore keeps these two while ignoring launch.json),

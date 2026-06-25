@@ -142,6 +142,25 @@ vitest.client.config.ts
 EOF
     note "added react config files to .graphifyignore"
 
+    # Client debug configs appended to the base launch.json (base.sh): a browser-side
+    # Chrome launch for the Vite app, the client unit tier, and a compound that starts
+    # the server and client together. The Chrome URL matches the CLIENT_HOST/PORT
+    # defaults in config/services.yaml below; change both if you change the yaml.
+    node -e '
+      const fs = require("fs");
+      const p = process.argv[1] + "/.vscode/launch.json";
+      const j = JSON.parse(fs.readFileSync(p, "utf8"));
+      j.configurations.push(
+        { name: "Open client in Chrome", type: "chrome", request: "launch", url: "http://127.0.0.1:5173", webRoot: "${workspaceFolder}/src/client", presentation: { group: "1-run", order: 3 } },
+        { name: "Debug client unit tier (jsdom)", type: "node", request: "launch", program: "${workspaceFolder}/node_modules/vitest/vitest.mjs", args: ["run", "-c", "vitest.client.config.ts", "--no-file-parallelism"], envFile: "${workspaceFolder}/.env", console: "integratedTerminal", autoAttachChildProcesses: true, sourceMaps: true, skipFiles: ["<node_internals>/**"], cwd: "${workspaceFolder}", presentation: { group: "3-client-tests", order: 1 } },
+      );
+      j.compounds = [
+        { name: "Run server + client", configurations: ["Run server", "Open client in Chrome"], stopAll: true, presentation: { group: "1-run", order: 4 } },
+      ];
+      fs.writeFileSync(p, JSON.stringify(j, null, 2) + "\n");
+    ' "$DIR"
+    note "added client debug configs (Chrome, client tier, compound)"
+
     # ---- fragments the orchestrator splices into the shared files ----
 
     # package.json: React runtime deps and the client scripts; React/Vite/RTL dev

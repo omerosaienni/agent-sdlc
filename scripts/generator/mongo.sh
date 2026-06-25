@@ -221,25 +221,31 @@ describe('replica set smoke test', () => {
 });
 EOF
 
-    # An extra VS Code debug config for the integration tier (Mongo must be up).
-    # Appended to the base launch.json via a node one-liner so the JSON stays valid.
+    # Two more debug configs for the Mongo paths (seed + integration tier; both need
+    # Mongo up), appended to the base launch.json (base.sh) as JSON. envFile is always
+    # set here: the Mongo layer seeds .env at generation. Same debugger reasoning as
+    # base.sh: node + vitest.mjs (not the shim), autoAttachChildProcesses for workers.
     node -e '
       const fs = require("fs");
       const p = process.argv[1] + "/.vscode/launch.json";
       const j = JSON.parse(fs.readFileSync(p, "utf8"));
-      j.configurations.push({
-        name: "Debug integration tier (Mongo must be up)",
+      const base = {
         type: "node",
         request: "launch",
-        runtimeExecutable: "${workspaceFolder}/node_modules/.bin/vitest",
-        runtimeArgs: ["run", "-c", "vitest.integration.config.ts", "--no-file-parallelism"],
+        envFile: "${workspaceFolder}/.env",
         console: "integratedTerminal",
+        autoAttachChildProcesses: true,
+        sourceMaps: true,
         skipFiles: ["<node_internals>/**"],
         cwd: "${workspaceFolder}",
-      });
+      };
+      j.configurations.push(
+        { name: "Run seed (Mongo must be up)", ...base, runtimeExecutable: "node", runtimeArgs: ["--import", "tsx"], program: "${workspaceFolder}/src/server/seed.ts", presentation: { group: "1-run", order: 2 } },
+        { name: "Debug server integration tier (Mongo must be up)", ...base, program: "${workspaceFolder}/node_modules/vitest/vitest.mjs", args: ["run", "-c", "vitest.integration.config.ts", "--no-file-parallelism"], presentation: { group: "2-server-tests", order: 2 } },
+      );
       fs.writeFileSync(p, JSON.stringify(j, null, 2) + "\n");
     ' "$DIR"
-    note "added integration-tier debug config"
+    note "added Mongo debug configs (seed, integration tier)"
 
     # ---- fragments the orchestrator splices into the shared files ----
 
