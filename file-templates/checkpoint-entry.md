@@ -10,6 +10,7 @@
 Build loop. Mode: <mode>. Profile: <profile>. Sheet: <sheet path>.
 <no-remote notice, or blank (only in the local-only flow): "No GitHub remote: I will build locally and commit each increment to local main; no push or PR until you add a remote.">
 <degraded note, or blank: "Subagent dispatch unavailable: I build one increment inline then stop. To build or resume another, start a fresh conversation and I will reclaim.">
+<completion-gate note (lite profile only), or blank: "Completion gate: running the full integration suite." while it runs, or "Completion gate: the integration suite failed; append a fix increment to the sheet and I will build it, then re-run the gate." on a failure>
 <OTHER QUEUES (sibling feature queues with open work), one line each: "other queue <feature-name>: <n> in flight, <n> awaiting merge, <n> escalated, <n> blocked"; or blank if none>
 
 <!-- STATE BLOCK START (byte-identical across the three checkpoint templates) -->

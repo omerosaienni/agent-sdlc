@@ -13,6 +13,9 @@ The build loop's per-feature recovery record and cross-conversation memory: one 
   - review_count: integer, 0 to 3. Review-loop attempts spent (budget 3).
   - judge_count: integer, 0 to 3. Judge-loop attempts spent (budget 3).
   - branch: string or null. The audit-named branch (`feat/<id>-<kebab-title>`, per the project branch-naming standard, see build-judge-loop.md, Branch and PR), and the PR lookup key in the GitHub flow (in the local-only flow there is no PR and it is purely the audit name). null until the branch is cut.
+- completion: object, OPTIONAL, lite profile only. The loop's record of the lite completion gate (build-loop-lite.md), written by the loop (not human-set) when every increment is merged and the gate begins, absent otherwise and always absent in full. Fields:
+  - integration: `pending` or `passed`. `pending` until the full accumulated integration suite passes against the finished main, then `passed`. A failure leaves it `pending` (the gate is resolved by appending a fix increment to the sheet, which builds and merges through the normal flow, after which the gate re-runs).
+  - docs: `pending`, `pr-open`, or `merged`. `pending` until the documentation sweep is committed; with a remote it goes to `pr-open` on the docs PR (branch `docs/<feature-name>-completion`) and to `merged` once that PR merges; in the local-only flow the loop integrates the docs commit into main itself, so it goes straight to `merged`.
 
 ## Example
 ```
@@ -23,7 +26,8 @@ The build loop's per-feature recovery record and cross-conversation memory: one 
   "profile": "lite",
   "increments": {
     "ci-workflow": { "depends_on": [], "status": "merged", "review_count": 1, "judge_count": 1, "branch": "feat/ci-workflow-pr-checks" }
-  }
+  },
+  "completion": { "integration": "passed", "docs": "pr-open" }
 }
 ```
 
@@ -36,10 +40,11 @@ The build loop's per-feature recovery record and cross-conversation memory: one 
 6. status is one of the nine canonical values.
 7. review_count and judge_count are integers in 0..3.
 8. branch is null or a non-empty string, unique across this file and across sibling queues (branch names are one git namespace).
+9. completion, if present, occurs only when profile is lite; its integration is one of `pending`/`passed` and its docs is one of `pending`/`pr-open`/`merged`.
 
 ## Who writes it
 - The loop, on every status transition: sole writer in normal operation.
 - The bootstrap, on a feature's first build (state.json absent): every increment pending, counts 0, branch null, `mode` and `profile` not written. See build-judge-loop.md, Resume after interruption.
 - The reconstruction recovery path, rebuilding a lost file from the sheet and the merged PRs.
 
-The human sets `mode` and `profile`, and may hand-correct the file as an out-of-band recovery action (for example an increment completed outside the loop, see Reconciliation). Nothing else writes it.
+The `completion` block (lite only) is loop-written like everything except `mode` and `profile`: the loop creates and advances it at the completion gate (build-loop-lite.md). The human sets `mode` and `profile`, and may hand-correct the file as an out-of-band recovery action (for example an increment completed outside the loop, see Reconciliation). Nothing else writes it.

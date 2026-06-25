@@ -7,7 +7,7 @@ allowed-tools: Bash(git:*), Bash(gh:*), Bash(npm:*), Bash(npx:*), Bash(make:*), 
 ---
 Operate the build-judge loop defined in
 {{SDLC_REPO}}/contracts/build-judge-loop.md. Read that contract now and follow it
-exactly. It is the single source of truth for the workflow; this skill does not
+exactly. It is the source of truth for the shared workflow; this skill does not
 restate it.
 
 That contract is the profile-agnostic core. After reading it, read the active

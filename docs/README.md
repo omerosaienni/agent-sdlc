@@ -5,7 +5,7 @@ Explains the whole system, and the place to start. The contracts under [`../cont
 ## Start here
 
 - [`pipeline.md`](pipeline.md): the three phases and two gates, creating a project, the pipeline tooling and prerequisites.
-- [`build-loops.md`](build-loops.md): the one build loop, its two modes (sequential and parallel), the per-increment cycle, the checkpoint, tests, recovery.
+- [`build-loops.md`](build-loops.md): the one build loop, its two modes (sequential and parallel) and two profiles (full and lite), the per-increment cycle, the checkpoint, tests, recovery.
 - [`roles.md`](roles.md): the four agent roles and the ordering invariant.
 
 ## Reference
