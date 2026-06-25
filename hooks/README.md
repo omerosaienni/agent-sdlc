@@ -1,13 +1,18 @@
 # Hooks
 
-Two git guards, installed globally for every repo at once.
+Three git guards, installed globally for every repo at once.
 
 | Hook | Guards | Blocks |
 | --- | --- | --- |
 | `pre-commit` | commit author identity | a commit whose `user.email` is not on your allowlist, so the loop's commits always attribute to the right GitHub account |
+| `commit-msg` | commit authorship | a commit message that credits an AI assistant via a `Co-authored-by` trailer or a "Generated with" footer |
 | `pre-push` | branch naming | a push from a branch not named `<type>/<kebab-description>` |
 
 The identity allowlist is your own, read from git config (`sdlc.identityAllowlist`, space-separated), so no personal email is baked into this repo. It is a persistent config key, not a per-shell env var, so there is no bypass to forget about. If it is unset, `pre-commit` fails closed (an empty allowlist that waved everything through would defeat the guard).
+
+## Commit authorship
+
+`commit-msg` rejects a message that credits an AI assistant: a `Co-authored-by:` trailer or a "Generated with" footer naming Claude, Copilot, Cursor, Gemini and the like. GitHub treats a `Co-authored-by` trailer as a real contributor, so one stray trailer adds an AI avatar to the repo that only a history rewrite can remove. The guard stops it at write time. It is the enforcement layer under the `omero-git-authorship.md` global rule (which tells Claude not to write the trailer); the hook makes it true even when the rule is not in context. The match is case-insensitive and word-bounded, so honest prose and the `claude-rules/` path are not affected. A human `Co-authored-by` is allowed.
 
 ## Branch naming
 

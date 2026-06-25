@@ -3,9 +3,10 @@
 # repo at once, with no drift.
 #
 # It points git's global core.hooksPath at one shared dir (~/.config/git/hooks)
-# holding two hooks:
-#   pre-commit  identity guard    - blocks a commit whose author email is off the allowlist
-#   pre-push    branch-name guard  - blocks a push from a branch not named <type>/<kebab>
+# holding three hooks:
+#   pre-commit  identity guard     - blocks a commit whose author email is off the allowlist
+#   commit-msg  authorship guard   - blocks a commit message that credits an AI assistant
+#   pre-push    branch-name guard   - blocks a push from a branch not named <type>/<kebab>
 # core.hooksPath is a global redirect: git consults ONLY that dir, so there is one
 # source of truth and no per-repo copies to drift. Each hook then CHAINS - after
 # its own check passes it execs the repo's own .git/hooks/<name> if one exists, so
@@ -37,7 +38,7 @@ HOOKS_SRC="$SCRIPT_DIR/../hooks"
 HOOKS_DEST="${XDG_CONFIG_HOME:-$HOME/.config}/git/hooks"
 
 # The hooks this repo owns and installs.
-HOOK_NAMES="pre-commit pre-push"
+HOOK_NAMES="pre-commit commit-msg pre-push"
 
 # Known-stale hooks install is allowed to delete when it finds them shadowing,
 # matched by md5 so it never removes something unrecognised:
@@ -158,7 +159,7 @@ do_install() {
     fi
 
     tidy_stale
-    ok "Installed. Every repo now runs the identity and branch-name guards."
+    ok "Installed. Every repo now runs the identity, authorship and branch-name guards."
 }
 
 # ============================================================================

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Refuse a commit message that credits an AI assistant, so commits attribute to
+# the human author alone. GitHub reads Co-authored-by trailers as real
+# contributors, so one stray trailer adds an AI avatar to the repo that only a
+# history rewrite can remove. This guard stops it at write time.
+#
+# Matched, case-insensitive: a Co-authored-by trailer naming a known assistant,
+# and a "Generated with <assistant>" footer. Word boundaries keep it off honest
+# prose (anthropology, an author surnamed Bard) since the names sit inside a
+# trailer line here, not free text.
+msg_file="$1"
+
+assistants='claude|anthropic|copilot|cursor|codeium|chatgpt|openai|gpt-[0-9]|gemini|bard|llama|codewhisperer|tabnine|sourcegraph|cody|devin|aider'
+
+if grep -qiE "^[[:space:]]*Co-authored-by:.*\b(${assistants})\b" "$msg_file" \
+   || grep -qiE "generated with .*\b(${assistants})\b" "$msg_file"; then
+    echo "BLOCKED: commit message credits an AI assistant." >&2
+    echo "Remove the Co-authored-by / 'Generated with' line. Commits are the human author's alone." >&2
+    echo "Offending line(s):" >&2
+    grep -inE "^[[:space:]]*Co-authored-by:.*\b(${assistants})\b|generated with .*\b(${assistants})\b" "$msg_file" >&2
+    exit 1
+fi
+
+# Guard passed. Chain to the repo's own commit-msg if it has one, so a per-repo
+# tool (commitlint, husky) keeps working under our global core.hooksPath. exec
+# preserves the message-file argument the local hook expects. The -ef guard
+# avoids re-running ourselves in a per-repo install.
+local_hook="$(git rev-parse --git-dir 2>/dev/null)/hooks/commit-msg"
+if [ -x "$local_hook" ] && ! [ "$local_hook" -ef "$0" ]; then
+    exec "$local_hook" "$@"
+fi
