@@ -6,7 +6,6 @@
 # Usage:
 #   project-setup.sh            set up: install and scaffold gaps as needed (default)
 #   project-setup.sh --check    verify only; never install, scaffold or push
-#   (--yes is a deprecated alias for the default; acting is now the default)
 #
 # Exit: 0 READY, 1 NOT READY (fix FAILs), 2 NOT READY (--check found setup to
 #       apply; re-run without --check), 3 BLOCKED (endpoint down)
@@ -109,7 +108,6 @@ format_check(){
 mode="act"
 for a in "$@"; do case "$a" in
     --check) mode="check" ;;
-    -y|--yes) mode="act" ;;  # deprecated: acting is the default, kept so old calls still work
     -h|--help) grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown argument: $a" >&2; exit 64 ;;
 esac; done

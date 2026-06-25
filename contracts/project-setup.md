@@ -25,7 +25,7 @@ A second run mutates nothing. Being idempotent and reporting ready-or-not with s
 Integration tiers need live endpoints. Setup runs the integration tier; if it fails with a connection error (endpoint down), setup reports BLOCKED with the bring-up step, distinct from a test failure. Human brings the endpoint up and re-runs setup. An endpoint being down is never reported as a code failure.
 
 ## Consent for side effects
-Installs, scaffolds and pushes are side effects. The default acts: invoking the gate IS the consent, so it installs, scaffolds and pushes gaps as needed. --check is the read-only preview: verifies only, never installs, scaffolds or pushes; a needed action makes it report NOT READY (exit 2) with the re-run-without-check instruction. Consent is never a hidden environment variable. (--yes is a deprecated alias for the default.)
+Installs, scaffolds and pushes are side effects. The default acts: invoking the gate IS the consent, so it installs, scaffolds and pushes gaps as needed. --check is the read-only preview: verifies only, never installs, scaffolds or pushes; a needed action makes it report NOT READY (exit 2) with the re-run-without-check instruction. Consent is never a hidden environment variable.
 
 ## Verdict and exit codes
 - 0 READY: build may proceed.
