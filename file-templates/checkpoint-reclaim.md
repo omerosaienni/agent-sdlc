@@ -31,7 +31,7 @@ POSSIBLY STALLED (state is not pending, merged or pr-open):
 
 AWAITING MERGE (PR open, you merge):
 - <id> <title> <★ or blank> -- branch <branch>. Merge to unblock <dependent ids, or "no dependents">.
-<!-- one row per pr-open increment, lowest id first. If none, write exactly: None. -->
+<!-- one row per pr-open increment, lowest id first; in the lite profile, also one row for the completion docs PR when completion.docs is pr-open (id completion-docs, title "documentation sweep", no star, branch docs/<feature-name>-completion, "no dependents"), placed last. If none, write exactly: None. -->
 
 READY (all deps merged):
 - <id> <title> <★ or blank> -- deps <satisfied dep ids> merged.
