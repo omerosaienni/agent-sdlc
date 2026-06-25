@@ -180,7 +180,7 @@ All loop output, plus the feature sheets it builds from, lives under a single gi
 
 ## Scripts and permissions
 - Multi-step project operations are committed named scripts under scripts/, invoked as a single command, not inline compound bash. The loop's own runners are not committed: the setup gate places the agent test runner and the hollow-check runner under .building/scripts/ (gitignored), the judge places the type-check runner there the same way, and the judge invokes them all from there. Grant each script explicitly by path (e.g. Bash(.building/scripts/agent-tests.sh:*)), never a directory glob, plus a minimal atomic set.
-- Side-effecting scripts (install, network, destructive) announce intent and ask via an informative dialog before acting, even under the allowlist. Repo-local read-only scripts run silently. Consent is passed explicitly (an explicit flag or confirmation), never a hidden environment variable.
+- Side-effecting scripts (install, network, destructive) announce intent and ask via an informative dialog before acting, even under the allowlist. Repo-local read-only scripts run silently. Consent is passed explicitly (a flag or confirmation), never a hidden environment variable.
 
 ## Resume after interruption
 The loop can be interrupted (crash, closed terminal, exhausted context). state.json is the recovery record.
