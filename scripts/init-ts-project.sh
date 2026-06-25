@@ -163,6 +163,7 @@ write_file "$DIR/package.json" <<EOF
     "server:test:unit": "vitest run -c vitest.unit.config.ts"${MONGO_SERVER_SCRIPTS:-}${REACT_SCRIPTS:-}${MONGO_DB_SCRIPTS:-},
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "dependencies": {
@@ -269,8 +270,11 @@ ${REACT_CLIENT_HELP:-}
 ${REACT_TESTALL_HELP:-}
 	@echo ""
 	@echo " quality"
-	@echo "  lint        Run eslint over src"
-	@echo "  typecheck   Type-check without emitting (tsc --noEmit)"
+	@echo "  lint          Run eslint over src"
+	@echo "  typecheck     Type-check without emitting (tsc --noEmit)"
+	@echo "  format        Format the repo with prettier (writes changes)"
+	@echo "  format-check  Check formatting without writing"
+	@echo "  check         Run all quality gates (format-check, lint, typecheck, test)"
 	@echo ""
 	@echo " graph"
 	@echo "  graph       Rebuild the knowledge graph (code + docs) and HTML"
@@ -294,13 +298,24 @@ ${REACT_CLIENT_TARGETS:-}
 test: ${TEST_PREREQS} ## Run the server tier(s)
 ${REACT_TESTALL_TARGET:-}
 # --- quality -------------------------------------------------------------
-.PHONY: lint typecheck
+.PHONY: lint typecheck format format-check check
 
 lint: ## Run eslint over src
 	npm run lint
 
 typecheck: ## Type-check without emitting (tsc --noEmit)
 	npm run typecheck
+
+format: ## Format the repo with prettier (writes changes)
+	npm run format
+
+format-check: ## Check formatting without writing (CI-friendly)
+	npm run format:check
+
+# Aggregate gate for CI and pre-push: format-check (not format) so unformatted
+# code fails rather than being silently rewritten. test pulls in the integration
+# tier with Mongo, so check needs the db up (make db-start).
+check: format-check lint typecheck test ## Run all quality gates
 
 # --- graph ---------------------------------------------------------------
 # Knowledge graph (graphify). Model/env pinned so the target is self-contained.
