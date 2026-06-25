@@ -219,8 +219,6 @@ project-setup.sh            set up: install and scaffold gaps as needed (default
 project-setup.sh --check    verify only; never install, scaffold or push
 ```
 
-`--yes` is a deprecated alias for the default; acting is now the default.
-
 Exit codes: 0 READY, 1 NOT READY (fix the FAIL lines), 2 NOT READY (`--check`
 found setup to apply, re-run without `--check`), 3 BLOCKED (endpoint down).
 
@@ -296,7 +294,6 @@ setup gate (today) places and proves only the test and hollow-check runners.
   idempotently (acts only on the gap). Invoking the gate is the consent.
 - `--check`: reports only, never changes anything. Use this to verify without
   side effects (exit 2 if setup is needed).
-- `--yes`: deprecated alias for the default, kept so old invocations still work.
 
 ---
 
@@ -306,8 +303,7 @@ A focused helper that ensures the repo has the coverage tooling the judge report
 needs (`@vitest/coverage-v8`) and verifies a coverage run works. Idempotent.
 
 ```
-ensure-report-tooling.sh            ask before installing (at a terminal)
-ensure-report-tooling.sh --yes      install without asking
+ensure-report-tooling.sh            install if missing (default)
 ensure-report-tooling.sh --check    report only, never install (exit 2 if missing)
 ```
 

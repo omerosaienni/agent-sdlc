@@ -3,11 +3,10 @@
 # (@vitest/coverage-v8). Idempotent. Run from the project root.
 #
 # Usage:
-#   ensure-report-tooling.sh            ask before installing (if at a terminal)
-#   ensure-report-tooling.sh --yes      install without asking
+#   ensure-report-tooling.sh            install if missing (default)
 #   ensure-report-tooling.sh --check    report only, never install (exit 2 if missing)
 #
-# Exit: 0 present or installed, 1 coverage run failed, 2 missing and not installed
+# Exit: 0 present or installed, 1 coverage run failed, 2 --check found it missing
 set -euo pipefail
 
 # ============================================================================
@@ -16,34 +15,22 @@ set -euo pipefail
 
 usage() { grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0; }
 
-# consent: true if the script may install, given the mode and whether we are at a
-# terminal. Keeps the install decision in one place.
-consent() {
-    case "$mode" in
-        yes)   return 0 ;;
-        check) return 1 ;;
-        ask)
-            if [ -t 0 ]; then
-                read -r -p "install now? [y/N] " reply
-                case "$reply" in y|Y|yes|YES) return 0 ;; *) return 1 ;; esac
-            fi
-            return 1 ;;
-    esac
-}
+# consent: true if the script may install. Installing is the default, since invoking
+# the script is the consent; --check is the read-only check that refuses.
+consent() { [ "$mode" = check ] && return 1; return 0; }
 
 # ============================================================================
 # Parse arguments
 # ============================================================================
 
-mode="ask"
+mode="act"
 for arg in "$@"; do
     case "$arg" in
-        -y|--yes)  mode="yes" ;;
         --check)   mode="check" ;;
         -h|--help) usage ;;
         *)
             echo "unknown argument: $arg" >&2
-            echo "use --yes, --check, or no argument" >&2
+            echo "use --check or no argument" >&2
             exit 64 ;;
     esac
 done
@@ -63,16 +50,11 @@ if [ ${#need[@]} -eq 0 ]; then
     echo "report tooling already present"
 else
     echo "missing report tooling: ${need[*]}"
-    if [ "$mode" = check ]; then
-        exit 2
-    fi
-    echo "this installs npm dev dependencies (network + package.json change)"
     if consent; then
-        echo "installing: ${need[*]}"
+        echo "installing (npm dev dependencies: network + package.json change): ${need[*]}"
         npm install -D "${need[@]}"
     else
-        # ask-mode at a non-terminal, or declined: refuse rather than guess.
-        echo "skipped install; coverage tooling missing" >&2
+        echo "--check: not installing; re-run without --check to install" >&2
         exit 2
     fi
 fi
