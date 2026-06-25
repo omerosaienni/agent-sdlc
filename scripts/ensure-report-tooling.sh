@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Ensure this repo has the tooling the judge report needs: the coverage provider
-# (@vitest/coverage-v8). Idempotent. Run from the project root.
+# (@vitest/coverage-v8), matching the installed vitest major. Idempotent. Run from
+# the project root.
 #
 # Usage:
-#   ensure-report-tooling.sh            install if missing (default)
-#   ensure-report-tooling.sh --check    report only, never install (exit 2 if missing)
+#   ensure-report-tooling.sh            install or realign if missing/mismatched (default)
+#   ensure-report-tooling.sh --check    report only, never install (exit 2 if missing/mismatched)
 #
-# Exit: 0 present or installed, 1 coverage run failed, 2 --check found it missing
+# Exit: 0 ok, 1 vitest absent or coverage run failed, 2 --check found it missing or mismatched
 set -euo pipefail
 
 # ============================================================================
@@ -36,23 +37,32 @@ for arg in "$@"; do
 done
 
 # ============================================================================
-# Resolve inputs: what is missing
+# Resolve inputs: vitest major, and whether coverage-v8 matches it
 # ============================================================================
 
-need=()
-node -e "require.resolve('@vitest/coverage-v8')" 2>/dev/null || need+=("@vitest/coverage-v8")
+# The coverage provider major must match the installed vitest major; a present but
+# mismatched provider fails the run, so match it, do not just check presence. This
+# mirrors the setup gate's step 1, of which this is the standalone version.
+node_major(){ node -e "try{console.log(require('$1/package.json').version.split('.')[0])}catch(e){process.exit(1)}" 2>/dev/null; }
+
+vmaj=$(node_major vitest || true)
+if [ -z "$vmaj" ]; then
+    echo "vitest not installed; install it before ensuring report tooling" >&2
+    exit 1
+fi
+cmaj=$(node_major '@vitest/coverage-v8' || true)
 
 # ============================================================================
-# Install the gap (only with consent)
+# Install or realign the coverage provider (only with consent)
 # ============================================================================
 
-if [ ${#need[@]} -eq 0 ]; then
-    echo "report tooling already present"
+if [ -n "$cmaj" ] && [ "$cmaj" = "$vmaj" ]; then
+    echo "report tooling present (coverage-v8 matches vitest $vmaj)"
 else
-    echo "missing report tooling: ${need[*]}"
+    [ -n "$cmaj" ] && echo "coverage-v8 major $cmaj does not match vitest $vmaj" || echo "coverage-v8 missing (need ^$vmaj)"
     if consent; then
-        echo "installing (npm dev dependencies: network + package.json change): ${need[*]}"
-        npm install -D "${need[@]}"
+        echo "installing @vitest/coverage-v8@^$vmaj (npm dev dependency: network + package.json change)"
+        npm install -D "@vitest/coverage-v8@^${vmaj}"
     else
         echo "--check: not installing; re-run without --check to install" >&2
         exit 2

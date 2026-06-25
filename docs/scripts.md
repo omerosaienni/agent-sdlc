@@ -300,13 +300,15 @@ setup gate (today) places and proves only the test and hollow-check runners.
 ## ensure-report-tooling.sh (dependency helper)
 
 A focused helper that ensures the repo has the coverage tooling the judge report
-needs (`@vitest/coverage-v8`) and verifies a coverage run works. Idempotent.
+needs (`@vitest/coverage-v8`), matching the installed vitest major, and verifies a
+coverage run works. Idempotent.
 
 ```
-ensure-report-tooling.sh            install if missing (default)
-ensure-report-tooling.sh --check    report only, never install (exit 2 if missing)
+ensure-report-tooling.sh            install or realign if missing/mismatched (default)
+ensure-report-tooling.sh --check    report only, never install (exit 2 if missing/mismatched)
 ```
 
-The gate's step 1 covers the same ground (it derives the required coverage major
-from the installed vitest). This script is the standalone, single-concern version
-for when you want to fix just the report tooling without running the whole gate.
+It does the same major-matching as the gate's step 1 (derives the required
+coverage major from the installed vitest and pins the install to it). This is the
+standalone, single-concern version for fixing just the report tooling without
+running the whole gate.
