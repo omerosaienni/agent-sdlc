@@ -6,7 +6,7 @@ Both modes are attended. With a GitHub remote a human merges every PR, and the m
 
 ## The per-increment cycle
 
-For each increment: the builder implements and writes tests; the reviewer reviews (budget 3, bounce on a critical or major finding with evidence); on approval the judge runs the unit tier then the integration tier and proves the tests are not hollow; on a pass the document agent runs; the orchestrator commits code and docs and opens a PR into main (or, with no remote, integrates the increment into local main). Either the review or the judge loop exhausting three attempts escalates and freezes that increment's dependents. This cycle is identical in both modes. The per-increment state machine is [`diagrams/increment-states.svg`](diagrams/increment-states.svg).
+For each increment: the builder implements and writes tests; the reviewer reviews (budget 3, bounce on a critical or major finding with evidence); on approval the judge runs the unit tier then the integration tier and proves the tests are not hollow; on a pass the document agent runs; the orchestrator commits code and docs and opens a PR into main (or, with no remote, integrates the increment into local main). Either the review or the judge loop exhausting three attempts escalates and freezes that increment's dependents. This cycle is identical in both modes. The per-increment state machine is [`diagrams/increment-states.svg`](diagrams/increment-states.svg). This is the full profile; the lite profile defers the integration tier and the documentation to a completion gate (see [Build profiles](#build-profiles-full-and-lite)).
 
 ![The build and judge loop for one increment](diagrams/build-judge-loop.svg)
 
@@ -40,6 +40,17 @@ A remote is not required to build. The setup gate proves git, a local main, `gh`
 - **No remote**: the local-only flow. The loop warns once that no remote is configured, so nothing can be pushed or PR'd yet, then continues locally. It cuts each branch from local main, builds and commits the increment and integrates it into local main itself (a fast-forward), with no push and no PR. The local commit is the increment's terminal state, so it goes straight to `merged` (meaning "on local main") with no `pr-open` stage, and the checkpoint never offers **Merge the PR** because there is nothing to merge. Not every increment ends up pushed or PR'd, which is expected.
 
 In the local-only flow the two modes coincide: with no open PRs there is no merge order to decouple from build order, so the loop integrates each increment as soon as it is committed and cuts the next branch from the updated local main, keeping main green after every increment. Adding a remote later resumes the full push/PR flow for subsequent increments; increments already committed locally stay on main and are pushed with it when you first push.
+
+## Build profiles: full and lite
+
+Like `mode`, a `profile` lives in each feature's `state.json`, set per queue and persisting across conversations. The loop reads it and never writes it; absent, it defaults to full. It is orthogonal to `mode`: a queue can be lite and parallel, or full and sequential, in any combination.
+
+- **full** (default): every increment is fully verified and documented before it ships. The judge runs both the unit and the integration tier per increment, the document agent runs per increment, and the commit carries code and docs. There is no completion gate, because each increment is already integration-green and documented.
+- **lite**: a fast iteration path. Per increment the judge gates with the type-check, the unit tier and the hollow-test only; it defers the integration tier, so no live endpoint or Docker is needed while iterating. The document agent is deferred too (the builder still writes its cheap `doc-payload.md` slice, so nothing is lost), and the commit carries code only.
+
+lite reconciles both deferrals at a **completion gate**, before the queue is declared complete: the full accumulated integration suite runs once against the finished main and must pass, then a documentation sweep runs the document agent across every increment from its `doc-payload.md` slice in one pass. So a lite queue is unit-green throughout and integration-green at completion, the same shape as parallel-attended's deferred combined re-run.
+
+The trade is honest. lite buys speed (no per-increment integration tier, no per-increment docs) at the cost of per-increment integration-green and per-increment docs, both reconciled before the feature ships. full stays the default and the thorough per-increment pass.
 
 ## Multiple queues
 
