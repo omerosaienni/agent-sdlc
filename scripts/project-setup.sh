@@ -4,11 +4,12 @@
 # On READY it writes a receipt (.building/setup-ok) the build loop checks.
 #
 # Usage:
-#   project-setup.sh            check; ask before installing or scaffolding
-#   project-setup.sh --yes      install and scaffold gaps without asking
-#   project-setup.sh --check    verify only; never install or scaffold
+#   project-setup.sh            set up: install and scaffold gaps as needed (default)
+#   project-setup.sh --check    verify only; never install, scaffold or push
+#   (--yes is a deprecated alias for the default; acting is now the default)
 #
-# Exit: 0 READY, 1 NOT READY (fix FAILs), 2 needs --yes, 3 BLOCKED (endpoint down)
+# Exit: 0 READY, 1 NOT READY (fix FAILs), 2 NOT READY (--check found setup to
+#       apply; re-run without --check), 3 BLOCKED (endpoint down)
 #
 # No -e: this gate accumulates failures in `fail` and decides its own exit code,
 # so a single failing check must not abort the run.
@@ -36,12 +37,9 @@ bad(){ printf 'FAIL  %s\n' "$1"; fail=1; }
 block(){ printf 'BLOCK %s\n' "$1"; [ "$fail" -lt 3 ] && fail=3; }
 need(){ printf 'NEED  %s\n' "$1"; [ "$fail" -lt 2 ] && fail=2; }
 
-# consent: true if the gate may install/scaffold/push, given the mode.
-consent(){ case "$mode" in
-    yes) return 0 ;;
-    check) return 1 ;;
-    ask) if [ -t 0 ]; then read -r -p "  do it now? [y/N] " r; case "$r" in y|Y|yes|YES) return 0;; *) return 1;; esac; fi; return 1 ;;
-esac; }
+# consent: true if the gate may install/scaffold/push. Acting is the default, since
+# invoking the gate is the consent; --check is the read-only preview that refuses.
+consent(){ [ "$mode" = check ] && return 1; return 0; }
 
 node_major(){ node -e "try{console.log(require('$1/package.json').version.split('.')[0])}catch(e){process.exit(1)}" 2>/dev/null; }
 has_script(){ node -e "try{process.stdout.write(require('./package.json').scripts['$1']?'1':'')}catch(e){}" 2>/dev/null; }
@@ -100,7 +98,7 @@ format_check(){
     if consent; then
         npx prettier --write . >/dev/null 2>&1 && ok "formatted with prettier --write" || bad "prettier --write failed; format the tree manually"
     else
-        need "formatting; re-run with --yes to run prettier --write"
+        need "formatting; re-run without --check to run prettier --write"
     fi
 }
 
@@ -108,10 +106,10 @@ format_check(){
 # Parse arguments
 # ============================================================================
 
-mode="ask"
+mode="act"
 for a in "$@"; do case "$a" in
-    -y|--yes) mode="yes" ;;
     --check) mode="check" ;;
+    -y|--yes) mode="act" ;;  # deprecated: acting is the default, kept so old calls still work
     -h|--help) grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown argument: $a" >&2; exit 64 ;;
 esac; done
@@ -127,7 +125,7 @@ if [ -z "$vmaj" ]; then bad "vitest not installed; install it before setup"; els
     if [ -n "$cmaj" ] && [ "$cmaj" = "$vmaj" ]; then ok "coverage tooling matches vitest $vmaj"; else
         [ -n "$cmaj" ] && note "coverage mismatched (vitest $vmaj, coverage $cmaj)" || note "coverage missing (need ^$vmaj)"
         if consent; then npm install -D "@vitest/coverage-v8@^${vmaj}" && ok "installed coverage ^$vmaj" || bad "install failed"
-        else need "coverage tooling; re-run with --yes"; fi
+        else need "coverage tooling; re-run without --check"; fi
     fi
 fi
 
@@ -168,7 +166,7 @@ if [ ${#gaps[@]} -gt 0 ]; then
         ok "scaffolded testing convention (configs + scripts + agent test runner)"
         have_unit=$(has_script "server:test:unit"); have_int=$(has_script "server:test:integration"); have_fmt=$(has_script "format:check")
     else
-        need "testing convention; re-run with --yes to scaffold"
+        need "testing convention; re-run without --check to scaffold"
     fi
 else
     ok "testing convention present (tier configs + scripts + agent test runner)"
@@ -248,7 +246,7 @@ if git rev-parse --git-dir >/dev/null 2>&1; then ok "git repository"
         if [ "$has_remote" -ne 1 ]; then :
         elif git ls-remote --exit-code --heads origin main >/dev/null 2>&1; then ok "main on remote"
         elif consent; then git push -u origin main >/dev/null 2>&1 && ok "pushed main" || bad "push failed"
-        else need "main not on remote; re-run with --yes to push"; fi
+        else need "main not on remote; re-run without --check to push"; fi
     else bad "no local main branch; the build loop cuts each increment branch from main"; fi
 else bad "not a git repository; init and add a GitHub remote"; fi
 
@@ -264,7 +262,7 @@ if git rev-parse --git-dir >/dev/null 2>&1; then
             printf '\n.building/\n' >> .gitignore
             git check-ignore -q .building 2>/dev/null && ok "added .building to .gitignore" || bad "added to .gitignore but still not ignored; check .gitignore"
         else
-            need ".building not gitignored; re-run with --yes to add it"
+            need ".building not gitignored; re-run without --check to add it"
         fi
     fi
 fi
@@ -281,7 +279,7 @@ if [ "$fail" -eq 0 ]; then
 else
     rm -f .building/setup-ok   # stale receipt must not survive a non-ready result
     case "$fail" in
-        2) echo "NOT READY: install/scaffold/push needed, re-run with --yes"; exit 2 ;;
+        2) echo "NOT READY: --check found install/scaffold/push to do; re-run without --check to apply"; exit 2 ;;
         3) echo "BLOCKED: endpoint down, bring it up and re-run"; exit 3 ;;
         *) echo "NOT READY: fix the FAIL lines and re-run"; exit 1 ;;
     esac
