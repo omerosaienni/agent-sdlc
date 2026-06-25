@@ -139,6 +139,9 @@ test-all           ## Server tier(s) then the client tier
 # ---- quality + graph ----
 lint               ## eslint over src
 typecheck          ## tsc --noEmit (covers server, client, common under one tsconfig)
+format             ## prettier --write (format the repo)
+format-check       ## prettier --check (CI-friendly, no writes)
+check              ## All quality gates: format-check, lint, typecheck, test
 graph / graph-viz  ## Knowledge graph (graphify)
 
 # ---- config ----
