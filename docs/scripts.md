@@ -88,7 +88,7 @@ flowchart TD
     args["parse args<br/>name, dir, flags"] --> resolve["resolve + validate<br/>kebab-case name, derive db name,<br/>refuse if dir exists"]
     resolve --> tooling["base: tooling configs<br/>vitest unit, tsconfig, eslint,<br/>prettier, ignores"]
     tooling --> entry["base: entry point<br/>src/server/index.ts + unit test"]
-    entry --> editor["base: editor<br/>.vscode debug configs"]
+    entry --> editor["base: editor configs<br/>.vscode settings, extensions, debug"]
     editor --> mongo["--mongo (optional)<br/>db helper (src/server/db),<br/>docker infra, integration tier + seed"]
     mongo --> react["--react (optional)<br/>src/client (Vite), src/common,<br/>frontend tier"]
     react --> express["--express (optional)<br/>versioned Express server<br/>(src/server/app.ts) + supertest tests"]
@@ -157,7 +157,7 @@ flowchart TD
         claude["CLAUDE.md (identity + runtime)"]
         rules[".claude/rules/ (TS + chosen layers)"]
         readme["README.md"]
-        vscode[".vscode/launch.json (gitignored)"]
+        vscode[".vscode/ settings + extensions (committed),<br/>launch.json (gitignored)"]
     end
 
     dbts --> smoke

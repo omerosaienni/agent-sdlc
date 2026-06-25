@@ -39,7 +39,10 @@ EOF
 node_modules/
 dist/
 .claude/
-.vscode/
+# Share format-on-save and the recommended extensions; keep personal debug configs local.
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 coverage/
 .building/
 graphify-out/
@@ -94,7 +97,7 @@ describe('main', () => {
 });
 EOF
 
-    step "editor debug configs"
+    step "editor configs"
     mkdir -p "$DIR/.vscode"
     write_file "$DIR/.vscode/launch.json" <<'EOF'
 {
@@ -140,6 +143,22 @@ EOF
       "cwd": "${workspaceFolder}"
     }
   ]
+}
+EOF
+
+    # Format on save with Prettier, and recommend the extension so the formatter is
+    # present. Committed (the .gitignore keeps these two while ignoring launch.json),
+    # so every clone gets the same on-save formatting the setup gate also enforces.
+    write_file "$DIR/.vscode/settings.json" <<'EOF'
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
+}
+EOF
+
+    write_file "$DIR/.vscode/extensions.json" <<'EOF'
+{
+  "recommendations": ["esbenp.prettier-vscode", "dbaeumer.vscode-eslint"]
 }
 EOF
 }
