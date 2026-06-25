@@ -67,7 +67,7 @@ workspace tooling to maintain.
 
 **Infra / tooling**
 - docker-compose.yml (shared-mongo, single-node replica set, shared named volume)
-- scripts/rs-init.sh (idempotent, polls for PRIMARY; run by `make up`, once per server)
+- scripts/rs-init.sh (idempotent, polls for PRIMARY; run by `make db-start`, once per server)
 - The Makefile target set (backend always; frontend targets with React)
 - The three vitest configs and the suffix convention (`*.test.ts` backend unit,
   `*.integration.test.ts` backend integration, `*.test.tsx` frontend)
@@ -113,30 +113,36 @@ workspace tooling to maintain.
 The backend targets are always present; the frontend targets are appended only with
 React.
 
-```make
-# ---- infra (shared Mongo) ----
-up                 ## Start the shared mongod (idempotent) and ensure the replica set
-down               ## Stop the shared mongod, keep data (affects every project)
-drop               ## Drop this project's database only
+Targets are grouped by service (`db`, `server`, `client`), each named
+`<service>-<action>`, mirroring the package.json `<service>:<action>` scripts.
 
-# ---- backend ----
-start              ## Run the entry point (src/server/index.ts)
-seed               ## Generate and load faker seed data
-test-unit          ## Backend unit tier (no database)
-test-integration   ## Backend integration tier (needs Mongo up)
-test               ## Backend: unit then integration
+```make
+# ---- db (shared Mongo) ----
+db-start           ## Start the shared mongod (idempotent) and ensure the replica set
+db-stop            ## Stop the shared mongod, keep data (affects every project)
+db-drop            ## Drop this project's database only
+db-seed            ## Generate and load faker seed data
+
+# ---- server ----
+server-start             ## Start the entry point (src/server/index.ts)
+server-test-unit         ## Server unit tier (no database)
+server-test-integration  ## Server integration tier (needs db up)
+
+# ---- client (React only) ----
+client-start       ## Start the Vite client
+client-test-unit   ## Frontend unit tier (vitest + Testing Library, jsdom)
+
+# ---- tests (cross-service) ----
+test               ## Server tier(s): unit then integration
+test-all           ## Server tier(s) then the client tier
 
 # ---- quality + graph ----
 lint               ## eslint over src
 typecheck          ## tsc --noEmit (covers server, client, common under one tsconfig)
 graph / graph-viz  ## Knowledge graph (graphify)
 
-# ---- frontend (React only) ----
-dev-client         ## Run the Vite dev server
-build-client       ## Production build (vite build)
-preview            ## Preview the production client build
-test-client        ## Frontend unit tier (vitest + Testing Library, jsdom)
-test-all           ## Backend tiers then the frontend tier
+# ---- config ----
+config             ## Regenerate .env from config/services.yaml
 ```
 
 `typecheck` runs one `tsc --noEmit` over the whole `src` tree (server, client, and

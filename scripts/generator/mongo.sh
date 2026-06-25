@@ -8,7 +8,7 @@
 # Mongo model: every project shares one mongod container (shared-mongo, fixed port
 # 27017, replica set rs0). A project lives in its own database inside it, named
 # after the project. The compose is identical in every project, so the first to run
-# `make up` creates the container and later projects reuse it.
+# `make db-start` creates the container and later projects reuse it.
 
 mongo_layer() {
     step "database helper"
@@ -71,7 +71,7 @@ EOF
     write_file "$DIR/docker-compose.yml" <<'EOF'
 # This compose is identical in every project. It defines the one shared mongod
 # that all projects share, each as its own database. The first project to run
-# `make up` creates the container; later projects reuse it. Nobody owns it, so
+# `make db-start` creates the container; later projects reuse it. Nobody owns it, so
 # deleting it is a manual docker rm of shared-mongo, never a make target.
 name: shared-mongo
 services:
@@ -126,7 +126,7 @@ docker compose exec -T "${SERVICE}" mongosh --quiet --eval '
 '
 
 # Poll rather than trust rs.initiate returning: election is asynchronous, so the
-# smoke test could connect before a PRIMARY exists. Block here to keep `make up`
+# smoke test could connect before a PRIMARY exists. Block here to keep `make db-start`
 # race-free.
 echo "waiting for a PRIMARY to be elected..."
 for _ in $(seq 1 30); do
@@ -189,7 +189,7 @@ EOF
 
     # Generic Mongo smoke test (integration tier). Not tied to any domain or to the
     # entry point's logic, it verifies the infrastructure: the app's own connection
-    # path reaches a healthy single node replica set with a PRIMARY. Run `make up`
+    # path reaches a healthy single node replica set with a PRIMARY. Run `make db-start`
     # first. This also exercises the db helper from birth.
     write_file "$DIR/src/server/smoke.integration.test.ts" <<'EOF'
 import { afterAll, describe, expect, it } from 'vitest';
@@ -247,9 +247,12 @@ EOF
     # Leading commas so they slot in after the base entries.
     MONGO_DEPS=',
     "mongodb": "^6.12.0"'
-    MONGO_SCRIPTS=',
-    "seed": "tsx --env-file-if-exists=.env src/server/seed.ts",
-    "test:integration": "vitest run -c vitest.integration.config.ts"'
+    # Two script fragments so the orchestrator can place them in the right groups:
+    # server:test:integration sits with the server scripts, db:seed with the db ones.
+    MONGO_SERVER_SCRIPTS=',
+    "server:test:integration": "vitest run -c vitest.integration.config.ts"'
+    MONGO_DB_SCRIPTS=',
+    "db:seed": "tsx --env-file-if-exists=.env src/server/seed.ts"'
 
     # config/services.yaml fragment: the Mongo address and port. config-env.sh turns
     # this into MONGO_HOST/MONGO_PORT, read by the db layer and the compose mapping.
@@ -268,22 +271,30 @@ mongo:
   container shared-mongo. The host and port come from the mongo block of
   config/services.yaml (defaults to 127.0.0.1:27017). This project uses database
   ${DB_NAME}. Readiness: a connect succeeds, or \`docker compose ps\`
-  shows the mongo service up. Bring up with \`make up\`. The shared server is an
-  attended prerequisite; the loop does not start it."
+  shows the mongo service up. Bring up with \`make db-start\`. The shared server is
+  an attended prerequisite; the loop does not start it."
 
-    # Makefile fragment: the infra and integration targets, plus the help lines for
-    # them. The orchestrator appends MONGO_MAKE_TARGETS after the base targets and
-    # weaves MONGO_MAKE_HELP into the help block.
-    MONGO_MAKE_HELP='	@echo "  up          Start the shared mongod (idempotent) and ensure the replica set"
-	@echo "  seed        Generate and load faker seed data"
-	@echo "  down        Stop the shared mongod, keep data (affects every project)"
-	@echo "  drop        Drop this project'"'"'s database ('"${DB_NAME}"') only"
-	@echo "  test-integration  Run the integration tier (needs Mongo up)"'
+    # Makefile fragments: the db group (start/stop/drop/seed) and the
+    # server-test-integration target, plus their help lines. The orchestrator places
+    # the db group first, splices server-test-integration into the server group, and
+    # weaves the help lines into the matching groups.
+    # The db help group (printed first by the orchestrator) and the lone
+    # server-test-integration line that belongs in the server group.
+    MONGO_DB_HELP='	@echo ""
+	@echo " db"
+	@echo "  db-start    Start the shared mongod (idempotent) and ensure the replica set"
+	@echo "  db-stop     Stop the shared mongod, keep data (affects every project)"
+	@echo "  db-drop     Drop this project'"'"'s database ('"${DB_NAME}"') only"
+	@echo "  db-seed     Generate and load faker seed data"'
+    MONGO_SERVER_TEST_HELP='	@echo "  server-test-integration  Run the integration tier (needs db up)"'
 
-    MONGO_MAKE_TARGETS="
-.PHONY: up down drop seed test-integration
+    # The db target group (start/stop/drop/seed) and the server-test-integration
+    # target spliced into the server group.
+    MONGO_DB_TARGETS="
+# --- db ------------------------------------------------------------------
+.PHONY: db-start db-stop db-drop db-seed
 
-up: ## Start the shared mongod (idempotent) and ensure the replica set
+db-start: ## Start the shared mongod (idempotent) and ensure the replica set
 	docker compose up -d
 	@echo \"waiting for mongod to accept connections...\"
 	@for i in \$\$(seq 1 30); do \\
@@ -297,21 +308,24 @@ up: ## Start the shared mongod (idempotent) and ensure the replica set
 	exit 1
 	./scripts/rs-init.sh
 
-seed: ## Generate and load faker seed data
-	npm run seed
-
-down: ## Stop the shared mongod, keep data
+db-stop: ## Stop the shared mongod, keep data
 	docker compose down
 
-drop: ## Drop this project's database (${DB_NAME}) only
+db-drop: ## Drop this project's database (${DB_NAME}) only
 	docker compose exec -T mongo mongosh --quiet --eval 'db.getSiblingDB(\"${DB_NAME}\").dropDatabase()'
 	@echo \"database ${DB_NAME} dropped\"
 
-test-integration: ## Run the integration tier (needs Mongo up)
-	npm run test:integration"
+db-seed: ## Generate and load faker seed data
+	npm run db:seed"
+
+    MONGO_SERVER_TEST_TARGET="
+.PHONY: server-test-integration
+
+server-test-integration: ## Run the integration tier (needs db up)
+	npm run server:test:integration"
 
     # CI job fragment spliced into .github/workflows/ci.yml after the base jobs. The
-    # integration tier on a real mongod: make up brings up the shared container and
+    # integration tier on a real mongod: make db-start brings up the shared container and
     # initialises the replica set, seed proves the faker-to-Mongo path, then the
     # tier runs. Leading blank line keeps it apart from the base jobs.
     MONGO_CI_JOB='
@@ -325,9 +339,9 @@ test-integration: ## Run the integration tier (needs Mongo up)
           node-version: 22
           cache: npm
       - run: npm ci
-      # reuse make up (compose + rs-init to a PRIMARY) rather than re-encoding the
-      # replica set in YAML; seed then proves the faker-to-Mongo path before the tier
-      - run: make up
-      - run: npm run seed
-      - run: npm run test:integration'
+      # reuse make db-start (compose + rs-init to a PRIMARY) rather than re-encoding
+      # the replica set in YAML; seed then proves the faker-to-Mongo path before the tier
+      - run: make db-start
+      - run: npm run db:seed
+      - run: npm run server:test:integration'
 }

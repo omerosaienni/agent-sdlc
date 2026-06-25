@@ -198,7 +198,7 @@ EOF
 
     # config/services.yaml fragment: the HTTP server's address and port. The loop's
     # config-env.sh turns this into SERVER_HOST/SERVER_PORT; index.ts reads them.
-    SERVER_YAML="# the HTTP server (npm start)
+    SERVER_YAML="# the HTTP server (make server-start)
 server:
   host: 127.0.0.1
   port: 3000

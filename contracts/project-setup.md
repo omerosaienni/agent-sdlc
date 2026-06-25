@@ -7,7 +7,7 @@ Setup is safe to run any number of times. On an already-ready project it changes
 
 ## What it proves (all by execution)
 - Report tooling is present AND matches the installed test runner. Derive the runner's major version from the project, install the matching coverage provider, verify coverage actually runs. Never hardcode a version; derive it.
-- The project declares its test-tier commands (test:unit, test:integration).
+- The project declares its test-tier commands (server:test:unit, server:test:integration).
 - The agent test runner (.building/scripts/agent-tests.sh) is present and matches the shared template. Setup creates .building/scripts/ and places the runner there if absent or out of date, then runs it to prove the agent test path the build loop's judge depends on actually runs and reports. A project is not loop-ready if that path is broken, even when the human test commands pass, because the judge runs tests through the agent runner, not the human scripts.
 - The hollow-check runner (.building/scripts/agent-hollow.sh) is present, matches the shared template, and is runnable. Setup places it under .building/scripts/ if absent or out of date and proves it answers its usage contract, because the judge invokes it for the hollow-test negative run.
 - (The type-check runner, .building/scripts/agent-typecheck.sh from the shared template, is the build loop judge's gate, placed and run by the loop, not by this setup gate. The judge runs it first, before the tiers, because the tiers strip types: a clean type-check (exit 0) passes, a type error (exit 1) is a hard fail, and a type-check that cannot run at all (exit 3) is an environment block. The setup gate places and proves only the test and hollow-check runners.)

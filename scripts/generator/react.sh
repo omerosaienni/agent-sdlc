@@ -149,15 +149,15 @@ EOF
     REACT_DEPS=',
     "react": "^19.0.0",
     "react-dom": "^19.0.0"'
+    # Dev-only: the client start and its unit tier. No production build/preview
+    # scripts for now (added back when a deploy path is needed).
     REACT_SCRIPTS=',
-    "dev:client": "vite",
-    "build:client": "vite build",
-    "preview": "vite preview",
-    "test:client": "vitest run -c vitest.client.config.ts"'
+    "client:start": "vite",
+    "client:test:unit": "vitest run -c vitest.client.config.ts"'
 
     # config/services.yaml fragment: the Vite dev server's address and port.
     # config-env.sh turns this into CLIENT_HOST/CLIENT_PORT, read by vite.config.ts.
-    CLIENT_YAML="# the Vite dev server (make dev-client)
+    CLIENT_YAML="# the Vite client (make client-start)
 client:
   host: 127.0.0.1
   port: 5173
@@ -178,33 +178,33 @@ client:
     "jsx": "react-jsx",'
 
     # Makefile fragment: the frontend dev/build/test targets and their help lines.
-    REACT_MAKE_HELP='	@echo "  dev-client  Run the Vite dev server"
-	@echo "  build-client  Production build of the client"
-	@echo "  preview     Preview the production client build"
-	@echo "  test-client  Frontend unit tier (jsdom)"
-	@echo "  test-all    Backend tiers then the frontend tier"'
+    # The client help group, and the lone test-all line for the tests group.
+    REACT_CLIENT_HELP='	@echo ""
+	@echo " client"
+	@echo "  client-start      Start the Vite client"
+	@echo "  client-test-unit  Run the frontend unit tier (jsdom)"'
+    REACT_TESTALL_HELP='	@echo "  test-all    Server tier(s) then the client tier"'
 
-    REACT_MAKE_TARGETS='
-.PHONY: dev-client build-client preview test-client test-all
+    # The client target group, and the test-all aggregate spliced into the tests group.
+    REACT_CLIENT_TARGETS='
+# --- client --------------------------------------------------------------
+.PHONY: client-start client-test-unit
 
-dev-client: ## Run the Vite dev server
-	npm run dev:client
+client-start: ## Start the Vite client
+	npm run client:start
 
-build-client: ## Production build of the client (vite build)
-	npm run build:client
+client-test-unit: ## Run the frontend unit tier (vitest + Testing Library, jsdom)
+	npm run client:test:unit'
 
-preview: ## Preview the production client build
-	npm run preview
+    REACT_TESTALL_TARGET='
+.PHONY: test-all
 
-test-client: ## Frontend unit tier (vitest + Testing Library, jsdom)
-	npm run test:client
-
-# Everything: backend tiers (unit, plus integration if Mongo is enabled), then frontend.
-test-all: test test-client ## Run the backend tiers then the frontend tier'
+# Everything: the server tier(s) (unit, plus integration if Mongo is enabled), then client.
+test-all: test client-test-unit ## Run the server tier(s) then the client tier'
 
     # CI job fragment spliced into .github/workflows/ci.yml after the base (and any
     # Mongo) jobs. The frontend tier runs in jsdom with no external services, so it
-    # needs no make up. This is where client component tests are gated. Type-checking
+    # needs no make db-start. This is where client component tests are gated. Type-checking
     # of the client is already covered by the base typecheck job (tsc spans all of src).
     # Leading blank line keeps it apart from the prior job in the assembled workflow.
     REACT_CI_JOB='
@@ -218,5 +218,5 @@ test-all: test test-client ## Run the backend tiers then the frontend tier'
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run test:client'
+      - run: npm run client:test:unit'
 }
