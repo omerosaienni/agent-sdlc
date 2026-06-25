@@ -16,7 +16,7 @@ Invocation and neutralising the profile machinery:
 - An increment is gated by the type-check, the unit tier and the hollow-test only. There is no integration tier in this contract at all (not deferred, not run).
 
 ## Documentation and commit (no documentation)
-- The document agent does NOT run, and the builder does NOT write a doc-payload.md slice. No docs/modules/ files are produced and docs/ARCHITECTURE.md is never touched.
+- The document agent does NOT run, and the builder does NOT write a doc-payload.md slice. No docs/modules/ files are produced and docs/ARCHITECTURE.md is never touched. The core's missing-slice reviewer suggestion (build-judge-loop.md, Roles) does not apply: no slice is expected, so the reviewer does not flag its absence.
 - On judge pass the increment reaches the `documented` status (here = verified and ready to commit, carrying no docs); the commit carries code only.
 - Orchestrator then opens a PR with a remote or integrates into local main without one (build-judge-loop.md, Remote presence), and renders the post-PR checkpoint.
 
