@@ -146,12 +146,11 @@ EOF
     "jsdom": "^25.0.1",
     "vite": "^6.0.7"'
 
-    # tsconfig: the DOM libs and the react-jsx transform, plus the client config
-    # files joining the include set.
+    # tsconfig: the DOM libs and the react-jsx transform (the client config files
+    # join the include set via the orchestrator's tsconfig include assembly).
     REACT_TS_LIB=', "DOM", "DOM.Iterable"'
     REACT_TS_JSX='
     "jsx": "react-jsx",'
-    REACT_TS_INCLUDE=', "vitest.client.config.ts", "vite.config.ts"'
 
     # Makefile fragment: the frontend dev/build/test targets and their help lines.
     REACT_MAKE_HELP='	@echo "  dev-client  Run the Vite dev server"

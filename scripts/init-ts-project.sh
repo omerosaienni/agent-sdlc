@@ -163,6 +163,21 @@ write_file "$DIR/package.json" <<EOF
 }
 EOF
 
+# tsconfig include: assemble the list, then format it as prettier would, one line
+# when it fits printWidth (100) and wrapped one per line when the React configs push
+# it over, so the generated tsconfig is prettier-clean for every layer combination.
+ts_inc=('"src"' '"vitest.unit.config.ts"' '"eslint.config.js"')
+[ "$WITH_MONGO" = 1 ] && ts_inc+=('"vitest.integration.config.ts"')
+[ "$WITH_REACT" = 1 ] && ts_inc+=('"vitest.client.config.ts"' '"vite.config.ts"')
+inc_oneline=""
+for e in "${ts_inc[@]}"; do inc_oneline="${inc_oneline:+$inc_oneline, }$e"; done
+TSCONFIG_INCLUDE="  \"include\": [$inc_oneline]"
+if [ "${#TSCONFIG_INCLUDE}" -gt 100 ]; then
+    TSCONFIG_INCLUDE="  \"include\": ["
+    for e in "${ts_inc[@]}"; do TSCONFIG_INCLUDE+=$'\n'"    $e,"; done
+    TSCONFIG_INCLUDE="${TSCONFIG_INCLUDE%,}"$'\n'"  ]"
+fi
+
 # tsconfig.json
 write_file "$DIR/tsconfig.json" <<EOF
 {
@@ -180,7 +195,7 @@ write_file "$DIR/tsconfig.json" <<EOF
     "forceConsistentCasingInFileNames": true,
     "types": ["node"]
   },
-  "include": ["src", "vitest.unit.config.ts", "eslint.config.js"${MONGO_TS_INCLUDE:-}${REACT_TS_INCLUDE:-}]
+${TSCONFIG_INCLUDE}
 }
 EOF
 
@@ -248,10 +263,12 @@ write_file "$DIR/CLAUDE.md" <<EOF
 TODO: one or two lines on what this project is and is not (its scope).
 
 ## Layout
+
 - Backend source under src/server/. A frontend, if present, lives under src/client/.
   Entry point: src/server/index.ts, run via \`npm start\`.
 
 ## Conventions
+
 - Stack conventions (TypeScript, and any others) are path-scoped rules under
   .claude/rules/, installed by install-project-rules.sh and read automatically.
   Universal conventions (prose, comments) come from the global rules. This file
@@ -264,6 +281,7 @@ write_file "$DIR/README.md" <<EOF
 A TypeScript project.
 
 ## Quick start
+
 \`\`\`
 npm install$([ "$WITH_MONGO" = 1 ] && printf '\nmake up            # start the shared Mongo and init the replica set')
 $(if [ "$WITH_REACT" = 1 ]; then printf 'make test-all      # backend tier(s) then the frontend tier\nmake dev-client    # run the Vite dev server'; else printf 'make test          # run the backend tier(s)'; fi)

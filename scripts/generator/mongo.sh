@@ -76,9 +76,9 @@ services:
     container_name: shared-mongo
     # --replSet is mandatory: a single node replica set so change streams and
     # transactions work. bind_ip_all lets the host reach it.
-    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    command: ['mongod', '--replSet', 'rs0', '--bind_ip_all']
     ports:
-      - "27017:27017"
+      - '27017:27017'
     volumes:
       - data:/data/db
 volumes:
@@ -202,21 +202,15 @@ afterAll(async () => {
 });
 
 describe('replica set smoke test', () => {
-  it(
-    'reports a PRIMARY member',
-    async () => {
-      // Connect exactly as the rest of the app will, through the shared helper,
-      // so this fails if mongod is down OR the replica set was never initiated.
-      const db = await getDb();
-      const status = (await db
-        .admin()
-        .command({ replSetGetStatus: 1 })) as ReplSetStatus;
-      expect(status.set).toBe('rs0');
-      const states = status.members.map((m) => m.stateStr);
-      expect(states).toContain('PRIMARY');
-    },
-    15000,
-  );
+  it('reports a PRIMARY member', async () => {
+    // Connect exactly as the rest of the app will, through the shared helper,
+    // so this fails if mongod is down OR the replica set was never initiated.
+    const db = await getDb();
+    const status = (await db.admin().command({ replSetGetStatus: 1 })) as ReplSetStatus;
+    expect(status.set).toBe('rs0');
+    const states = status.members.map((m) => m.stateStr);
+    expect(states).toContain('PRIMARY');
+  }, 15000);
 });
 EOF
 
@@ -250,12 +244,11 @@ EOF
     "seed": "tsx src/server/seed.ts",
     "test:integration": "vitest run -c vitest.integration.config.ts"'
 
-    # tsconfig include additions (the integration config file).
-    MONGO_TS_INCLUDE=', "vitest.integration.config.ts"'
-
     # CLAUDE.md section documenting the runtime endpoint (this project's DB facts).
     MONGO_CLAUDE_MD="
+
 ## Integration endpoints
+
 - Mongo at mongodb://127.0.0.1:27017 with directConnection=true, the shared
   container shared-mongo. This project uses database ${DB_NAME}. Readiness: a
   connect succeeds, or \`docker compose ps\` shows the mongo service up. Bring up
