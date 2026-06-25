@@ -267,7 +267,7 @@ The agent test runner (`.building/scripts/agent-tests.sh`) is part of the testin
 convention the gate scaffolds and proves. It is the path the build loop's judge
 uses to run tests: terse one-line output on pass, full output on failure, so the
 judge's repeated verification runs cost a few tokens of context rather than the
-whole vitest dump each time. Humans keep the verbose path (`npm run test:unit`,
+whole vitest dump each time. Humans keep the verbose path (`npm run server:test:unit`,
 `make test`); both drive the same tier configs, so they never disagree on what
 they test. The gate places the runner from the shared template if absent or out of
 date (step 2) and runs it to prove the agent path works before stamping ready

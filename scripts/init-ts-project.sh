@@ -159,11 +159,11 @@ write_file "$DIR/package.json" <<EOF
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "${START_SCRIPT}",
-    "test:unit": "vitest run -c vitest.unit.config.ts",
+    "server:start": "${START_SCRIPT}",
+    "server:test:unit": "vitest run -c vitest.unit.config.ts"${MONGO_SERVER_SCRIPTS:-}${REACT_SCRIPTS:-}${MONGO_DB_SCRIPTS:-},
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "format:check": "prettier --check ."${MONGO_SCRIPTS:-}${REACT_SCRIPTS:-}
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "tsx": "^4.22.4"${MONGO_DEPS:-}${REACT_DEPS:-}${EXPRESS_DEPS:-}
@@ -222,51 +222,79 @@ EOF
 
 # Makefile: base targets, then the help lines and target blocks each layer added.
 # The base `test` runs the unit tier; with Mongo it also runs the integration tier.
-TEST_PREREQS="test-unit"
-[ "$WITH_MONGO" = 1 ] && TEST_PREREQS="test-unit test-integration"
+TEST_PREREQS="server-test-unit"
+[ "$WITH_MONGO" = 1 ] && TEST_PREREQS="server-test-unit server-test-integration"
 
 # config target: present whenever a service layer contributed a services.yaml block.
 # Regenerates .env from the YAML so the server, client and docker read one config.
+# Its own group in the help and target sections.
 CONFIG_MAKE_HELP=""
 CONFIG_MAKE_TARGET=""
 if [ -n "${SERVER_YAML:-}${MONGO_YAML:-}${CLIENT_YAML:-}" ]; then
-    CONFIG_MAKE_HELP='	@echo "  config      Regenerate .env from config/services.yaml"'
+    CONFIG_MAKE_HELP='	@echo ""
+	@echo " config"
+	@echo "  config      Regenerate .env from config/services.yaml"'
     CONFIG_MAKE_TARGET='
+# --- config --------------------------------------------------------------
 .PHONY: config
 
 config: ## Regenerate .env from config/services.yaml
 	./scripts/config-env.sh'
 fi
 
+# Grouped by service (db, server, client), then cross-service tests, quality, graph
+# and config. The db group and client group come from the Mongo and React layers; the
+# server group, tests, quality, graph and the help skeleton are the base's. Names are
+# <service>-<action> (bare service-action verbs only; no qualifiers), mirroring the
+# package.json <service>:<action> scripts.
 write_file "$DIR/Makefile" <<EOF
 # help is the default goal so a bare \`make\` documents the project
 .DEFAULT_GOAL := help
 
-.PHONY: help start test test-unit lint typecheck graph graph-viz
-
+.PHONY: help
 help: ## List available targets
 	@echo "${NAME} - available targets:"
 	@echo ""
 	@echo "  help        Show this list"
-	@echo "  start       Run the entry point (src/server/index.ts)"
-${MONGO_MAKE_HELP:-}
-	@echo "  test-unit   Run the unit tier (no external services)"
-	@echo "  test        Run the backend tier(s)"
+${MONGO_DB_HELP:-}
+	@echo ""
+	@echo " server"
+	@echo "  server-start             Start the entry point (src/server/index.ts)"
+	@echo "  server-test-unit         Run the unit tier (no external services)"
+${MONGO_SERVER_TEST_HELP:-}
+${REACT_CLIENT_HELP:-}
+	@echo ""
+	@echo " tests"
+	@echo "  test        Run the server tier(s)"
+${REACT_TESTALL_HELP:-}
+	@echo ""
+	@echo " quality"
 	@echo "  lint        Run eslint over src"
 	@echo "  typecheck   Type-check without emitting (tsc --noEmit)"
+	@echo ""
+	@echo " graph"
 	@echo "  graph       Rebuild the knowledge graph (code + docs) and HTML"
 	@echo "  graph-viz   Regenerate graph.html and report from the existing graph"
 ${CONFIG_MAKE_HELP:-}
-${REACT_MAKE_HELP:-}
+${MONGO_DB_TARGETS:-}
+# --- server --------------------------------------------------------------
+.PHONY: server-start server-test-unit
 
-start: ## Run the entry point (src/server/index.ts)
-	npm start
+server-start: ## Start the entry point (src/server/index.ts)
+	npm run server:start
 
-test-unit: ## Run the unit tier (no external services)
-	npm run test:unit
+server-test-unit: ## Run the unit tier (no external services)
+	npm run server:test:unit
+${MONGO_SERVER_TEST_TARGET:-}
+${REACT_CLIENT_TARGETS:-}
+# --- tests (cross-service) -----------------------------------------------
+.PHONY: test
 
-# unit first so a logic break fails fast; integration (with Mongo) needs the server up
-test: ${TEST_PREREQS} ## Run the backend tier(s)
+# unit first so a logic break fails fast; integration (with Mongo) needs db up
+test: ${TEST_PREREQS} ## Run the server tier(s)
+${REACT_TESTALL_TARGET:-}
+# --- quality -------------------------------------------------------------
+.PHONY: lint typecheck
 
 lint: ## Run eslint over src
 	npm run lint
@@ -274,7 +302,9 @@ lint: ## Run eslint over src
 typecheck: ## Type-check without emitting (tsc --noEmit)
 	npm run typecheck
 
+# --- graph ---------------------------------------------------------------
 # Knowledge graph (graphify). Model/env pinned so the target is self-contained.
+.PHONY: graph graph-viz
 GRAPHIFY_ENV := OLLAMA_MODEL=graphify OLLAMA_API_KEY=x
 
 graph: ## Rebuild the knowledge graph: code (AST) + docs (LLM) + HTML
@@ -282,8 +312,6 @@ graph: ## Rebuild the knowledge graph: code (AST) + docs (LLM) + HTML
 
 graph-viz: ## Regenerate graph.html and the report from the existing graph
 	\$(GRAPHIFY_ENV) graphify cluster-only . --backend ollama
-${MONGO_MAKE_TARGETS:-}
-${REACT_MAKE_TARGETS:-}
 ${CONFIG_MAKE_TARGET:-}
 EOF
 
@@ -351,7 +379,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run test:unit${MONGO_CI_JOB:-}${REACT_CI_JOB:-}
+      - run: npm run server:test:unit${MONGO_CI_JOB:-}${REACT_CI_JOB:-}
 EOF
 
 # ---------------------------------------------------------------------------
@@ -437,7 +465,7 @@ TODO: one or two lines on what this project is and is not (its scope).
 ## Layout
 
 - Backend source under src/server/. A frontend, if present, lives under src/client/.
-  Entry point: src/server/index.ts, run via \`npm start\`.${CONFIG_CLAUDE_MD:-}
+  Entry point: src/server/index.ts, run via \`make server-start\`.${CONFIG_CLAUDE_MD:-}
 
 ## Conventions
 
@@ -455,8 +483,8 @@ A TypeScript project.
 ## Quick start
 
 \`\`\`
-npm install$([ -n "$SERVICES_YAML" ] && printf '\nmake config        # regenerate .env from config/services.yaml (edit ports there)')$([ "$WITH_MONGO" = 1 ] && printf '\nmake up            # start the shared Mongo and init the replica set')
-$(if [ "$WITH_REACT" = 1 ]; then printf 'make test-all      # backend tier(s) then the frontend tier\nmake dev-client    # run the Vite dev server'; else printf 'make test          # run the backend tier(s)'; fi)$([ "$WITH_EXPRESS" = 1 ] && printf '\nnpm start          # run the Express server (GET /api/v1/health)')
+npm install$([ -n "$SERVICES_YAML" ] && printf '\nmake config        # regenerate .env from config/services.yaml (edit ports there)')$([ "$WITH_MONGO" = 1 ] && printf '\nmake db-start      # start the shared Mongo and init the replica set')
+$(if [ "$WITH_REACT" = 1 ]; then printf 'make test-all      # server tier(s) then the client tier\nmake client-start  # start the Vite client'; else printf 'make test          # run the server tier(s)'; fi)$([ "$WITH_EXPRESS" = 1 ] && printf '\nmake server-start  # start the Express server (GET /api/v1/health)')
 \`\`\`
 EOF
 
@@ -514,14 +542,14 @@ echo "Next:"
 echo "  cd $DIR"
 echo "  npm install"
 [ -n "$SERVICES_YAML" ] && echo "  make config             # regenerate .env from config/services.yaml (ports live there)"
-[ "$WITH_MONGO" = 1 ] && echo "  make up                 # start the shared Mongo and init the replica set"
+[ "$WITH_MONGO" = 1 ] && echo "  make db-start           # start the shared Mongo and init the replica set"
 if [ "$WITH_REACT" = 1 ]; then
-    echo "  make test-all           # backend tier(s) then the frontend tier"
-    echo "  make dev-client         # run the Vite dev server"
+    echo "  make test-all           # server tier(s) then the client tier"
+    echo "  make client-start       # start the Vite client"
 else
-    echo "  make test               # the backend tier(s)"
+    echo "  make test               # the server tier(s)"
 fi
-[ "$WITH_EXPRESS" = 1 ] && echo "  npm start               # run the Express server (GET /api/v1/health)"
+[ "$WITH_EXPRESS" = 1 ] && echo "  make server-start       # start the Express server (GET /api/v1/health)"
 echo
 echo "Then drive it through the pipeline. Two independent prerequisites, in either order:"
 echo "  /omero-design-partner   converges your intent into feature sheet(s)"

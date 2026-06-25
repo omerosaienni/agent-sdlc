@@ -59,7 +59,7 @@ run_tier(){ local s="$1" ep="$2" out rc
     out=$(npm run "$s" 2>&1); rc=$?
     if echo "$out" | grep -q "No test files found"; then bad "$s selected zero tests (hollow suite)"; return; fi
     if [ "$rc" -ne 0 ]; then
-        if [ "$ep" = yes ] && echo "$out" | grep -qiE "ECONNREFUSED|MongoServerSelectionError|connection refused"; then block "$s endpoint not reachable; bring up the shared Mongo (make up, see CLAUDE.md integration endpoints) and re-run"
+        if [ "$ep" = yes ] && echo "$out" | grep -qiE "ECONNREFUSED|MongoServerSelectionError|connection refused"; then block "$s endpoint not reachable; bring up the shared Mongo (make db-start, see CLAUDE.md integration endpoints) and re-run"
         else bad "$s failed (see output)"; fi; return; fi
     ok "$s selected tests and passed"; }
 
@@ -134,10 +134,10 @@ fi
 # ---------------------------------------------------------------------------
 # 2. Testing convention: tier scripts + configs, scaffold with consent.
 # ---------------------------------------------------------------------------
-have_unit=$(has_script "test:unit"); have_int=$(has_script "test:integration"); have_fmt=$(has_script "format:check")
+have_unit=$(has_script "server:test:unit"); have_int=$(has_script "server:test:integration"); have_fmt=$(has_script "format:check")
 gaps=()
-[ "$have_unit" = "1" ] || gaps+=("npm script test:unit")
-[ "$have_int" = "1" ]  || gaps+=("npm script test:integration")
+[ "$have_unit" = "1" ] || gaps+=("npm script server:test:unit")
+[ "$have_int" = "1" ]  || gaps+=("npm script server:test:integration")
 [ "$have_fmt" = "1" ]  || gaps+=("npm script format:check")
 [ -f vitest.unit.config.ts ] || gaps+=("vitest.unit.config.ts")
 [ -f vitest.integration.config.ts ] || gaps+=("vitest.integration.config.ts")
@@ -152,8 +152,8 @@ if [ ${#gaps[@]} -gt 0 ]; then
     if consent; then
         [ -f vitest.unit.config.ts ] || copy_template vitest.unit.config.ts vitest.unit.config.ts || bad "could not write vitest.unit.config.ts from template"
         [ -f vitest.integration.config.ts ] || copy_template vitest.integration.config.ts vitest.integration.config.ts || bad "could not write vitest.integration.config.ts from template"
-        [ "$have_unit" = "1" ] || npm pkg set "scripts.test:unit=vitest run -c vitest.unit.config.ts" >/dev/null
-        [ "$have_int" = "1" ]  || npm pkg set "scripts.test:integration=vitest run -c vitest.integration.config.ts" >/dev/null
+        [ "$have_unit" = "1" ] || npm pkg set "scripts.server:test:unit=vitest run -c vitest.unit.config.ts" >/dev/null
+        [ "$have_int" = "1" ]  || npm pkg set "scripts.server:test:integration=vitest run -c vitest.integration.config.ts" >/dev/null
         [ "$have_fmt" = "1" ]  || npm pkg set "scripts.format:check=prettier --check ." >/dev/null
         if ! cmp -s .building/scripts/agent-tests.sh "$TEMPLATES_DIR/agent-tests.sh"; then
             mkdir -p .building/scripts
@@ -166,7 +166,7 @@ if [ ${#gaps[@]} -gt 0 ]; then
             else bad "could not write .building/scripts/agent-hollow.sh from template"; fi
         fi
         ok "scaffolded testing convention (configs + scripts + agent test runner)"
-        have_unit=$(has_script "test:unit"); have_int=$(has_script "test:integration"); have_fmt=$(has_script "format:check")
+        have_unit=$(has_script "server:test:unit"); have_int=$(has_script "server:test:integration"); have_fmt=$(has_script "format:check")
     else
         need "testing convention; re-run with --yes to scaffold"
     fi
@@ -184,8 +184,8 @@ fi
 # ---------------------------------------------------------------------------
 # 3. Run each tier; non-zero selection + pass.
 # ---------------------------------------------------------------------------
-[ "$have_unit" = "1" ] && run_tier "test:unit" no
-[ "$have_int" = "1" ]  && run_tier "test:integration" yes
+[ "$have_unit" = "1" ] && run_tier "server:test:unit" no
+[ "$have_int" = "1" ]  && run_tier "server:test:integration" yes
 
 # ---------------------------------------------------------------------------
 # 3b. Prove the agent test path works. The judge runs tests through

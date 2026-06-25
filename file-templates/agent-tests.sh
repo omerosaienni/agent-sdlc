@@ -4,7 +4,7 @@
 # print the failing tests in full so the cause is visible without a second run.
 #
 # This is the AGENT test path, called by the build loop's judge. Humans keep the
-# verbose path (npm run test:unit / test:integration, make test), which stays
+# verbose path (npm run server:test:unit / server:test:integration, make test), which stays
 # plain vitest. Both paths drive the same vitest.<tier>.config.ts files, so they
 # cannot disagree on what they test, only on how much they print.
 #

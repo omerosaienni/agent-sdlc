@@ -31,7 +31,7 @@ These pipeline scripts follow a shared layout ([`../contracts/script-layout.md`]
 
 Some prerequisites you provide; the rest the setup gate proves by execution.
 
-You provide (the gate does not install these): the integration endpoints up (e.g. Docker and Compose running the shared Mongo, brought up with `make up`), `gh` authenticated and, to push branches and open PRs, a GitHub remote with main present (the gate never creates a remote, and only warns if it is missing; without one the build loop still runs, committing each increment to local main instead, see [`build-loops.md`](build-loops.md#github-is-optional)).
+You provide (the gate does not install these): the integration endpoints up (e.g. Docker and Compose running the shared Mongo, brought up with `make db-start`), `gh` authenticated and, to push branches and open PRs, a GitHub remote with main present (the gate never creates a remote, and only warns if it is missing; without one the build loop still runs, committing each increment to local main instead, see [`build-loops.md`](build-loops.md#github-is-optional)).
 
 The gate proves, by running things, and scaffolds boilerplate on consent:
 
