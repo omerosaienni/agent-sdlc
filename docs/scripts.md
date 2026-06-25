@@ -36,7 +36,7 @@ flowchart LR
     class proj,receipt artifact;
 ```
 
-- **init-ts-project.sh** scaffolds a new project: a TypeScript base, plus optional Mongo and React layers.
+- **init-ts-project.sh** scaffolds a new project: a TypeScript base, plus optional Mongo, React and Express layers.
 - **project-setup.sh** proves a project is ready by execution, and on success
   writes the `setup-ok` receipt the build loop refuses to start without.
 - **ensure-report-tooling.sh** is a focused helper that installs and verifies the
@@ -50,24 +50,27 @@ the loop consumes the stamp.
 
 ## init-ts-project.sh (the generator)
 
-Scaffolds a TypeScript project with optional Mongo and React layers. The base is
-always TypeScript (tooling, an entry point, a unit tier under `src/server`); `--mongo`
+Scaffolds a TypeScript project with optional Mongo, React and Express layers. The base
+is always TypeScript (tooling, an entry point, a unit tier under `src/server`); `--mongo`
 adds the db helper, docker infra, the integration tier and a faker seed; `--react`
-adds the React + Vite client under `src/client`. It inits git and installs the
-matching stack rules, and emits a layer-aware GitHub Actions workflow
+adds the React + Vite client under `src/client`; `--express` replaces the stub entry
+point with a versioned Express HTTP server (`src/server/app.ts`) and its supertest unit
+tests, and with `--mongo` the server's shutdown closes the shared client. It inits git,
+installs the matching stack rules, and emits a layer-aware GitHub Actions workflow
 (`.github/workflows/ci.yml`). It makes no domain assumptions; you grow
 `src/server/index.ts` and add your own modules.
 
 It is a small multi-file script (per `contracts/script-layout.md`): an orchestrator
 that sources the shared helpers (`scripts/generator/lib.sh`) and the
-`scripts/generator/base.sh`, `mongo.sh`, `react.sh` layers, assembling the shared files
-(package.json, tsconfig, Makefile) from the fragments each enabled layer contributes.
+`scripts/generator/base.sh`, `mongo.sh`, `react.sh`, `express.sh` layers, assembling the
+shared files (package.json, tsconfig, Makefile) from the fragments each enabled layer
+contributes.
 
 ```
-init-ts-project.sh <project-name> [target-dir] [--mongo] [--react] [--verbose] [--no-color] [--debug]
+init-ts-project.sh <project-name> [target-dir] [--mongo] [--react] [--express] [--verbose] [--no-color] [--debug]
 ```
 
-- `--mongo` adds the MongoDB layer; `--react` adds the React client layer; any combination is valid.
+- `--mongo` adds the MongoDB layer; `--react` adds the React client layer; `--express` adds the Express server layer; any combination is valid.
 
 - `--verbose` prints each file as it is written.
 - `--no-color` forces plain output (colour is auto-detected and on only at a
@@ -88,7 +91,8 @@ flowchart TD
     entry --> editor["base: editor<br/>.vscode debug configs"]
     editor --> mongo["--mongo (optional)<br/>db helper (src/server/db),<br/>docker infra, integration tier + seed"]
     mongo --> react["--react (optional)<br/>src/client (Vite), src/common,<br/>frontend tier"]
-    react --> build["assemble shared files<br/>package.json, tsconfig, Makefile,<br/>.github/workflows/ci.yml<br/>(from base + layer fragments)"]
+    react --> express["--express (optional)<br/>versioned Express server<br/>(src/server/app.ts) + supertest tests"]
+    express --> build["assemble shared files<br/>package.json, tsconfig, Makefile,<br/>.github/workflows/ci.yml<br/>(from base + layer fragments)"]
     build --> docs["docs<br/>CLAUDE.md (identity + runtime), README"]
     docs --> git["git init + initial commit<br/>(idempotent)"]
     git --> rules["stack rules<br/>install-project-rules.sh --typescript [--mongo] [--react]"]
@@ -97,7 +101,7 @@ flowchart TD
     classDef io fill:#fdeccd,stroke:#b8743d,color:#1d2733;
     classDef work fill:#e4edf4,stroke:#5b6b7a,color:#1d2733;
     class args,resolve,done io;
-    class tooling,entry,editor,mongo,react,build,docs,git,rules work;
+    class tooling,entry,editor,mongo,react,express,build,docs,git,rules work;
 ```
 
 ### Scaffold components
@@ -138,6 +142,11 @@ flowchart TD
         common["src/common (shared types)"]
     end
 
+    subgraph expresslayer["--express layer"]
+        app["src/server/app.ts (versioned API)"]
+        srvboot["src/server/index.ts + index.test.ts<br/>(server bootstrap, replaces the base stub)"]
+    end
+
     subgraph build["Build surface (assembled from fragments)"]
         makefile["Makefile"]
         pkg["package.json"]
@@ -158,8 +167,8 @@ flowchart TD
     classDef node fill:#e4edf4,stroke:#5b6b7a,color:#1d2733;
     classDef group fill:#f4f6f8,stroke:#5b6b7a,color:#1d2733;
     class name,dbname param;
-    class vitest,tsconfig,lint,ignores,index,indextest,dbts,compose,smoke,seed,client,common,makefile,pkg,ci,claude,rules,readme,vscode node;
-    class tooling,base,mongolayer,reactlayer,build,docs group;
+    class vitest,tsconfig,lint,ignores,index,indextest,dbts,compose,smoke,seed,client,common,app,srvboot,ci,makefile,pkg,claude,rules,readme,vscode node;
+    class tooling,base,mongolayer,reactlayer,expresslayer,build,docs group;
 ```
 
 The entry point, the seed helper and the smoke test all use `src/server/db/index.ts`,

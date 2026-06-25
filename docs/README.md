@@ -37,4 +37,4 @@ The operating contracts, each a project-agnostic rulebook a project consumes by 
 
 ## Skills
 
-The thin `/omero-*` wrappers, in [`../skills/`](../skills/). `omero-create-ts-project` runs the project generator (TypeScript base, optional `--mongo` and `--react` layers); `omero-install-project-rules` installs stack rules into a repo; the pipeline skills (`omero-design-partner`, `omero-project-setup`, `omero-build-loop`) each reference a contract by path. All carry `disable-model-invocation: true`; invoke with `/omero-*`.
+The thin `/omero-*` wrappers, in [`../skills/`](../skills/). `omero-create-ts-project` runs the project generator (TypeScript base, optional `--mongo`, `--react` and `--express` layers); `omero-install-project-rules` installs stack rules into a repo; the pipeline skills (`omero-design-partner`, `omero-project-setup`, `omero-build-loop`) each reference a contract by path. All carry `disable-model-invocation: true`; invoke with `/omero-*`.

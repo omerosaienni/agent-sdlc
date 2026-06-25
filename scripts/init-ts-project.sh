@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# init-ts-project.sh - scaffold a TypeScript project, with optional Mongo and React
-# layers. The orchestrator: it parses args, validates, then assembles the shared
+# init-ts-project.sh - scaffold a TypeScript project, with optional Mongo, React and
+# Express layers. The orchestrator: it parses args, validates, then assembles the shared
 # files (package.json, tsconfig.json, Makefile, CLAUDE.md) from fragments each
 # enabled layer contributes, and calls each layer to write its own exclusive files.
 #
@@ -9,22 +9,25 @@
 #   generator/base.sh   always: TS tooling, entry point + unit test, editor, configs
 #   generator/mongo.sh  --mongo: db helper, docker infra, integration tier, seed
 #   generator/react.sh  --react: src/client React+Vite, src/common, frontend tier
+#   generator/express.sh --express: versioned Express server + supertest unit tests
 #
-# Any combination is valid: TS, TS+Mongo, TS+React, or all three. The base is always
-# TypeScript under src/server; Mongo and React are additive.
+# Any combination is valid. The base is always TypeScript under src/server; Mongo,
+# React and Express are additive. Express replaces the base stub entry point with a
+# long-running server, and with Mongo its shutdown closes the shared client.
 #
 # This is the GENERATOR half of project provisioning. After it runs, the project
 # still needs: npm install, the setup gate (project-setup.sh), and (with Mongo)
 # docker bring-up, to be ready for the build loop.
 #
 # Usage:
-#   init-ts-project.sh <project-name> [target-dir] [--mongo] [--react] [--verbose] [--no-color] [--debug]
+#   init-ts-project.sh <project-name> [target-dir] [--mongo] [--react] [--express] [--verbose] [--no-color] [--debug]
 #
 #   project-name : kebab-case, used for the npm package name (and, with --mongo, the
 #                  Mongo database name).
 #   target-dir   : where to create it (default: ./<project-name>)
 #   --mongo      : add the MongoDB layer (db helper, docker infra, integration tier).
 #   --react      : add the React + Vite client layer (src/client, frontend tier).
+#   --express    : add a versioned Express HTTP server (src/server/app.ts + tests).
 #   --verbose    : print each file as it is written (default prints one line per area).
 #   --no-color   : force plain output (colour is auto-detected, on only at a terminal).
 #   --debug      : trace every shell command (set -x).
@@ -49,9 +52,11 @@ TEMPLATES_DIR="$SCRIPT_DIR/../file-templates"
 . "$GENERATOR_DIR/mongo.sh"
 # shellcheck source=generator/react.sh
 . "$GENERATOR_DIR/react.sh"
+# shellcheck source=generator/express.sh
+. "$GENERATOR_DIR/express.sh"
 
 usage() {
-    echo "usage: init-ts-project.sh <project-name> [target-dir] [--mongo] [--react] [--verbose] [--no-color] [--debug]" >&2
+    echo "usage: init-ts-project.sh <project-name> [target-dir] [--mongo] [--react] [--express] [--verbose] [--no-color] [--debug]" >&2
     exit 2
 }
 
@@ -63,10 +68,12 @@ NAME=""
 DIR=""
 WITH_MONGO=0
 WITH_REACT=0
+WITH_EXPRESS=0
 while [ $# -gt 0 ]; do
     case "$1" in
         --mongo | --with-mongo) WITH_MONGO=1; shift ;;
         --react | --with-react) WITH_REACT=1; shift ;;
+        --express | --with-express) WITH_EXPRESS=1; shift ;;
         --verbose) VERBOSE=1; shift ;;
         --no-color | --no-colour) USE_COLOR=never; shift ;;
         --debug) set -x; shift ;;
@@ -122,6 +129,9 @@ mkdir -p "$DIR"/{src/server,scripts,docs,docs/modules,.github/workflows}
 base_layer
 [ "$WITH_MONGO" = 1 ] && mongo_layer
 [ "$WITH_REACT" = 1 ] && react_layer
+# Express last: it replaces the base entry point and its test, and reads WITH_MONGO
+# to decide whether shutdown closes the shared Mongo client.
+[ "$WITH_EXPRESS" = 1 ] && express_layer
 
 # ---------------------------------------------------------------------------
 # Shared files: assembled from the base plus whatever fragments the enabled layers
@@ -145,7 +155,7 @@ write_file "$DIR/package.json" <<EOF
     "format:check": "prettier --check ."${MONGO_SCRIPTS:-}${REACT_SCRIPTS:-}
   },
   "dependencies": {
-    "tsx": "^4.22.4"${MONGO_DEPS:-}${REACT_DEPS:-}
+    "tsx": "^4.22.4"${MONGO_DEPS:-}${REACT_DEPS:-}${EXPRESS_DEPS:-}
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
@@ -158,7 +168,7 @@ write_file "$DIR/package.json" <<EOF
     "prettier": "^3.4.2",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.18.1",
-    "vitest": "^4.1.9"${REACT_DEV_DEPS:-}
+    "vitest": "^4.1.9"${REACT_DEV_DEPS:-}${EXPRESS_DEV_DEPS:-}
   }
 }
 EOF
@@ -351,7 +361,7 @@ A TypeScript project.
 
 \`\`\`
 npm install$([ "$WITH_MONGO" = 1 ] && printf '\nmake up            # start the shared Mongo and init the replica set')
-$(if [ "$WITH_REACT" = 1 ]; then printf 'make test-all      # backend tier(s) then the frontend tier\nmake dev-client    # run the Vite dev server'; else printf 'make test          # run the backend tier(s)'; fi)
+$(if [ "$WITH_REACT" = 1 ]; then printf 'make test-all      # backend tier(s) then the frontend tier\nmake dev-client    # run the Vite dev server'; else printf 'make test          # run the backend tier(s)'; fi)$([ "$WITH_EXPRESS" = 1 ] && printf '\nnpm start          # run the Express server (GET /api/v1/health)')
 \`\`\`
 EOF
 
@@ -415,6 +425,7 @@ if [ "$WITH_REACT" = 1 ]; then
 else
     echo "  make test               # the backend tier(s)"
 fi
+[ "$WITH_EXPRESS" = 1 ] && echo "  npm start               # run the Express server (GET /api/v1/health)"
 echo
 echo "Then drive it through the pipeline. Two independent prerequisites, in either order:"
 echo "  /omero-design-partner   converges your intent into feature sheet(s)"

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # generator/lib.sh - shared helpers for the project generator and its stack layers.
-# Sourced by init-ts-project.sh and the layer scripts (base.sh, mongo.sh, react.sh),
+# Sourced by init-ts-project.sh and the layer scripts (base.sh, mongo.sh, react.sh,
+# express.sh),
 # so every layer uses the same output idiom, colour handling and file primitives.
 # Not executed directly. Expects DIR, VERBOSE, USE_COLOR and TEMPLATES_DIR to be
 # set by the orchestrator before use.

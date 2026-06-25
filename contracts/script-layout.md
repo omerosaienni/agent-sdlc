@@ -108,7 +108,7 @@ above still governs the orchestrator; the components follow these rules:
   across files).
 - **Layers own their exclusive files; the orchestrator assembles shared ones.**
   When several layers contribute to one output file (e.g. a `package.json` the
-  base, Mongo, and React layers all add to), the layer exports a named fragment
+  base, Mongo, React and Express layers all add to), the layer exports a named fragment
   and the orchestrator splices it in. A layer never hard-codes another layer's
   content, and never edits a file another layer owns.
 
@@ -116,6 +116,6 @@ above still governs the orchestrator; the components follow these rules:
 
 `scripts/init-ts-project.sh` is the reference implementation: an orchestrator that
 sources `scripts/generator/lib.sh` (helpers) and the `scripts/generator/base.sh`,
-`mongo.sh`, `react.sh` layers, assembling the shared files from their fragments. A
+`mongo.sh`, `react.sh`, `express.sh` layers, assembling the shared files from their fragments. A
 single-file script should mirror the skeleton; a composed one should mirror this
 orchestrator-and-layers structure.
