@@ -498,9 +498,11 @@ A TypeScript project.
 ## Quick start
 
 \`\`\`
-npm install$([ -n "$SERVICES_YAML" ] && printf '\nmake config        # regenerate .env from config/services.yaml (edit ports there)')$([ "$WITH_MONGO" = 1 ] && printf '\nmake db-start      # start the shared Mongo and init the replica set')
-$(if [ "$WITH_REACT" = 1 ]; then printf 'make test-all      # server tier(s) then the client tier\nmake client-start  # start the Vite client'; else printf 'make test          # run the server tier(s)'; fi)$([ "$WITH_EXPRESS" = 1 ] && printf '\nmake server-start  # start the Express server (GET /api/v1/health)')
+npm install$([ -n "$SERVICES_YAML" ] && printf '\nmake config')$([ "$WITH_MONGO" = 1 ] && printf '\nmake db-start')
+$(if [ "$WITH_REACT" = 1 ]; then printf 'make test-all\nmake client-start'; else printf 'make test'; fi)$([ "$WITH_EXPRESS" = 1 ] && printf '\nmake server-start')
 \`\`\`
+
+Run \`make help\` to see what each target does.
 EOF
 
 # ---------------------------------------------------------------------------
@@ -553,21 +555,23 @@ if [ -z "$(git config --global --get core.hooksPath || true)" ]; then
 fi
 
 printf '\n%sScaffolded %s%s\n' "$C_OK" "$NAME" "$C_RESET"
-echo "Next:"
+# Bare commands, one per line, so the block is safe to copy-paste: short commands
+# never wrap, and a wrapped comment tail would otherwise paste as a broken command.
+# Descriptions live in `make help`.
+echo "Next (run 'make help' to see what each target does):"
 echo "  cd $DIR"
 echo "  npm install"
-[ -n "$SERVICES_YAML" ] && echo "  make config             # regenerate .env from config/services.yaml (ports live there)"
-[ "$WITH_MONGO" = 1 ] && echo "  make db-start           # start the shared Mongo and init the replica set"
+[ -n "$SERVICES_YAML" ] && echo "  make config"
+[ "$WITH_MONGO" = 1 ] && echo "  make db-start"
 if [ "$WITH_REACT" = 1 ]; then
-    echo "  make test-all           # server tier(s) then the client tier"
-    echo "  make client-start       # start the Vite client"
+    echo "  make test-all"
+    echo "  make client-start"
 else
-    echo "  make test               # the server tier(s)"
+    echo "  make test"
 fi
-[ "$WITH_EXPRESS" = 1 ] && echo "  make server-start       # start the Express server (GET /api/v1/health)"
+[ "$WITH_EXPRESS" = 1 ] && echo "  make server-start"
 echo
 echo "Then drive it through the pipeline. Two independent prerequisites, in either order:"
-echo "  /omero-design-partner   converges your intent into feature sheet(s)"
-echo "                          (.building/features/<feature-name>/increments.md)"
-echo "  /omero-project-setup    proves the project environment ready (writes the receipt)"
-echo "Then /omero-build-loop builds the sheet (it needs both the sheet and the receipt)."
+echo "  /omero-design-partner   converges your intent into a feature sheet"
+echo "  /omero-project-setup    proves the project environment ready"
+echo "Then /omero-build-loop builds the sheet (needs both the sheet and the receipt)."
