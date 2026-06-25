@@ -13,8 +13,7 @@ Explains the whole system, and the place to start. The contracts under [`../cont
 - [`building-folder.md`](building-folder.md): the gitignored `.building/` workspace, what each file is.
 - [`scripts.md`](scripts.md): the pipeline shell scripts (the generator, the setup gate, the report helper) and how they connect.
 - [`project-rules.md`](project-rules.md): the two rule layers (global conventions and per-project stack rules), the installers and the path-scoping.
-- [`diagram-spec.md`](diagram-spec.md): the canonical definition of the visual set, and how to regenerate a diagram.
-- [`diagrams/`](diagrams/): the SVGs.
+- [`diagrams/`](diagrams/): the SVGs, embedded in the pages above.
 
 ## Templates and examples
 

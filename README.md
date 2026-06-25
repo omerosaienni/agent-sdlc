@@ -51,7 +51,6 @@ The build loop runs in one of two modes, sequential-attended or parallel-attende
 | [docs/roles.md](docs/roles.md) | The four agent roles and the ordering invariant |
 | [docs/building-folder.md](docs/building-folder.md) | The gitignored `.building/` workspace |
 | [docs/scripts.md](docs/scripts.md) | The three pipeline shell scripts and how they connect |
-| [docs/diagram-spec.md](docs/diagram-spec.md) | The visual set and how to regenerate a diagram |
 
 ## Repository layout
 

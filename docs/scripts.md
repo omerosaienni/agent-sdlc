@@ -11,9 +11,9 @@ skills installer (`skills/install-skills.sh`), documented in
 flow described here.)
 
 They follow the layout in `contracts/script-layout.md`. The diagrams here are
-inline Mermaid (rendered by GitHub) rather than the SVGs catalogued in
-`diagram-spec.md`, because a script's documentation is easier to keep in sync
-when the diagram lives as text beside the prose.
+inline Mermaid (rendered by GitHub) rather than standalone SVGs, because a script's
+documentation is easier to keep in sync when the diagram lives as text beside the
+prose.
 
 ## How they connect
 

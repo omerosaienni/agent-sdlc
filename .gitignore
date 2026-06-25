@@ -3,3 +3,6 @@
 .building/
 coverage/
 node_modules/
+
+# agent instructions are packaged outside the repo, never committed
+CLAUDE.md
