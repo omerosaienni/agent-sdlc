@@ -60,6 +60,14 @@ installs the matching stack rules, and emits a layer-aware GitHub Actions workfl
 (`.github/workflows/ci.yml`). It makes no domain assumptions; you grow
 `src/server/index.ts` and add your own modules.
 
+When any service layer is present it also writes `config/services.yaml`: the ports and
+addresses for the server, the mongo and the client, each block contributed by its layer.
+`scripts/config-env.sh` (run via `make config`) turns the YAML into a gitignored `.env`
+that the server (`--env-file-if-exists`), the Vite client (`loadEnv`) and docker compose
+(`${MONGO_PORT}`) all read, so a project's ports and addresses live in one file and you
+can run several instances by config alone. The code defaults match the YAML, so a fresh
+checkout runs without regenerating.
+
 It is a small multi-file script (per `contracts/script-layout.md`): an orchestrator
 that sources the shared helpers (`scripts/generator/lib.sh`) and the
 `scripts/generator/base.sh`, `mongo.sh`, `react.sh`, `express.sh` layers, assembling the

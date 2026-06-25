@@ -10,24 +10,41 @@ react_layer() {
     step "react client"
 
     write_file "$DIR/vite.config.ts" <<'EOF'
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 // Client root is src/client so the app sits beside the server, not at repo root.
 // Build output goes to dist/client to keep it clear of any backend build.
-export default defineConfig({
-  root: 'src/client',
-  plugins: [react()],
-  build: { outDir: '../../dist/client', emptyOutDir: true },
-  // A bare `vitest run` (e.g. the coverage gate) resolves this config, not the
-  // tier ones, so the client tests need jsdom here too. Paths are relative to
-  // root (src/client), mirroring vitest.client.config.ts.
-  test: {
-    environment: 'jsdom',
-    globals: true,
-    include: ['**/*.test.tsx'],
-    setupFiles: ['./test-setup.ts'],
-  },
+export default defineConfig(({ mode }) => {
+  // Ports and addresses come from config/services.yaml via scripts/config-env.sh,
+  // which writes .env. The empty prefix loads every key, not just VITE_ ones, so
+  // the dev server and its API proxy follow one config. Defaults match the yaml.
+  const env = loadEnv(mode, process.cwd(), '');
+  const clientHost = env.CLIENT_HOST || '127.0.0.1';
+  const clientPort = Number(env.CLIENT_PORT) || 5173;
+  const serverHost = env.SERVER_HOST || '127.0.0.1';
+  const serverPort = env.SERVER_PORT || '3000';
+  return {
+    root: 'src/client',
+    plugins: [react()],
+    build: { outDir: '../../dist/client', emptyOutDir: true },
+    // Dev server bound per config; /api is proxied to the Express server so the
+    // browser talks to the client origin and dodges CORS in development.
+    server: {
+      host: clientHost,
+      port: clientPort,
+      proxy: { '/api': `http://${serverHost}:${serverPort}` },
+    },
+    // A bare `vitest run` (e.g. the coverage gate) resolves this config, not the
+    // tier ones, so the client tests need jsdom here too. Paths are relative to
+    // root (src/client), mirroring vitest.client.config.ts.
+    test: {
+      environment: 'jsdom',
+      globals: true,
+      include: ['**/*.test.tsx'],
+      setupFiles: ['./test-setup.ts'],
+    },
+  };
 });
 EOF
 
@@ -137,6 +154,14 @@ EOF
     "build:client": "vite build",
     "preview": "vite preview",
     "test:client": "vitest run -c vitest.client.config.ts"'
+
+    # config/services.yaml fragment: the Vite dev server's address and port.
+    # config-env.sh turns this into CLIENT_HOST/CLIENT_PORT, read by vite.config.ts.
+    CLIENT_YAML="# the Vite dev server (make dev-client)
+client:
+  host: 127.0.0.1
+  port: 5173
+"
     REACT_DEV_DEPS=',
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",

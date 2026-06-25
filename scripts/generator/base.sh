@@ -46,6 +46,9 @@ dist/
 coverage/
 .building/
 graphify-out/
+# .env is generated from config/services.yaml by scripts/config-env.sh; edit the
+# YAML, not this. Gitignored because it is derived; code defaults match the YAML.
+.env
 EOF
 
     # Base .graphifyignore: loop output plus the config files that are noise in the

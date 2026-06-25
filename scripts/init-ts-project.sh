@@ -119,6 +119,10 @@ DB_NAME="$NAME"
 
 step "Scaffolding '$NAME' into '$DIR'$([ "$WITH_MONGO" = 1 ] && echo " (db: $DB_NAME)")"
 mkdir -p "$DIR"/{src/server,scripts,docs,docs/modules,.github/workflows}
+# config/ holds services.yaml when a service layer is present (express/mongo/react).
+if [ "$WITH_MONGO" = 1 ] || [ "$WITH_REACT" = 1 ] || [ "$WITH_EXPRESS" = 1 ]; then
+    mkdir -p "$DIR/config"
+fi
 [ "$WITH_MONGO" = 1 ] && mkdir -p "$DIR/src/server/db"
 # React adds the client tree (omero-react.md scopes to src/client/**) and a common
 # tree for types crossing the client/server boundary.
@@ -139,6 +143,13 @@ base_layer
 # ---------------------------------------------------------------------------
 step "build surface (package.json, tsconfig, Makefile)"
 
+# The start script loads .env (generated from config/services.yaml) when the Express
+# server layer is present, so SERVER_HOST/SERVER_PORT reach the bootstrap; the base
+# stub has no server, so it stays a plain run. --env-file-if-exists tolerates a
+# missing .env (a fresh clone before `make config`), falling back to code defaults.
+START_SCRIPT="tsx src/server/index.ts"
+[ "$WITH_EXPRESS" = 1 ] && START_SCRIPT="tsx --env-file-if-exists=.env src/server/index.ts"
+
 # package.json
 write_file "$DIR/package.json" <<EOF
 {
@@ -148,7 +159,7 @@ write_file "$DIR/package.json" <<EOF
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "tsx src/server/index.ts",
+    "start": "${START_SCRIPT}",
     "test:unit": "vitest run -c vitest.unit.config.ts",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
@@ -214,6 +225,19 @@ EOF
 TEST_PREREQS="test-unit"
 [ "$WITH_MONGO" = 1 ] && TEST_PREREQS="test-unit test-integration"
 
+# config target: present whenever a service layer contributed a services.yaml block.
+# Regenerates .env from the YAML so the server, client and docker read one config.
+CONFIG_MAKE_HELP=""
+CONFIG_MAKE_TARGET=""
+if [ -n "${SERVER_YAML:-}${MONGO_YAML:-}${CLIENT_YAML:-}" ]; then
+    CONFIG_MAKE_HELP='	@echo "  config      Regenerate .env from config/services.yaml"'
+    CONFIG_MAKE_TARGET='
+.PHONY: config
+
+config: ## Regenerate .env from config/services.yaml
+	./scripts/config-env.sh'
+fi
+
 write_file "$DIR/Makefile" <<EOF
 # help is the default goal so a bare \`make\` documents the project
 .DEFAULT_GOAL := help
@@ -232,6 +256,7 @@ ${MONGO_MAKE_HELP:-}
 	@echo "  typecheck   Type-check without emitting (tsc --noEmit)"
 	@echo "  graph       Rebuild the knowledge graph (code + docs) and HTML"
 	@echo "  graph-viz   Regenerate graph.html and report from the existing graph"
+${CONFIG_MAKE_HELP:-}
 ${REACT_MAKE_HELP:-}
 
 start: ## Run the entry point (src/server/index.ts)
@@ -259,6 +284,7 @@ graph-viz: ## Regenerate graph.html and the report from the existing graph
 	\$(GRAPHIFY_ENV) graphify cluster-only . --backend ollama
 ${MONGO_MAKE_TARGETS:-}
 ${REACT_MAKE_TARGETS:-}
+${CONFIG_MAKE_TARGET:-}
 EOF
 
 # ---------------------------------------------------------------------------
@@ -329,6 +355,75 @@ jobs:
 EOF
 
 # ---------------------------------------------------------------------------
+# Service config: ports and addresses in one YAML, assembled from the layer
+# fragments (server, mongo, client). scripts/config-env.sh turns it into .env, which
+# the server (--env-file-if-exists), the Vite client (loadEnv) and docker compose
+# (\${MONGO_PORT}) all read. Written only when a service layer contributed a block.
+# ---------------------------------------------------------------------------
+SERVICES_YAML="${SERVER_YAML:-}${MONGO_YAML:-}${CLIENT_YAML:-}"
+if [ -n "$SERVICES_YAML" ]; then
+    step "service config (config/services.yaml)"
+
+    # %$'\n' strips the fragments' trailing newline so the heredoc's own line break
+    # leaves exactly one at end-of-file.
+    write_file "$DIR/config/services.yaml" <<EOF
+# Service ports and addresses for this project, in one place. Edit here, then run
+# \`make config\` (or ./scripts/config-env.sh) to regenerate .env, which the server,
+# the Vite client and docker compose read. Defaults match the code, so a fresh
+# checkout runs without regenerating.
+${SERVICES_YAML%$'\n'}
+EOF
+
+    write_file "$DIR/scripts/config-env.sh" <<'EOF'
+#!/usr/bin/env bash
+# Generate .env from config/services.yaml so the server, the Vite client and docker
+# compose all read their ports and addresses from one place. Re-run after editing
+# the YAML (or via `make config`). No YAML dependency: services.yaml is a fixed
+# two-level shape (a `section:` line, then two-space `key: value` lines) that this
+# awk reads deterministically, emitting SECTION_KEY=value pairs.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SRC="$ROOT/config/services.yaml"
+OUT="$ROOT/.env"
+
+if [ ! -f "$SRC" ]; then
+    echo "config-env.sh: $SRC not found" >&2
+    exit 1
+fi
+
+awk '
+  # A top-level "section:" line (nothing after the colon) opens a section.
+  /^[a-z][a-z0-9_]*:[[:space:]]*$/ { section = $1; sub(/:.*/, "", section); next }
+  # An indented "key: value" line under the current section.
+  /^[[:space:]]+[a-z]/ {
+    if (section == "") next
+    line = $0
+    sub(/^[[:space:]]+/, "", line)                   # strip indent
+    key = line; sub(/:.*/, "", key)                  # key before the colon
+    val = line; sub(/^[^:]*:[[:space:]]*/, "", val)  # value after the colon
+    sub(/[[:space:]]*#.*/, "", val)                  # strip a trailing comment
+    sub(/[[:space:]]+$/, "", val)                    # strip trailing space
+    if (key != "" && val != "") printf "%s_%s=%s\n", toupper(section), toupper(key), val
+  }
+' "$SRC" > "$OUT"
+
+echo "config-env.sh: wrote $OUT from config/services.yaml"
+EOF
+    chmod +x "$DIR/scripts/config-env.sh"
+
+    # Seed the initial .env so the freshly scaffolded project runs immediately. .env
+    # is gitignored (derived); regenerate with `make config` after editing the YAML.
+    ( cd "$DIR" && ./scripts/config-env.sh >/dev/null )
+
+    # CLAUDE.md note (woven into the Layout section below). Backticks are escaped so
+    # they land literally in the variable rather than running a command substitution.
+    CONFIG_CLAUDE_MD="
+- Service ports and addresses live in config/services.yaml; \`make config\`
+  regenerates .env from it, read by the server, the Vite client and docker compose."
+fi
+
+# ---------------------------------------------------------------------------
 # Docs: CLAUDE.md (project identity + runtime facts; conventions are in
 # .claude/rules), README. The Mongo layer contributes the endpoints section.
 # ---------------------------------------------------------------------------
@@ -342,7 +437,7 @@ TODO: one or two lines on what this project is and is not (its scope).
 ## Layout
 
 - Backend source under src/server/. A frontend, if present, lives under src/client/.
-  Entry point: src/server/index.ts, run via \`npm start\`.
+  Entry point: src/server/index.ts, run via \`npm start\`.${CONFIG_CLAUDE_MD:-}
 
 ## Conventions
 
@@ -360,7 +455,7 @@ A TypeScript project.
 ## Quick start
 
 \`\`\`
-npm install$([ "$WITH_MONGO" = 1 ] && printf '\nmake up            # start the shared Mongo and init the replica set')
+npm install$([ -n "$SERVICES_YAML" ] && printf '\nmake config        # regenerate .env from config/services.yaml (edit ports there)')$([ "$WITH_MONGO" = 1 ] && printf '\nmake up            # start the shared Mongo and init the replica set')
 $(if [ "$WITH_REACT" = 1 ]; then printf 'make test-all      # backend tier(s) then the frontend tier\nmake dev-client    # run the Vite dev server'; else printf 'make test          # run the backend tier(s)'; fi)$([ "$WITH_EXPRESS" = 1 ] && printf '\nnpm start          # run the Express server (GET /api/v1/health)')
 \`\`\`
 EOF
@@ -418,6 +513,7 @@ printf '\n%sScaffolded %s%s\n' "$C_OK" "$NAME" "$C_RESET"
 echo "Next:"
 echo "  cd $DIR"
 echo "  npm install"
+[ -n "$SERVICES_YAML" ] && echo "  make config             # regenerate .env from config/services.yaml (ports live there)"
 [ "$WITH_MONGO" = 1 ] && echo "  make up                 # start the shared Mongo and init the replica set"
 if [ "$WITH_REACT" = 1 ]; then
     echo "  make test-all           # backend tier(s) then the frontend tier"
