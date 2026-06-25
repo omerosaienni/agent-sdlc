@@ -293,4 +293,25 @@ drop: ## Drop this project's database (${DB_NAME}) only
 
 test-integration: ## Run the integration tier (needs Mongo up)
 	npm run test:integration"
+
+    # CI job fragment spliced into .github/workflows/ci.yml after the base jobs. The
+    # integration tier on a real mongod: make up brings up the shared container and
+    # initialises the replica set, seed proves the faker-to-Mongo path, then the
+    # tier runs. Leading blank line keeps it apart from the base jobs.
+    MONGO_CI_JOB='
+
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # reuse make up (compose + rs-init to a PRIMARY) rather than re-encoding the
+      # replica set in YAML; seed then proves the faker-to-Mongo path before the tier
+      - run: make up
+      - run: npm run seed
+      - run: npm run test:integration'
 }

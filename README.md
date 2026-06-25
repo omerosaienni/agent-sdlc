@@ -34,7 +34,7 @@ Steps 2 and 3 are independent prerequisites and can run in either order; step 4 
 
 The work is driven by these four `/omero-*` skills (thin wrappers over the contracts; a fifth, `omero-install-project-rules`, installs stack rules into a repo and is normally run for you by the generator, see [`skills/README.md`](skills/README.md)):
 
-1. `omero-create-ts-project` scaffolds a TypeScript project, with optional Mongo and React layers (the generator, separate from the pipeline).
+1. `omero-create-ts-project` scaffolds a TypeScript project, with optional Mongo and React layers and a layer-aware GitHub Actions CI workflow (the generator, separate from the pipeline).
 2. `omero-design-partner` converges intent into validated feature sheet(s).
 3. `omero-project-setup` proves the project ready and writes the setup receipt.
 4. `omero-build-loop` delivers the sheet, one increment per branch (one PR per increment with a GitHub remote, otherwise a local commit to main).

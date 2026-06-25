@@ -27,6 +27,7 @@ workspace tooling to maintain.
   CLAUDE.md                      domain scope + runtime facts (conventions live in .claude/rules)
   .graphifyignore                constant (config exclusions)
   .gitignore                     constant (includes .claude/, dist/)
+  .github/workflows/ci.yml       constant shape (layer-aware: +integration with Mongo, +client with React)
   package.json                   constant shape (React adds client scripts + deps)
   tsconfig.json                  constant (React adds jsx + DOM libs)
   vite.config.ts                 constant, React only (client root src/client)
@@ -71,6 +72,8 @@ workspace tooling to maintain.
 - The three vitest configs and the suffix convention (`*.test.ts` backend unit,
   `*.integration.test.ts` backend integration, `*.test.tsx` frontend)
 - graphify: the `.graphifyignore` exclusions and the `make graph`/`graph-viz` targets
+- The CI workflow `.github/workflows/ci.yml` (layer-aware: lint, format, typecheck and
+  unit always; an integration job with Mongo; a client job with React)
 - package.json (one package; React adds client scripts and the react/vite/RTL deps)
 - tsconfig base (strict; React adds `jsx: react-jsx` and the DOM libs), eslint, prettier
 - vite.config.ts (client root `src/client`, build to `dist/client`)
@@ -163,8 +166,9 @@ API boundary.
 - **Setup gate** (`project-setup.sh`): proves the project loop-ready the same way it
   does for a backend project. The monorepo provisioning idea (the gate laying down the
   skeleton) is not built; the generator is how a project gets the skeleton.
-- **Build-loop contract**: unchanged. The frontend tier is an extra unit-class tier;
-  it does not change the loop's gates.
+- **Build-loop contract**: unchanged. The judge gates the backend unit and integration
+  tiers; the frontend tier is an extra unit-class tier the judge does not run, gated
+  instead by the generated CI workflow's `client` job on every PR into main.
 
 ---
 

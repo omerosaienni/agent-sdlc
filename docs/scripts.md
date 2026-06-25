@@ -54,8 +54,9 @@ Scaffolds a TypeScript project with optional Mongo and React layers. The base is
 always TypeScript (tooling, an entry point, a unit tier under `src/server`); `--mongo`
 adds the db helper, docker infra, the integration tier and a faker seed; `--react`
 adds the React + Vite client under `src/client`. It inits git and installs the
-matching stack rules. It makes no domain assumptions; you grow `src/server/index.ts`
-and add your own modules.
+matching stack rules, and emits a layer-aware GitHub Actions workflow
+(`.github/workflows/ci.yml`). It makes no domain assumptions; you grow
+`src/server/index.ts` and add your own modules.
 
 It is a small multi-file script (per `contracts/script-layout.md`): an orchestrator
 that sources the shared helpers (`scripts/generator/lib.sh`) and the
@@ -87,7 +88,7 @@ flowchart TD
     entry --> editor["base: editor<br/>.vscode debug configs"]
     editor --> mongo["--mongo (optional)<br/>db helper (src/server/db),<br/>docker infra, integration tier + seed"]
     mongo --> react["--react (optional)<br/>src/client (Vite), src/common,<br/>frontend tier"]
-    react --> build["assemble shared files<br/>package.json, tsconfig, Makefile<br/>(from base + layer fragments)"]
+    react --> build["assemble shared files<br/>package.json, tsconfig, Makefile,<br/>.github/workflows/ci.yml<br/>(from base + layer fragments)"]
     build --> docs["docs<br/>CLAUDE.md (identity + runtime), README"]
     docs --> git["git init + initial commit<br/>(idempotent)"]
     git --> rules["stack rules<br/>install-project-rules.sh --typescript [--mongo] [--react]"]
@@ -140,6 +141,7 @@ flowchart TD
     subgraph build["Build surface (assembled from fragments)"]
         makefile["Makefile"]
         pkg["package.json"]
+        ci[".github/workflows/ci.yml"]
     end
 
     subgraph docs["Docs + editor"]
@@ -156,7 +158,7 @@ flowchart TD
     classDef node fill:#e4edf4,stroke:#5b6b7a,color:#1d2733;
     classDef group fill:#f4f6f8,stroke:#5b6b7a,color:#1d2733;
     class name,dbname param;
-    class vitest,tsconfig,lint,ignores,index,indextest,dbts,compose,smoke,seed,client,common,makefile,pkg,claude,rules,readme,vscode node;
+    class vitest,tsconfig,lint,ignores,index,indextest,dbts,compose,smoke,seed,client,common,makefile,pkg,ci,claude,rules,readme,vscode node;
     class tooling,base,mongolayer,reactlayer,build,docs group;
 ```
 
@@ -166,6 +168,20 @@ the integration tier runs a replica-set smoke test through the real helper (it
 asserts the set reports a PRIMARY, so it fails if mongod is down or the replica
 set was never initiated). The seed helper (`make seed`, faker-backed) proves the
 faker to Mongo path end to end and is a domain-free starting point you grow.
+
+### CI workflow
+
+The generator writes `.github/workflows/ci.yml`, assembled from layer fragments like
+the Makefile and `package.json`. The base contributes a job each for `lint`,
+`format:check`, `typecheck` (one `tsc --noEmit` spans all of `src`, so it covers the
+client too) and the unit tier; `--mongo` appends an `integration` job that runs `make
+up` then `seed` then the integration tier on a real mongod; `--react` appends a
+`client` job running the frontend tier, which is where client component tests are
+gated. It triggers on every pull request into `main`, which is what the build loop
+opens per increment, so each increment is checked before you merge it. The jobs use
+`npm ci`, so the project's `package-lock.json` must be committed (`npm install` writes
+it). On a project with no remote the loop never opens a PR, so the workflow simply
+never runs.
 
 ### What it does not do
 

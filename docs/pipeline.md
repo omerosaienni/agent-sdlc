@@ -16,7 +16,7 @@ The two gates are independent: re-running design (a new sheet) does not invalida
 
 A project is created by a stack-specific generator, separate from the pipeline. The generator decides the stack; the pipeline runs on whatever project exists and passes setup. This keeps the pipeline stack-agnostic: the same design, setup and build work on any project a generator produces.
 
-`scripts/init-ts-project.sh` scaffolds a TypeScript project with optional Mongo and React layers (a TypeScript base always; `--mongo` adds the db helper at `src/server/db/`, docker infra, the integration tier and a faker seed; `--react` adds the React + Vite client under `src/client/`), then inits git and installs the matching stack rules into `.claude/rules/`. It makes no domain assumptions; you grow `src/server/index.ts` and add your own modules. The generator is layered, so the stack it produces is chosen by flag and more layers can be added without a new script.
+`scripts/init-ts-project.sh` scaffolds a TypeScript project with optional Mongo and React layers (a TypeScript base always; `--mongo` adds the db helper at `src/server/db/`, docker infra, the integration tier and a faker seed; `--react` adds the React + Vite client under `src/client/`), then inits git, installs the matching stack rules into `.claude/rules/` and emits a layer-aware GitHub Actions workflow at `.github/workflows/ci.yml` (lint, format, typecheck and unit always; an integration job with `--mongo`; a client job with `--react`). It makes no domain assumptions; you grow `src/server/index.ts` and add your own modules. The generator is layered, so the stack it produces is chosen by flag and more layers can be added without a new script.
 
 ## Pipeline tooling
 

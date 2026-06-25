@@ -63,6 +63,7 @@ package-lock.json
 .prettierrc.json
 eslint.config.js
 vitest.unit.config.ts
+.github/
 EOF
 
     step "entry point"

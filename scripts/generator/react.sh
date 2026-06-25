@@ -176,4 +176,22 @@ test-client: ## Frontend unit tier (vitest + Testing Library, jsdom)
 
 # Everything: backend tiers (unit, plus integration if Mongo is enabled), then frontend.
 test-all: test test-client ## Run the backend tiers then the frontend tier'
+
+    # CI job fragment spliced into .github/workflows/ci.yml after the base (and any
+    # Mongo) jobs. The frontend tier runs in jsdom with no external services, so it
+    # needs no make up. This is where client component tests are gated. Type-checking
+    # of the client is already covered by the base typecheck job (tsc spans all of src).
+    # Leading blank line keeps it apart from the prior job in the assembled workflow.
+    REACT_CI_JOB='
+
+  client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:client'
 }

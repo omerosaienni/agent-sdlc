@@ -111,7 +111,7 @@ DB_NAME="$NAME"
 # ============================================================================
 
 step "Scaffolding '$NAME' into '$DIR'$([ "$WITH_MONGO" = 1 ] && echo " (db: $DB_NAME)")"
-mkdir -p "$DIR"/{src/server,scripts,docs,docs/modules}
+mkdir -p "$DIR"/{src/server,scripts,docs,docs/modules,.github/workflows}
 [ "$WITH_MONGO" = 1 ] && mkdir -p "$DIR/src/server/db"
 # React adds the client tree (omero-react.md scopes to src/client/**) and a common
 # tree for types crossing the client/server boundary.
@@ -249,6 +249,73 @@ graph-viz: ## Regenerate graph.html and the report from the existing graph
 	\$(GRAPHIFY_ENV) graphify cluster-only . --backend ollama
 ${MONGO_MAKE_TARGETS:-}
 ${REACT_MAKE_TARGETS:-}
+EOF
+
+# ---------------------------------------------------------------------------
+# CI workflow: one job per gate, assembled from layer fragments like the Makefile.
+# Base contributes lint, format, typecheck and unit; --mongo appends the integration
+# job, --react appends the client job. Runs on every PR into main, which is what the
+# build loop opens per increment, so each increment is checked before you merge it.
+# A single typecheck job covers the whole project (tsc spans all of src, client
+# included). npm ci needs the committed package-lock.json: npm install writes it,
+# commit it with the project.
+# ---------------------------------------------------------------------------
+step "CI workflow"
+
+write_file "$DIR/.github/workflows/ci.yml" <<EOF
+# Layer-aware CI from init-ts-project.sh: jobs scale with the layers added.
+# Runs on every PR into main, which the build loop opens one of per increment.
+# npm ci needs the committed package-lock.json (npm install writes it; commit it).
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:unit${MONGO_CI_JOB:-}${REACT_CI_JOB:-}
 EOF
 
 # ---------------------------------------------------------------------------

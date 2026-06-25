@@ -30,5 +30,6 @@ tree and not to server `.tsx`. Drafted from sensible defaults, refine to taste.
 ## Tests
 - Component tests are unit-class (no Mongo, no network) but run in the frontend tier
   (jsdom), via `npm run test:client` / `make test-client`, not the backend unit tier.
-  Test behaviour through the rendered output and user interaction, not implementation
-  details.
+  The judge does not run this tier; the generated CI workflow's `client` job gates it
+  on every PR into main. Test behaviour through the rendered output and user
+  interaction, not implementation details.
