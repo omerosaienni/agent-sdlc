@@ -16,7 +16,7 @@ Profile decides timing (build-judge-loop.md, Build profile):
 - lite completion-gate sweep (build-loop-lite.md): assemble these same per-increment inputs across every increment in one pass, producing each increment's Outputs below. Assembly is per increment either way, just batched.
 
 ## Outputs
-- Per-increment doc: docs/modules/<id>-<module-filename>.md. Named after the primary module file it documents, so it tracks the code not the title. Renders the seven payload fields as a clean module reference.
+- Per-increment doc: docs/modules/<id>-<module-filename>.md. Named after the primary module file it documents, so it tracks the code not the title. Renders the payload fields (doc-payload.schema.md) as a clean module reference.
 - Project rollup: idempotent section in docs/ARCHITECTURE.md between markers <!-- <id> --> and <!-- /<id> -->. Re-documenting an increment REPLACES its block, never duplicates. Carries a module index, accumulated key-decisions log, and dependency graph.
 - Dependency graph: regenerated as coloured Mermaid from the sheet's depends_on (roots one colour, dependents another, matching the palette), inside docs/ARCHITECTURE.md. Mermaid because it is text, regenerable, and GitHub renders it.
 

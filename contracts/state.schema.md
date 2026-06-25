@@ -5,7 +5,7 @@ The build loop's per-feature recovery record and cross-conversation memory: one 
 ## Structure
 - sheet: string. Path to this queue's increment sheet, `.building/features/<feature-name>/increments.md`.
 - conventions: string. Path to the project conventions file (CLAUDE.md).
-- mode: string, OPTIONAL. `sequential-attended` or `parallel-attended`. Absent means sequential-attended. The loop NEVER writes this field; the human sets it (see Modes). The orchestrator is sole writer of everything else (except `profile`).
+- mode: string, OPTIONAL. `sequential-attended` or `parallel-attended`. Absent means sequential-attended. The loop NEVER writes this field; the human sets it (see build-judge-loop.md, Modes). The orchestrator is sole writer of everything else (except `profile`).
 - profile: string, OPTIONAL. `full` or `lite`. Absent means full. Like `mode` the loop NEVER writes this field; the human sets it (see build-judge-loop.md, Build profile, and build-loop-full.md/build-loop-lite.md). `lite` defers the integration tier and the per-increment document agent to a completion gate.
 - increments: object, keyed by increment id (the ids from the sheet, see increment-sheet.schema.md). Each value:
   - depends_on: list of increment ids. Mirrors the sheet's depends_on for this id.
@@ -14,7 +14,7 @@ The build loop's per-feature recovery record and cross-conversation memory: one 
   - judge_count: integer, 0 to 3. Judge-loop attempts spent (budget 3).
   - branch: string or null. The audit-named branch (`feat/<id>-<kebab-title>`, per the project branch-naming standard, see build-judge-loop.md, Branch and PR), and the PR lookup key in the GitHub flow (in local-only flow there is no PR and it is purely the audit name). null until the branch is cut.
 - completion: object, OPTIONAL, lite profile only. The loop's record of the lite completion gate (build-loop-lite.md), written by the loop (not human-set) when every increment is merged and the gate begins, absent otherwise and always absent in full. Fields:
-  - integration: `pending`, `passed`, or `failed`. `pending` before the run (or while it runs); `passed` once the full accumulated integration suite passes against the finished main; `failed` if that run fails. `failed` is distinct from `pending` so a reclaiming conversation surfaces the failure and waits rather than silently re-running it. The gate is resolved by appending a fix increment to the sheet, which builds and merges through the normal flow; the loop resets integration from `failed` to `pending` whenever it records any increment as merged while the block exists (build-judge-loop.md, Completion), so the fix increment's merge re-arms the gate.
+  - integration: `pending`, `passed`, or `failed`. Loop-written. `pending` before the run (or while it runs); `passed` once the full accumulated integration suite passes against the finished main; `failed` if that run fails. `failed` is distinct from `pending` so a reclaiming conversation surfaces the failure and waits rather than silently re-running it. The failure handling and the merge re-arm (a merge resetting `failed` to `pending`) are the single source build-loop-lite.md, Completion gate; not restated here.
   - docs: `pending`, `pr-open`, or `merged`. `pending` until the documentation sweep is committed; with a remote it goes to `pr-open` on the docs PR (branch `docs/<feature-name>-completion`) and to `merged` once that PR merges; in local-only flow the loop integrates the docs commit into main itself, so it goes straight to `merged`.
 
 ## Example
@@ -47,4 +47,4 @@ The build loop's per-feature recovery record and cross-conversation memory: one 
 - The bootstrap, on a feature's first build (state.json absent): every increment pending, counts 0, branch null, `mode` and `profile` not written. See build-judge-loop.md, Resume after interruption.
 - The reconstruction recovery path, rebuilding a lost file from the sheet and the merged PRs.
 
-The `completion` block (lite only) is loop-written like everything except `mode` and `profile`: the loop creates and advances it at the completion gate (build-loop-lite.md). The human sets `mode` and `profile`, and may hand-correct the file as an out-of-band recovery action (for example an increment completed outside the loop, see Reconciliation). Nothing else writes it.
+The `completion` block (lite only) is loop-written like everything except `mode` and `profile`: the loop creates and advances it at the completion gate (build-loop-lite.md). The human sets `mode` and `profile`, and may hand-correct the file as an out-of-band recovery action (for example an increment completed outside the loop, see build-judge-loop.md, Reconciliation). Nothing else writes it.

@@ -9,21 +9,24 @@ Verdict: PASS
 ## Test result by tier
 - Unit: PASS (<n> tests, <ms>)
 - Integration: PASS (<n> tests, <ms>), endpoints: <list, e.g. mongo replica set>
-Order run: unit first, then integration. Both required to pass.
+<!-- Include the Integration line only when the integration tier ran for this increment: the full profile runs it per increment. In lite and build-quick the per-increment judge is unit-only, so omit the Integration line (lite proves integration once at the completion gate; build-quick never). -->
+Order run: unit first, then integration where it runs. Every tier that ran must pass.
 
 ## Coverage by tier (measured by tooling, not merged)
 ### Unit
 - Lines <n>% / Branches <n>% / Functions <n>% / Statements <n>%
 - Uncovered: <file:lines>
 ### Integration
+<!-- Omit this subsection when the integration tier did not run for this increment (lite, build-quick). -->
 - Lines <n>% / Branches <n>% / Functions <n>% / Statements <n>%
 - Uncovered: <file:lines>
-Note: read with the hollow-test result below; coverage alone does not prove assertions. Unit coverage is naturally low on data-layer code; the integration tier carries that coverage.
+Note: read with the hollow-test result below; coverage alone does not prove assertions.
 
 ## Test inventory by tier (measured by tooling)
 ### Unit
 <n> tests across <n> files, <n> passed, <n> skipped
 ### Integration
+<!-- Omit this subsection when the integration tier did not run for this increment (lite, build-quick). -->
 <n> tests across <n> files, <n> passed, <n> skipped
 
 ### <functionName> (mapping below is asserted by the judge, not tool-measured)
