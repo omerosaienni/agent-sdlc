@@ -215,13 +215,14 @@ only on the gap. On READY it writes `.building/setup-ok`, the receipt the
 build loop checks.
 
 ```
-project-setup.sh            check; ask before installing or scaffolding
-project-setup.sh --yes      install and scaffold gaps without asking
-project-setup.sh --check    verify only; never install or scaffold
+project-setup.sh            set up: install and scaffold gaps as needed (default)
+project-setup.sh --check    verify only; never install, scaffold or push
 ```
 
-Exit codes: 0 READY, 1 NOT READY (fix the FAIL lines), 2 needs `--yes`, 3 BLOCKED
-(endpoint down).
+`--yes` is a deprecated alias for the default; acting is now the default.
+
+Exit codes: 0 READY, 1 NOT READY (fix the FAIL lines), 2 NOT READY (`--check`
+found setup to apply, re-run without `--check`), 3 BLOCKED (endpoint down).
 
 ### What it checks
 
@@ -252,8 +253,8 @@ flowchart TD
     class verdict decision;
 ```
 
-Each check is one of OK (pass), FAIL (must fix, exit 1), NEED (needs `--yes` to
-install or scaffold, exit 2), or BLOCK (endpoint down, exit 3). The gate
+Each check is one of OK (pass), FAIL (must fix, exit 1), NEED (`--check` found an
+install or scaffold to do, exit 2), or BLOCK (endpoint down, exit 3). The gate
 accumulates failures and decides the exit code at the end, which is why it runs
 without `set -e`.
 
@@ -291,11 +292,11 @@ setup gate (today) places and proves only the test and hollow-check runners.
 
 ### Modes
 
-- default (ask): reports gaps and, at a terminal, asks before installing or
-  scaffolding.
-- `--yes`: installs and scaffolds gaps without asking.
+- default: sets up. Installs and scaffolds gaps and pushes main as needed,
+  idempotently (acts only on the gap). Invoking the gate is the consent.
 - `--check`: reports only, never changes anything. Use this to verify without
-  side effects.
+  side effects (exit 2 if setup is needed).
+- `--yes`: deprecated alias for the default, kept so old invocations still work.
 
 ---
 
