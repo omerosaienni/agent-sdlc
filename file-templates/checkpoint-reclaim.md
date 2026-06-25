@@ -9,7 +9,7 @@
      byte-identical across checkpoint-entry, checkpoint-post-pr and
      checkpoint-reclaim; do not let it drift. -->
 
-Re-entered an in-progress run from state.json. Mode: <mode>. I have not changed any state or branch.
+Re-entered an in-progress run from state.json. Mode: <mode>. Profile: <profile>. I have not changed any state or branch.
 
 RESUME REPORT.
 - Stopped at: increment <id>, <title>, status <status>.

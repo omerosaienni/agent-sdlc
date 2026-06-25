@@ -9,7 +9,7 @@
      widget), not prose. The STATE BLOCK is byte-identical across checkpoint-entry,
      checkpoint-post-pr and checkpoint-reclaim; do not let it drift. -->
 
-<increment-done line: with a remote, "PR opened for increment <id>, <title> (branch <branch>)"; in the local-only flow, "Committed increment <id>, <title> to local main (branch <branch>); no remote, so no PR">. Mode: <mode>. Stopped at the post-PR checkpoint; I have not cut the next branch.
+<increment-done line: with a remote, "PR opened for increment <id>, <title> (branch <branch>)"; in the local-only flow, "Committed increment <id>, <title> to local main (branch <branch>); no remote, so no PR">. Mode: <mode>. Profile: <profile>. Stopped at the post-PR checkpoint; I have not cut the next branch.
 <no-remote notice, or blank (only in the local-only flow): "No GitHub remote: I am building locally and committing each increment to local main; no push or PR until you add a remote.">
 <degraded note, or blank: "Subagent dispatch unavailable: I built one increment inline and stopped. To build or resume another, start a fresh conversation and I will reclaim.">
 <OTHER QUEUES (sibling feature queues with open work), one line each: "other queue <feature-name>: <n> in flight, <n> awaiting merge, <n> escalated, <n> blocked"; or blank if none>

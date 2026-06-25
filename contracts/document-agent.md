@@ -3,7 +3,7 @@
 Produce documentation for a verified increment, after the judge passes and before the PR. A producer, not a gate: it never evaluates, rejects, or blocks. Documentation is best-effort; code verification is mandatory and is never compromised by a documentation problem.
 
 ## When it runs
-After the judge passes an increment, before the orchestrator opens the PR (or, with no remote, integrates the increment into local main). Its output (docs/) commits atomically with the increment, alongside the code. Reports are not committed; they stay local under .building/.
+The profile decides the timing (build-judge-loop.md, Build profile). In full (build-loop-full.md) it runs per increment, after the judge passes and before the orchestrator opens the PR (or, with no remote, integrates the increment into local main); its output (docs/) commits atomically with the increment, alongside the code. In lite (build-loop-lite.md) the per-increment run is deferred: the agent runs once at the feature completion gate, sweeping every increment from its doc-payload.md slice in one pass, and its docs commit separately from the per-increment code commits. Reports are not committed; they stay local under .building/.
 
 ## Inputs (assemble, do not re-derive)
 - The doc payload at .building/build/<feature-name>/work/<branch-name>/doc-payload.md (doc-payload.schema.md), the builder's slice.
