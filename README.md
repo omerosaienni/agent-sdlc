@@ -32,7 +32,7 @@ Steps 2 and 3 are independent prerequisites and can run in either order; step 4 
 
 ## Using it
 
-The work is driven by these four `/omero-*` skills (thin wrappers over the contracts; a fifth, `omero-install-project-rules`, installs stack rules into a repo and is normally run for you by the generator, see [`skills/README.md`](skills/README.md)):
+The work is driven by these four `/omero-*` skills (thin wrappers over the contracts; two more are setup helpers, `omero-install-project-rules`, which installs stack rules into a repo and is normally run for you by the generator, and `omero-install-global-rules`, which runs the once-per-machine global setup (the global rules and git guards), see [`skills/README.md`](skills/README.md)):
 
 1. `omero-create-ts-project` scaffolds a TypeScript project, with optional Mongo, React and Express layers and a layer-aware GitHub Actions CI workflow (the generator, separate from the pipeline).
 2. `omero-design-partner` converges intent into validated feature sheet(s).

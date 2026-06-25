@@ -25,6 +25,10 @@ Install (symlink, so an edit in the repo is live everywhere with no re-run):
 
     scripts/setup-global-claude-rules.sh install
 
+The `/omero-install-global-rules` skill runs this installer together with the global
+git guards (`setup-global-git-hooks.sh`, see [hooks](../hooks/README.md)) in one step,
+the once-per-machine counterpart to `/omero-install-project-rules`.
+
 These apply everywhere, so they are NOT installed per project. Editing agent-sdlc
 itself is governed by them too.
 
