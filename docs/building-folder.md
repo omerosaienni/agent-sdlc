@@ -1,6 +1,6 @@
 # The .building folder
 
-Everything the build loop generates while it works, plus the feature sheets it builds from, lives under one folder: `.building/`. It is gitignored in full, so none of it is ever committed. Your commits and pull requests carry only code and docs, the actual increment. `.building/` is the loop's private workspace on your machine.
+Everything the build loop generates while it works, plus the feature sheets it builds from, lives under one folder: `.building/`. It is gitignored in full, so none of it is ever committed. Your commits and pull requests carry only the actual increment (code, and docs too in the full profile), never anything under `.building/`. `.building/` is the loop's private workspace on your machine.
 
 ![Committed versus gitignored at a glance](diagrams/file-layout.svg)
 

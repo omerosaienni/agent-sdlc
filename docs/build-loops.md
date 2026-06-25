@@ -88,7 +88,7 @@ Two tiers. Unit tests have no external dependencies and run anywhere; integratio
 
 ## Where the loop keeps its work
 
-Everything the loop generates while building (state, the agents' working files, escalation records) lives under one gitignored folder, `.building/`. None of it is committed; your commits and PRs carry only code and docs. See [`building-folder.md`](building-folder.md) for the full layout.
+Everything the loop generates while building (state, the agents' working files, escalation records) lives under one gitignored folder, `.building/`. None of it is committed; your commits and PRs carry only the increment (code, and docs in the full profile), never anything under `.building/`. See [`building-folder.md`](building-folder.md) for the full layout.
 
 ## Validating the loop itself
 
