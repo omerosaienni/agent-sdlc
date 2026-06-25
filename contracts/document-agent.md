@@ -9,7 +9,7 @@ The profile decides the timing (build-judge-loop.md, Build profile). In full (bu
 - The doc payload at .building/build/<feature-name>/work/<branch-name>/doc-payload.md (doc-payload.schema.md), the builder's slice.
 - The approved reviewer report (architecture and design decisions).
 - The judge report (verified behaviour).
-A quick scan of the public interface to confirm, not a full re-read of the code.
+A quick scan of the public interface to confirm, not a full re-read of the code. In the lite completion-gate sweep (build-loop-lite.md) the agent assembles these same per-increment inputs across every increment in the feature in one pass, producing each increment's outputs below; the assembly is per increment either way, just batched.
 
 ## Outputs
 - Per-increment doc: docs/modules/<id>-<module-filename>.md. Named after the primary module file it documents, so it tracks the code, not the title. Renders the seven payload fields as a clean module reference.
@@ -17,7 +17,7 @@ A quick scan of the public interface to confirm, not a full re-read of the code.
 - Dependency graph: regenerated as coloured Mermaid from the sheet's depends_on (roots one colour, dependents another, matching the palette), inside docs/ARCHITECTURE.md. Mermaid because it is text, regenerable, and GitHub renders it.
 
 ## Never-block invariant (inviolable)
-The increment always commits and reaches main once the judge has passed (a PR with a remote, a local-main integration without one), regardless of documentation outcome. If the payload is incomplete or generation partially fails, the document agent writes what it can and marks missing parts "documentation incomplete: <reason>". It does not wait, retry-block, or reject. A documentation gap is visible but never stops verified work.
+Verified code always reaches main regardless of documentation outcome: in full each increment commits once the judge has passed (a PR with a remote, a local-main integration without one) carrying its docs; in lite the increments are already merged and the sweep's docs commit separately at the completion gate, so a documentation problem cannot hold back code either way. If the payload is incomplete or generation partially fails, the document agent writes what it can and marks missing parts "documentation incomplete: <reason>". It does not wait, retry-block, or reject. A documentation gap is visible but never stops verified work, and in lite it never blocks a queue that is otherwise complete (the gate still requires the docs to be committed, but a gap within them is marked, not blocking).
 
 ## Degradation
 Missing builder slice: fill from the reports, mark absent fields "not provided". Missing a report: document from what exists, note the gap. Always produce something; never nothing, never a block.
