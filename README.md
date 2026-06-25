@@ -39,7 +39,7 @@ The work is driven by these four `/omero-*` skills (thin wrappers over the contr
 3. `omero-project-setup` proves the project ready and writes the setup receipt.
 4. `omero-build-loop` delivers the sheet, one increment per branch (one PR per increment with a GitHub remote, otherwise a local commit to main).
 
-The build loop runs in one of two modes, sequential-attended or parallel-attended, read from `mode` in `state.json`. They share every role, gate and the checkpoint; they differ only in what the loop offers after a PR opens. See [docs/build-loops.md](docs/build-loops.md).
+The build loop runs in one of two modes, sequential-attended or parallel-attended, read from `mode` in `state.json`. They share every role, gate and the checkpoint; they differ only in what the loop offers after a PR opens. Orthogonally it runs in one of two profiles, full (the default) or lite, read from `profile` in `state.json`: lite defers the integration tier and the documentation to a completion gate for fast iteration, while full verifies and documents every increment before it ships. See [docs/build-loops.md](docs/build-loops.md).
 
 ## Documentation
 
@@ -47,7 +47,7 @@ The build loop runs in one of two modes, sequential-attended or parallel-attende
 | --- | --- |
 | [docs/](docs/README.md) | Documentation index and contract list |
 | [docs/pipeline.md](docs/pipeline.md) | The three phases and two gates, creating a project, tooling, prerequisites |
-| [docs/build-loops.md](docs/build-loops.md) | The one build loop, its two modes, the checkpoint, tests, recovery |
+| [docs/build-loops.md](docs/build-loops.md) | The one build loop, its two modes and two profiles, the checkpoint, tests, recovery |
 | [docs/roles.md](docs/roles.md) | The four agent roles and the ordering invariant |
 | [docs/building-folder.md](docs/building-folder.md) | The gitignored `.building/` workspace |
 | [docs/scripts.md](docs/scripts.md) | The three pipeline shell scripts and how they connect |

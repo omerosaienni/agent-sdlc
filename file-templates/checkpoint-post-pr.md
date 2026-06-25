@@ -9,10 +9,11 @@
      widget), not prose. The STATE BLOCK is byte-identical across checkpoint-entry,
      checkpoint-post-pr and checkpoint-reclaim; do not let it drift. -->
 
-<increment-done line: with a remote, "PR opened for increment <id>, <title> (branch <branch>)"; in the local-only flow, "Committed increment <id>, <title> to local main (branch <branch>); no remote, so no PR">. Mode: <mode>. Stopped at the post-PR checkpoint; I have not cut the next branch.
+<increment-done line: with a remote, "PR opened for increment <id>, <title> (branch <branch>)"; in the local-only flow, "Committed increment <id>, <title> to local main (branch <branch>); no remote, so no PR">. Mode: <mode>. Profile: <profile>. Stopped at the post-PR checkpoint; I have not cut the next branch.
 <no-remote notice, or blank (only in the local-only flow): "No GitHub remote: I am building locally and committing each increment to local main; no push or PR until you add a remote.">
 <degraded note, or blank: "Subagent dispatch unavailable: I built one increment inline and stopped. To build or resume another, start a fresh conversation and I will reclaim.">
-<OTHER QUEUES (sibling feature queues with open work), one line each: "other queue <feature-name>: <n> in flight, <n> awaiting merge, <n> escalated, <n> blocked"; or blank if none>
+<completion-gate note (lite profile only, keyed on the completion block), or blank: "Completion gate: running the full integration suite." (integration pending), "Completion gate: the integration suite failed; append a fix increment to the sheet and I will build it, then re-run the gate." (integration failed), or "Completion gate: running the documentation sweep." (integration passed, docs pending)>
+<OTHER QUEUES (sibling feature queues with open work), one line each: "other queue <feature-name>: <n> in flight, <n> awaiting merge, <n> escalated, <n> blocked", with ", completion gate: <integration|docs state>" appended when a lite sibling is parked at an unfinished completion gate; or blank if none>
 
 <!-- STATE BLOCK START (byte-identical across the three checkpoint templates) -->
 this queue: <M> of <T> merged to main (<merged id list>).
@@ -23,7 +24,7 @@ POSSIBLY STALLED (state is not pending, merged or pr-open):
 
 AWAITING MERGE (PR open, you merge):
 - <id> <title> <★ or blank> -- branch <branch>. Merge to unblock <dependent ids, or "no dependents">.
-<!-- one row per pr-open increment, lowest id first. If none, write exactly: None. -->
+<!-- one row per pr-open increment, lowest id first; in the lite profile, also one row for the completion docs PR when completion.docs is pr-open (id completion-docs, title "documentation sweep", no star, branch docs/<feature-name>-completion, "no dependents"), placed last. If none, write exactly: None. -->
 
 READY (all deps merged):
 - <id> <title> <★ or blank> -- deps <satisfied dep ids> merged.

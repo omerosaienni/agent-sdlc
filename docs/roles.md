@@ -24,13 +24,13 @@ Informed context: it reads the codebase. It checks conventions, architecture and
 
 ## Judge (owns behaviour)
 
-Fresh context per review. It type-checks first (a tsc gate, because nothing else type-checks: the tiers run through esbuild and tsx, which strip types), then runs the tests itself rather than trusting reports: the unit tier first (cheap, fail fast), then the integration tier, and it passes only if both pass. It checks the acceptance criteria are met and proves the tests are not hollow with a negative run (a test must fail when the code is deliberately broken). It does not check conventions, style, or architecture; that is the reviewer's job.
+Fresh context per review. It type-checks first (a tsc gate, because nothing else type-checks: the tiers run through esbuild and tsx, which strip types), then runs the tests itself rather than trusting reports: the unit tier first (cheap, fail fast), then the integration tier, and it passes only if both pass. (That is the full profile; in lite the judge defers the integration tier to the feature completion gate, gating each increment on the unit tier alone, see [Build profiles](build-loops.md#build-profiles-full-and-lite).) It checks the acceptance criteria are met and proves the tests are not hollow with a negative run (a test must fail when the code is deliberately broken). It does not check conventions, style, or architecture; that is the reviewer's job.
 
 ![Judge role card](diagrams/role-judge.svg)
 
 ## Document
 
-Runs after the judge passes, before the PR. It assembles per-module and project documentation from the builder's payload and the reports. It is a producer, not a gate: it never blocks a passed increment, and a missing input degrades gracefully with the gap marked.
+Runs after the judge passes, before the PR (per increment in the full profile; in lite it is deferred to a single completion-gate sweep across the feature, see [Build profiles](build-loops.md#build-profiles-full-and-lite)). It assembles per-module and project documentation from the builder's payload and the reports. It is a producer, not a gate: it never blocks a passed increment, and a missing input degrades gracefully with the gap marked.
 
 ![Document role card](diagrams/role-document.svg)
 

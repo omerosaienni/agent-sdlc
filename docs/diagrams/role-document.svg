@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="680" viewBox="0 0 680 326" role="img" font-family="sans-serif">
 <title>Role card: Document</title>
-<desc>Document. Owns: per-module and project documentation. Produces: docs/modules/&lt;id&gt;-&lt;module&gt;.md and the ARCHITECTURE.md rollup. Cannot: block, reject, or evaluate an increment. Context: a producer, runs after the judge passes and before the PR.</desc>
+<desc>Document. Owns: per-module and project documentation. Produces: docs/modules/&lt;id&gt;-&lt;module&gt;.md and the ARCHITECTURE.md rollup. Cannot: block, reject, or evaluate an increment. Context: a producer, runs per increment after the judge passes in the full profile, or once at the completion gate in the lite profile.</desc>
 <rect x="40" y="30" width="600" height="56" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
 <text x="60" y="51" dominant-baseline="central" fill="#633806" font-size="16" font-weight="500">Document</text>
 <text x="60" y="71" dominant-baseline="central" fill="#854F0B" font-size="12">a producer, never a gate</text>
@@ -14,5 +14,5 @@
 <text x="60" y="226" dominant-baseline="central" fill="#444441" font-size="13" font-weight="500">Cannot</text>
 <text x="200" y="226" dominant-baseline="central" fill="#5F5E5A" font-size="12">block, reject, or evaluate an increment</text>
 <text x="60" y="282" dominant-baseline="central" fill="#444441" font-size="13" font-weight="500">Context</text>
-<text x="200" y="282" dominant-baseline="central" fill="#5F5E5A" font-size="12">runs after the judge passes, before the PR</text>
+<text x="200" y="282" dominant-baseline="central" fill="#5F5E5A" font-size="12">runs per increment in full, or once at the completion gate in lite</text>
 </svg>

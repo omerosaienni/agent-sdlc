@@ -5,7 +5,7 @@ Explains the whole system, and the place to start. The contracts under [`../cont
 ## Start here
 
 - [`pipeline.md`](pipeline.md): the three phases and two gates, creating a project, the pipeline tooling and prerequisites.
-- [`build-loops.md`](build-loops.md): the one build loop, its two modes (sequential and parallel), the per-increment cycle, the checkpoint, tests, recovery.
+- [`build-loops.md`](build-loops.md): the one build loop, its two modes (sequential and parallel) and two profiles (full and lite), the per-increment cycle, the checkpoint, tests, recovery.
 - [`roles.md`](roles.md): the four agent roles and the ordering invariant.
 
 ## Reference
@@ -28,7 +28,9 @@ The operating contracts, each a project-agnostic rulebook a project consumes by 
 - [`../contracts/increment-sheet.schema.md`](../contracts/increment-sheet.schema.md): the typed design-to-build interface.
 - [`../contracts/design-partner.md`](../contracts/design-partner.md): phase 1, design.
 - [`../contracts/project-setup.md`](../contracts/project-setup.md): phase 2, the idempotent readiness gate.
-- [`../contracts/build-judge-loop.md`](../contracts/build-judge-loop.md): phase 3, the build loop (both modes).
+- [`../contracts/build-judge-loop.md`](../contracts/build-judge-loop.md): phase 3, the build loop's profile-agnostic core (both modes).
+- [`../contracts/build-loop-full.md`](../contracts/build-loop-full.md): the full profile (default), integration-tested and documented per increment.
+- [`../contracts/build-loop-lite.md`](../contracts/build-loop-lite.md): the lite profile, integration and documentation deferred to a completion gate.
 - [`../contracts/document-agent.md`](../contracts/document-agent.md): the document stage, a producer that never gates.
 - [`../contracts/doc-payload.schema.md`](../contracts/doc-payload.schema.md): the typed payload the agents fill for the document stage.
 - [`../contracts/state.schema.md`](../contracts/state.schema.md): the typed per-feature state file the loop, the cross-queue scan and the reconstruction path read and write.
