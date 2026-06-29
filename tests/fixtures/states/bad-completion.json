@@ -1,0 +1,10 @@
+{
+  "sheet": ".building/features/products/increments.md",
+  "conventions": "CLAUDE.md",
+  "profile": "full",
+  "increments": {
+    "prod-api": { "depends_on": [], "status": "merged", "review_count": 1, "judge_count": 1, "branch": "feat/prod-api-x" },
+    "prod-ui": { "depends_on": ["prod-api"], "status": "merged", "review_count": 1, "judge_count": 1, "branch": "feat/prod-ui-x" }
+  },
+  "completion": { "integration": "passed", "docs": "pr-open" }
+}

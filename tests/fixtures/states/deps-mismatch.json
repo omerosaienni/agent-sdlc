@@ -1,0 +1,8 @@
+{
+  "sheet": ".building/features/products/increments.md",
+  "conventions": "CLAUDE.md",
+  "increments": {
+    "prod-api": { "depends_on": [], "status": "merged", "review_count": 1, "judge_count": 1, "branch": "feat/prod-api-x" },
+    "prod-ui": { "depends_on": [], "status": "pending", "review_count": 0, "judge_count": 0, "branch": null }
+  }
+}

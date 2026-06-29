@@ -336,3 +336,25 @@ flaw) are the schema's, in
 (Validation tooling). The build loop calls it on entry (build-judge-loop.md); the
 design partner can self-check before hand-off. Its tests and fixtures live under
 `tests/`, run on every PR into main.
+
+---
+
+## validate-state.sh (the state validator)
+
+Validates a build-loop state file against the rules of the state schema, on the
+post-sync `state.json` (after the loop syncs the sheet in, before it acts), so a
+corrupted or hand-edited recovery record fails loud rather than being acted on.
+Read-only.
+
+```
+validate-state.sh <state.json> <sheet.md>   validate, one line per rule, verdict last
+validate-state.sh --help                     print the header
+```
+
+It always checks its inputs: the state-vs-sheet rules need the sheet, so it
+re-validates the sheet first rather than trusting it. The nine rules, the exit
+codes, and the defect-vs-rejection distinction (a state<->sheet disagreement is an
+upstream desync to reconcile, a bad count is a fixable flaw) are the schema's, in
+[`../contracts/state.schema.md`](../contracts/state.schema.md) (Validation tooling).
+The build loop calls it on re-entry (build-judge-loop.md, Resume). Its tests and
+fixtures live under `tests/`, run on every PR into main.
