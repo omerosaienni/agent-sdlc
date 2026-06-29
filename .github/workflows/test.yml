@@ -1,0 +1,15 @@
+# Gate: tests/run.sh on every PR into main. Red tests block merge. Only dep is node
+# (the scripts under test embed it), preinstalled on the runner.
+name: tests
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run test suites
+        run: ./tests/run.sh

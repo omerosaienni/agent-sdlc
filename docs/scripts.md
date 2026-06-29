@@ -1,8 +1,9 @@
 # Scripts
 
-Three pipeline scripts stand a project up and prove it ready for the build loop:
-the generator, the setup gate, and a small dependency helper. This documents what
-each does and how they connect. (The repo also has scripts outside the pipeline:
+The pipeline scripts stand a project up and prove it ready for the build loop:
+the generator, the setup gate, and a small dependency helper, plus the sheet
+validator that gates the build loop's input. This documents what each does and how
+they connect. (The repo also has scripts outside the pipeline:
 the per-project rules installer, documented in [`project-rules.md`](project-rules.md),
 the global git-hooks and Claude-rules installers, documented in
 [`../hooks/`](../hooks/README.md) and [`project-rules.md`](project-rules.md), and the
@@ -17,9 +18,11 @@ prose.
 
 ## How they connect
 
-Three pipeline scripts, three jobs: one creates a project, one proves it ready, one
-is a small dependency helper the gate also uses. The relationship is create, then
-verify, then the loop consumes the receipt.
+The pipeline scripts, one job each: one creates a project, one proves it ready, one
+is a small dependency helper the gate also uses, and one validates the sheet the
+build loop is about to build. The first three are the create-verify-build
+environment flow (create, then verify, then the loop consumes the receipt); the
+validator gates a different input, the sheet, at the loop's entry.
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#e4edf4','primaryTextColor':'#1d2733','primaryBorderColor':'#5b6b7a','lineColor':'#5b6b7a','fontSize':'14px'}}}%%
@@ -312,3 +315,24 @@ It does the same major-matching as the gate's step 1 (derives the required
 coverage major from the installed vitest and pins the install to it). This is the
 standalone, single-concern version for fixing just the report tooling without
 running the whole gate.
+
+---
+
+## validate-sheet.sh (the sheet validator)
+
+The build loop's entry gate on its input: it validates a sheet against the
+mechanical rules of the sheet schema before any role runs, so a malformed sheet
+fails loud rather than reaching the builder as garbled prose. Read-only.
+
+```
+validate-sheet.sh <sheet.md>     validate, one line per rule, verdict last
+validate-sheet.sh --help         print the header
+```
+
+Which rules it checks, the exit-code meanings, and the defect-vs-rejection
+distinction (a cycle is an upstream bug to regenerate, a missing field is a fixable
+flaw) are the schema's, in
+[`../contracts/increment-sheet.schema.md`](../contracts/increment-sheet.schema.md)
+(Validation tooling). The build loop calls it on entry (build-judge-loop.md); the
+design partner can self-check before hand-off. Its tests and fixtures live under
+`tests/`, run on every PR into main.
