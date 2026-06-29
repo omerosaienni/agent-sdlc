@@ -42,6 +42,15 @@ The build loop's per-feature recovery record and cross-conversation memory: one 
 8. branch is null or a non-empty string, unique across this file and across sibling queues (branch names are one git namespace).
 9. completion, if present, occurs only when profile is explicitly lite; its integration is one of `pending`/`passed`/`failed` and its docs is one of `pending`/`pr-open`/`merged`. (Created once every increment is first merged, but then legitimately persists while a fix increment appended after an integration failure is in flight, so it may coexist with non-merged increments; this is not a validation constraint.)
 
+## Validation tooling
+- Enforced mechanically by `scripts/validate-state.sh <state.json> <sheet>`: all nine rules.
+- The script is the source of truth for these checks; on disagreement with this prose, fix the prose (the rules are the spec, the script is the gate).
+- It always checks its inputs: rules 4-5 compare state against the sheet, so it re-validates the sheet with validate-sheet.sh first rather than trusting it (exit 5 if the sheet itself fails).
+- Run it POST-SYNC: after the loop additively syncs the sheet into state.json, before it acts, so the rule 4-5 agreement holds.
+- Exits: 0 valid, 1 rejection (fixable), 3 node absent, 4 structural defect, 5 the sheet failed, 64 usage. A defect outranks a rejection.
+- Defect vs rejection: a state<->sheet DISAGREEMENT (rules 4, 5: missing/extra ids, depends_on mismatch) or non-JSON is a structural DEFECT (exit 4) — the producer desynced state from the sheet, an out-of-band reconciliation. Every other failure (bad count, status, branch, mode, profile, completion) is a fixable REJECTION (exit 1).
+- Fixtures: tests/fixtures/states/ (valid + one per failing rule), run by tests/run.sh and the tests workflow on every PR into main.
+
 ## Who writes it
 - The loop, on every status transition: sole writer in normal operation.
 - The bootstrap, on a feature's first build (state.json absent): every increment pending, counts 0, branch null, `mode` and `profile` not written. See build-judge-loop.md, Resume after interruption.
