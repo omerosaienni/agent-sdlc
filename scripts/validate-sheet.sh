@@ -107,6 +107,8 @@ const lines = src.split(/\r?\n/);
 // A heading is a line starting with '### '. The canonical form is `### <id>: <title>`
 // where the id is the colon-free, whitespace-free token before the first colon.
 const FIELDS = ['depends_on', 'description', 'done_definition', 'acceptance_criteria', 'test_notes'];
+// Fields whose value is a nested bullet list (one item per line) rather than inline text.
+const LIST_FIELDS = new Set(['acceptance_criteria', 'test_notes']);
 const increments = [];
 let cur = null;
 
@@ -148,15 +150,16 @@ for (let i = 0; i < lines.length; i++) {
     cur.bulletOrder.push(label);
     if (!(label in cur.bullets)) cur.bullets[label] = value;
     if (!FIELDS.includes(label)) cur.extraBullets.push(label);
-    // acceptance_criteria carries its value on the nested lines that follow; collect them
-    if (label === 'acceptance_criteria') {
+    // A list field carries its value on the nested lines that follow; collect them.
+    if (LIST_FIELDS.has(label)) {
       const items = [];
       for (let j = i + 1; j < lines.length; j++) {
         if (/^  \S/.test(lines[j]) || /^  - /.test(lines[j])) { items.push(lines[j].trim()); continue; }
         if (lines[j].trim() === '') continue;
         break;
       }
-      cur.acItems = items;
+      cur.listItems = cur.listItems || {};
+      cur.listItems[label] = items;
     }
   }
 }
@@ -197,8 +200,8 @@ if (increments.length === 0) {
   for (const inc of increments) {
     for (const f of FIELDS) {
       if (!(f in inc.bullets)) { bad.push(`\`${inc.id}\`: missing ${f}`); continue; }
-      const empty = f === 'acceptance_criteria'
-        ? !(inc.acItems && inc.acItems.length)
+      const empty = LIST_FIELDS.has(f)
+        ? !(inc.listItems && inc.listItems[f] && inc.listItems[f].length)
         : inc.bullets[f] === '';
       if (empty) bad.push(`\`${inc.id}\`: empty ${f}`);
     }

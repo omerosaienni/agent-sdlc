@@ -9,4 +9,5 @@ An increment depends on an id that no increment defines. Everything else is vali
 - done_definition: The screen renders one row per product.
 - acceptance_criteria:
   - The component test renders one row per product in the fetched list.
-- test_notes: A correct test fails if the screen renders zero rows for a non-empty list.
+- test_notes:
+  - A correct test fails if the screen renders zero rows for a non-empty list.

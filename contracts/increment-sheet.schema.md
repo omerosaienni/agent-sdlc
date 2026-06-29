@@ -15,13 +15,15 @@ This sheet describes ONE feature: a `## Goal` paragraph plus the ordered list of
 - increments: ordered list, each conforming below.
 
 ## Increment fields (all required, non-empty)
+Each field has ONE job and states it ONCE. The reader is an AI builder that reads every field, so cross-field repetition is pure cost: state a fact in the field that owns it, never echo it in another. The sheet is the verdict of the design, not a re-explanation; terse and scannable, not defensive prose.
+
 - id: unique short id. Used by state.json and depends_on. Carried in the heading (see Serialisation).
 - title: one line. Carried in the heading (see Serialisation).
 - depends_on: list of ids that must be merged before this starts. Empty if none. Drives order and dependent-freeze.
-- description: what to build. Enough for a builder with no other context.
-- done_definition: one line. What "exists and works" means. Acceptance criteria are checked against this, not the reverse.
-- acceptance_criteria: list. Each verifiable by running something. Never opinion.
-- test_notes: what tests must exercise. The behaviour a correct test fails on if the code is wrong.
+- description: the instruction, what to build. Enough for a builder with no other context, no more. Does not restate the done bar or the criteria.
+- done_definition: one line, the done bar. The criteria are checked against this, not the reverse. Names what "done" means, not how it is tested (that is the criteria) nor what to build (that is the description).
+- acceptance_criteria: list, the runnable checks. Each verifiable by running something, never opinion. The only field carrying the runnable proof; the others do not duplicate it.
+- test_notes: list, the failure behaviours a correct test catches (what a wrong implementation breaks). One note per behaviour, never crammed with "or" into one line. Not a restatement of the criteria, the negatives they imply. If an increment has many independent failure modes, that is a signal it may be too big.
 
 ## Serialisation
 Markdown: a `## Goal` paragraph, then one `### <id>: <title>` heading per increment followed by exactly five bullet fields, in this fixed shape:
@@ -29,18 +31,35 @@ Markdown: a `## Goal` paragraph, then one `### <id>: <title>` heading per increm
 ```
 ### <id>: <title>
 - depends_on: [<id>, <id>]
-- description: <enough for a builder with no other context>
-- done_definition: <one line>
+- description: <the instruction, once; no echo of the done bar or criteria>
+- done_definition: <the done bar, one line>
 - acceptance_criteria:
   - <runnable criterion>
   - <runnable criterion>
-- test_notes: <the behaviour a correct test fails on if the code is wrong>
+- test_notes:
+  - <failure behaviour, one per line>
+  - <failure behaviour, one per line>
+```
+
+Worked example (dense, each field stating its one thing once):
+
+```
+### smoke-answer: Answer function with a unit test
+- depends_on: []
+- description: A pure exported function returning the integer 42, no arguments, in the conventional source location with a co-located unit test.
+- done_definition: The function exists, is exported, and its unit test passes.
+- acceptance_criteria:
+  - test:unit selects at least one test and passes.
+  - The function returns 42 when called with no arguments.
+- test_notes:
+  - A correct test fails if the function returns anything but 42.
+  - A correct test fails if the function takes an argument.
 ```
 
 - Heading carries id and title: id is the token before the first colon, title is the text after it. NO separate `id`/`title` bullet (a second copy can disagree with the heading).
 - Field labels plain lowercase, exactly depends_on, description, done_definition, acceptance_criteria, test_notes. No bold, no reordering, no extra fields.
 - depends_on: inline bracketed list, ids comma-separated, `[]` when empty.
-- acceptance_criteria: the only multi-value field, a nested bullet list, one runnable criterion per line.
+- acceptance_criteria and test_notes: nested bullet lists, one item per line (the two multi-value fields). The label line carries no inline value; the items follow as indented bullets.
 - ids short and unique within the sheet (validation 2). A short per-feature prefix (e.g. `prod-api`, `prod-ui`) is recommended, not required: keeps ids self-identifying and, because branch names form one git namespace across feature queues, makes cross-queue branches naturally distinct.
 
 This is the exact shape build validates and state.json keys on. A variant (bare `### 1`, separate `**id**:` bullet, bold labels) is a drift to correct, not an alternative.
