@@ -18,7 +18,7 @@ Profile decides timing (build-judge-loop.md, Build profile):
 ## Outputs
 - Per-increment doc: docs/modules/<id>-<module-filename>.md. Named after the primary module file it documents, so it tracks the code not the title. Renders the payload fields (doc-payload.schema.md) as a clean module reference.
 - Project rollup: idempotent section in docs/ARCHITECTURE.md between markers <!-- <id> --> and <!-- /<id> -->. Re-documenting an increment REPLACES its block, never duplicates. Carries a module index, accumulated key-decisions log, and dependency graph.
-- Dependency graph: regenerated as coloured Mermaid from the sheet's depends_on (roots one colour, dependents another, matching the palette), inside docs/ARCHITECTURE.md. Mermaid because it is text, regenerable, and GitHub renders it.
+- Dependency graph: the coloured Mermaid (roots one colour, dependents another) is the `mermaid` field of `scripts/board-state.sh` (build-judge-loop.md, The board), embedded inside docs/ARCHITECTURE.md. The same script the orchestrator's board uses owns the graph, so the two never drift; do not re-derive it from depends_on by hand. Mermaid because it is text, regenerable, and GitHub renders it.
 
 ## Never-block invariant (inviolable)
 Verified code always reaches main regardless of doc outcome:

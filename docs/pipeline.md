@@ -26,6 +26,7 @@ Beyond the generator above, more scripts back the pipeline itself, stack-agnosti
 - `scripts/ensure-report-tooling.sh` installs and verifies the coverage tooling the judge needs.
 - `scripts/validate-sheet.sh` gates the build loop's input: it validates an increment sheet against the mechanical rules of the sheet schema before any role runs.
 - `scripts/validate-state.sh` validates the loop's recovery record: it checks the post-sync `state.json` agrees with the sheet and is well-formed before the loop acts.
+- `scripts/board-state.sh` computes the checkpoint board (the section partition, the critical-path star, the cut-rule and the Mermaid graph) deterministically from `state.json` and the sheet, so it never drifts across conversations.
 
 These pipeline scripts follow a shared layout ([`../contracts/script-layout.md`](../contracts/script-layout.md)) and share pure-constant content through `file-templates/` so nothing drifts. See [`scripts.md`](scripts.md) for what each does and how they connect.
 
