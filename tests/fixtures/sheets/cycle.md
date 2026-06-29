@@ -9,7 +9,8 @@ Two increments that depend on each other, forming a cycle. Everything else is va
 - done_definition: The endpoints exist and return seeded products.
 - acceptance_criteria:
   - The integration test for list returns at least one seeded product.
-- test_notes: A correct test fails if list returns empty when products are seeded.
+- test_notes:
+  - A correct test fails if list returns empty when products are seeded.
 
 ### prod-ui: Products list screen
 - depends_on: [prod-api]
@@ -17,4 +18,5 @@ Two increments that depend on each other, forming a cycle. Everything else is va
 - done_definition: The screen renders one row per product.
 - acceptance_criteria:
   - The component test renders one row per product in the fetched list.
-- test_notes: A correct test fails if the screen renders zero rows for a non-empty list.
+- test_notes:
+  - A correct test fails if the screen renders zero rows for a non-empty list.

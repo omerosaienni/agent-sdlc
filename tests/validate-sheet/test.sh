@@ -20,6 +20,7 @@ expect_match 1 'rule 8'   "bad heading -> rule 8"         "$V" --no-color "$F/ba
 expect_match 1 'rule 3'   "dangling depends_on -> rule 3" "$V" --no-color "$F/missing-dep.md"
 expect_match 1 'rule 5'   "forward reference -> rule 5"   "$V" --no-color "$F/forward-reference.md"
 expect_match 1 'goal'     "missing goal -> goal"          "$V" --no-color "$F/missing-goal.md"
+expect_match 1 'rule 1'   "empty test_notes list -> rule 1" "$V" --no-color "$F/empty-test-notes.md"
 
 # Structural defects (exit 4): not a DAG / not a sheet, regenerate upstream.
 expect_match 4 'DEFECT.*rule 4'   "cycle -> defect rule 4"         "$V" --no-color "$F/cycle.md"

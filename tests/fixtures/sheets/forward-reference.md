@@ -9,7 +9,8 @@ The UI increment is listed BEFORE the API it depends on. The dependency exists a
 - done_definition: The screen renders one row per product.
 - acceptance_criteria:
   - The component test renders one row per product in the fetched list.
-- test_notes: A correct test fails if the screen renders zero rows for a non-empty list.
+- test_notes:
+  - A correct test fails if the screen renders zero rows for a non-empty list.
 
 ### prod-api: Products read API
 - depends_on: []
@@ -17,4 +18,5 @@ The UI increment is listed BEFORE the API it depends on. The dependency exists a
 - done_definition: The endpoints exist and return seeded products.
 - acceptance_criteria:
   - The integration test for list returns at least one seeded product.
-- test_notes: A correct test fails if list returns empty when products are seeded.
+- test_notes:
+  - A correct test fails if list returns empty when products are seeded.

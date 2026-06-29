@@ -9,7 +9,8 @@ A graph whose critical path is unambiguous so board-state.sh's star computation 
 - done_definition: Exists and is merged.
 - acceptance_criteria:
   - A test asserts the foundation is present.
-- test_notes: Fails if the foundation is absent.
+- test_notes:
+  - Fails if the foundation is absent.
 
 ### mid-a: Middle A
 - depends_on: [root]
@@ -17,7 +18,8 @@ A graph whose critical path is unambiguous so board-state.sh's star computation 
 - done_definition: Exists.
 - acceptance_criteria:
   - A test asserts arm A.
-- test_notes: Fails if arm A is wrong.
+- test_notes:
+  - Fails if arm A is wrong.
 
 ### mid-b: Middle B
 - depends_on: [root]
@@ -25,7 +27,8 @@ A graph whose critical path is unambiguous so board-state.sh's star computation 
 - done_definition: Exists.
 - acceptance_criteria:
   - A test asserts arm B.
-- test_notes: Fails if arm B is wrong.
+- test_notes:
+  - Fails if arm B is wrong.
 
 ### sink: Convergence
 - depends_on: [mid-a, mid-b]
@@ -33,7 +36,8 @@ A graph whose critical path is unambiguous so board-state.sh's star computation 
 - done_definition: Exists.
 - acceptance_criteria:
   - A test asserts convergence.
-- test_notes: Fails if convergence is wrong.
+- test_notes:
+  - Fails if convergence is wrong.
 
 ### tail: Off-path tail
 - depends_on: [root]
@@ -41,4 +45,5 @@ A graph whose critical path is unambiguous so board-state.sh's star computation 
 - done_definition: Exists.
 - acceptance_criteria:
   - A test asserts the tail.
-- test_notes: Fails if the tail is wrong.
+- test_notes:
+  - Fails if the tail is wrong.

@@ -6,4 +6,5 @@
 - done_definition: The endpoints exist and return seeded products.
 - acceptance_criteria:
   - The integration test for list returns at least one seeded product.
-- test_notes: A correct test fails if list returns empty when products are seeded.
+- test_notes:
+  - A correct test fails if list returns empty when products are seeded.
