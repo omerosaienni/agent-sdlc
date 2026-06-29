@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# tests/lib.sh - shared assertions and reporting for the repo's test suites.
+# Sourced by each tests/<name>/test.sh, never executed. A suite calls `expect_exit`
+# and `expect_match` to record cases; `suite_summary` prints the verdict and returns
+# non-zero if any case failed. Expects REPO_ROOT and the colour vars set by the caller.
+
+# Per-suite counters, reset by suite_begin.
+_t_pass=0
+_t_fail=0
+
+suite_begin() { _t_pass=0; _t_fail=0; printf '%s# %s%s\n' "${C_STEP:-}" "$1" "${C_RESET:-}"; }
+
+_t_ok()   { _t_pass=$((_t_pass+1)); printf '  %sOK%s   %s\n' "${C_OK:-}" "${C_RESET:-}" "$1"; }
+_t_bad()  { _t_fail=$((_t_fail+1)); printf '  %sFAIL%s %s\n' "${C_ERR:-}" "${C_RESET:-}" "$1"; }
+
+# expect_exit <want> <name> <cmd...>: run cmd, assert its exit code equals <want>.
+expect_exit() {
+    local want="$1" name="$2"; shift 2
+    local out ec
+    out="$("$@" 2>&1)"; ec=$?
+    if [ "$ec" = "$want" ]; then _t_ok "$name (exit $ec)"
+    else _t_bad "$name: got exit $ec, want $want"; printf '       %s\n' "$out"; fi
+}
+
+# expect_match <want-exit> <regex> <name> <cmd...>: assert BOTH the exit code and that
+# the output matches <regex>. Use when an exit code alone could pass for the wrong reason
+# (e.g. a defect exit caused by the wrong rule).
+expect_match() {
+    local want="$1" regex="$2" name="$3"; shift 3
+    local out ec
+    out="$("$@" 2>&1)"; ec=$?
+    if [ "$ec" = "$want" ] && printf '%s' "$out" | grep -Eq "$regex"; then
+        _t_ok "$name (exit $ec, matched /$regex/)"
+    else
+        _t_bad "$name: exit $ec (want $want), regex /$regex/ $(printf '%s' "$out" | grep -Eq "$regex" && echo matched || echo 'NOT matched')"
+        printf '       %s\n' "$out"
+    fi
+}
+
+# suite_summary: print the suite verdict, return 1 if any case failed.
+suite_summary() {
+    if [ "$_t_fail" -eq 0 ]; then
+        printf '  %s%d passed%s\n' "${C_OK:-}" "$_t_pass" "${C_RESET:-}"
+        return 0
+    fi
+    printf '  %s%d passed, %d failed%s\n' "${C_ERR:-}" "$_t_pass" "$_t_fail" "${C_RESET:-}"
+    return 1
+}

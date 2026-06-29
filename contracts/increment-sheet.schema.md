@@ -55,5 +55,14 @@ This is the exact shape build validates and state.json keys on. A variant (bare 
 7. Each increment independently buildable and mergeable given its deps merged. The feature as a whole is the shippable unit; an individual increment may be a partial step toward it (a read API before its UI) and need not be complete user-facing on its own, only buildable, testable and mergeable to a green main.
 8. Each increment in the canonical Serialisation: an `### <id>: <title>` heading (first colon separates a colon-free, whitespace-free id from the title, which may itself contain colons) and exactly the five bullet fields with plain lowercase labels. A bare `### <id>` heading, a separate `id`/`title` bullet, bold labels or extra fields fail validation. Build refuses a non-conforming sheet.
 
+## Validation tooling
+- Enforced mechanically by `scripts/validate-sheet.sh <sheet>`: rules 1-5, 8, plus goal present-and-non-empty.
+- The script is the source of truth for those checks. On disagreement with this prose, the script is what runs: fix the prose. Rules here are the spec, the script is the gate (mirrors claude-rules/omero-git-authorship.md).
+- Parse keys only on the two fixed tokens (`### <id>: <title>` heading, `depends_on: [...]` bullet), so densifying the prose fields needs no change here.
+- NOT checked (judgement, the design partner's): rule 6 runnable-not-opinion, rule 7 independently-buildable, goal usefulness. A clean run is necessary, not sufficient.
+- Exits: 0 valid, 1 rejection (fixable), 3 node absent, 4 structural defect, 64 usage. A defect outranks a rejection when both are present.
+- Defect vs rejection: the DAG is the law. A cycle (rule 4) or no increments = non-DAG/non-sheet = structural DEFECT (exit 4, regenerate upstream, an upstream-producer bug). Every other failure = a locatable REJECTION (exit 1); a dangling depends_on (rule 3) is a typo in an edge, still a DAG, so a rejection.
+- Fixtures: tests/fixtures/sheets/ (valid + one per failing rule), run by tests/run.sh and the tests workflow on every PR into main.
+
 ## Excludes
 No severity, budgets, commit rules, parallelism, reports. Those are build-contract concerns; schema describes only the seam. Parallelism is derived from depends_on by the build phase; the author never thinks about it here. Epic-level grouping of features is the human's; this schema describes one feature.

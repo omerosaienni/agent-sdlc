@@ -4,34 +4,7 @@ Everything the build loop generates while it works, plus the feature sheets it b
 
 ![Committed versus gitignored at a glance](diagrams/file-layout.svg)
 
-## Structure
-
-```
-.building/
-  setup-ok                        the setup receipt (project-level, proves the environment was ready)
-  scripts/                        the loop's own runners (project-level, never committed; setup places the test and hollow-check runners, the judge places the type-check runner)
-    agent-tests.sh                the judge's terse test runner
-    agent-hollow.sh               the judge's hollow-check runner
-    agent-typecheck.sh            the judge's type-check runner
-  features/                       the feature sheets, one folder per feature
-    greeting-spike/               keyed by the feature name
-      increments.md             the schema-valid sheet the loop builds
-  build/                          the loop's own state, one folder per feature (feature queue)
-    greeting-spike/               mirrors features/greeting-spike/
-      state.json                  this queue's mode, sheet/conventions paths, per-unit status, loop counts, branches
-      work/                       the agents' working files, one folder per unit
-        feat/db-pool-connection-helper/   keyed by the audit-named branch
-          builder.md              what the builder did
-          review-pass-1.md        the reviewer's record for each pass
-          judge.md                the judge's verdict (written on pass)
-          doc-payload.md          the builder's slice for the document agent
-        feat/db-crud/
-          review-pass-1..3.md
-          escalations/            present only if this unit escalated
-            2026-06-21-1430.md    the escalation record (single source of truth)
-      escalations/                this queue's flat chronological index
-        2026-06-21-1430.md  ->  ../work/feat/db-crud/escalations/2026-06-21-1430.md
-```
+The canonical `.building/` tree (the source of truth for the layout) is in [`../contracts/build-judge-loop.md`](../contracts/build-judge-loop.md) (State and channels). This page explains what each part is for and what you actually read, rather than repeating the tree.
 
 ## The parts
 
