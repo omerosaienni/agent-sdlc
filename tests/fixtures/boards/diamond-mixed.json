@@ -1,0 +1,12 @@
+{
+  "sheet": ".building/features/diamond/increments.md",
+  "conventions": "CLAUDE.md",
+  "mode": "sequential-attended",
+  "increments": {
+    "root": { "depends_on": [], "status": "merged", "review_count": 1, "judge_count": 1, "branch": "feat/root-foundation" },
+    "mid-a": { "depends_on": ["root"], "status": "pr-open", "review_count": 1, "judge_count": 1, "branch": "feat/mid-a-middle-a" },
+    "mid-b": { "depends_on": ["root"], "status": "pending", "review_count": 0, "judge_count": 0, "branch": null },
+    "sink": { "depends_on": ["mid-a", "mid-b"], "status": "pending", "review_count": 0, "judge_count": 0, "branch": null },
+    "tail": { "depends_on": ["root"], "status": "building", "review_count": 0, "judge_count": 0, "branch": "feat/tail-off-path-tail" }
+  }
+}

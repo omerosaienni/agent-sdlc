@@ -37,6 +37,18 @@ expect_match() {
     fi
 }
 
+# expect_json <name> <node-assert-src> <cmd...>: run cmd, pipe its stdout (a JSON
+# object) into `node -e <node-assert-src>` where the parsed object is the global `b`.
+# The assertion src must throw on mismatch (or call assert); a clean run passes the case.
+expect_json() {
+    local name="$1" src="$2"; shift 2
+    local out err
+    out="$("$@" 2>/dev/null)"
+    err="$(printf '%s' "$out" | node -e "const b=JSON.parse(require('fs').readFileSync(0));const assert=require('assert');$src" 2>&1)"
+    if [ -z "$err" ]; then _t_ok "$name"
+    else _t_bad "$name"; printf '       %s\n' "$err"; fi
+}
+
 # suite_summary: print the suite verdict, return 1 if any case failed.
 suite_summary() {
     if [ "$_t_fail" -eq 0 ]; then

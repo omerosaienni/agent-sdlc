@@ -59,7 +59,7 @@ The build loop runs in one of two modes, sequential-attended or parallel-attende
 | [`contracts/`](contracts/) | The operating contracts. The source of truth for behaviour, dense reference. |
 | [`docs/`](docs/README.md) | The documentation pages and the diagrams. |
 | [`skills/`](skills/README.md) | The thin `/omero-*` skill wrappers and the installer that points them at this repo. |
-| [`scripts/`](scripts/) | The shell scripts: the layered project generator (and its `scripts/generator/` layers), the setup gate, the report-tooling helper, the sheet and state validators, the per-project rules installer and the global hooks and rules installers. |
+| [`scripts/`](scripts/) | The shell scripts: the layered project generator (and its `scripts/generator/` layers), the setup gate, the report-tooling helper, the sheet and state validators, the board computer, the per-project rules installer and the global hooks and rules installers. |
 | [`tests/`](tests/) | The repo's own test suites (one folder per script under test) and their fixtures, run by `tests/run.sh` and the tests workflow on every PR into main. |
 | [`file-templates/`](file-templates/) | The shared constant files (agent runners, report and checkpoint templates, vitest configs) the scripts copy from so nothing drifts. |
 | [`claude-rules/`](claude-rules/README.md) | The global Claude rules (conventions, branch naming), symlinked into `~/.claude/rules`. |

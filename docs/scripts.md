@@ -358,3 +358,27 @@ upstream desync to reconcile, a bad count is a fixable flaw) are the schema's, i
 [`../contracts/state.schema.md`](../contracts/state.schema.md) (Validation tooling).
 The build loop calls it on re-entry (build-judge-loop.md, Resume). Its tests and
 fixtures live under `tests/`, run on every PR into main.
+
+---
+
+## board-state.sh (the board computer)
+
+Computes the build loop's checkpoint board from `state.json` and the sheet: every
+`depends_on` computation the orchestrator and the document agent would otherwise do
+by hand. An LLM hand-computing longest-path-with-ties drifts, yet the board must
+render byte-identical across conversations, so a script owns it. Read-only; the
+orchestrator stays the sole writer of `state.json`.
+
+```
+board-state.sh <state.json> <sheet.md>   emit the board-state JSON
+board-state.sh --help                     print the header
+```
+
+It emits one JSON object: the four-section partition (ready, awaiting_merge,
+blocked, possibly_stalled), the critical-path star set (the longest dependency
+chain, ties included), the ready set, the per-mode cut-rule boolean, and the
+coloured Mermaid graph. The orchestrator pastes the board into its verbatim
+template (build-judge-loop.md, The board); the document agent embeds the same
+Mermaid (document-agent.md), so the two never drift. It always checks its inputs,
+running `validate-state.sh` first (exit 2 if the pair fails). Its tests assert the
+computed board against graphs worked out by hand; fixtures under `tests/`.
