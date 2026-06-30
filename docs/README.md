@@ -29,7 +29,8 @@ The operating contracts, each a project-agnostic rulebook a project consumes by 
 - [`../contracts/increment-sheet.schema.md`](../contracts/increment-sheet.schema.md): the typed design-to-build interface.
 - [`../contracts/design-partner.md`](../contracts/design-partner.md): phase 1, design.
 - [`../contracts/project-setup.md`](../contracts/project-setup.md): phase 2, the idempotent readiness gate.
-- [`../contracts/build-judge-loop.md`](../contracts/build-judge-loop.md): phase 3, the build loop's profile-agnostic core (both modes).
+- [`../contracts/build-judge-loop.md`](../contracts/build-judge-loop.md): phase 3, the build loop's profile-agnostic orchestration core (both modes).
+- [`../contracts/judge.md`](../contracts/judge.md): phase 3, the judge's verification spec (test tiers, integration endpoints, the type-check and hollow-test gates), read alongside build-judge-loop.md.
 - [`../contracts/agent-runner.md`](../contracts/agent-runner.md): the exit-code contract every stack's agent runners honour, so one shared hollow-check runner serves all stacks.
 - [`../contracts/build-loop-full.md`](../contracts/build-loop-full.md): the full profile (default), integration-tested and documented per increment.
 - [`../contracts/build-loop-lite.md`](../contracts/build-loop-lite.md): the lite profile, integration and documentation deferred to a completion gate.
