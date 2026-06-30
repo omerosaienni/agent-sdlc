@@ -3,6 +3,14 @@
 # assertion. Idempotent: safe to run any number of times. Acts only on the gap.
 # On READY it writes a receipt (.building/setup-ok) the build loop checks.
 #
+# This is the stack-neutral ORCHESTRATOR. It owns the spine every stack shares
+# (argument parsing, the verdict helpers, git/remote/gh/commit-identity, the
+# .building gitignore, the receipt and the exit codes), detects the project's
+# stack, and sources the matching per-stack module under scripts/setup/ for the
+# stack-specific checks (tooling, test tiers, coverage, placing the agent runners).
+# Detection: package.json -> TypeScript (scripts/setup/ts.sh). A second stack adds
+# its own module and one detection line; no check body branches on stack inline.
+#
 # Usage:
 #   project-setup.sh            set up: install and scaffold gaps as needed (default)
 #   project-setup.sh --check    verify only; never install, scaffold or push
@@ -40,65 +48,24 @@ need(){ printf 'NEED  %s\n' "$1"; [ "$fail" -lt 2 ] && fail=2; }
 # invoking the gate is the consent; --check is the read-only preview that refuses.
 consent(){ [ "$mode" = check ] && return 1; return 0; }
 
-node_major(){ node -e "try{console.log(require('$1/package.json').version.split('.')[0])}catch(e){process.exit(1)}" 2>/dev/null; }
-has_script(){ node -e "try{process.stdout.write(require('./package.json').scripts['$1']?'1':'')}catch(e){}" 2>/dev/null; }
-
-# Templates: the vitest tier configs the scaffold path writes come from shared
-# templates (also used by init-ts-project.sh), so the two scripts never drift.
-# Resolve relative to this script's own location.
+# Templates: the per-stack modules and the runner/config templates they place
+# come from shared template dirs. Resolve relative to this script's own location
+# so the orchestrator and the modules it sources agree on where templates live.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SETUP_DIR="$SCRIPT_DIR/setup"
 TEMPLATES_DIR="$SCRIPT_DIR/../file-templates"
+# copy_template stays in the spine because every stack module uses it to place its
+# templates; one definition shared, like the generator's one lib for every layer.
 copy_template(){ local src="$TEMPLATES_DIR/$1" dest="$2"
     if [ ! -f "$src" ]; then echo "missing template: $src" >&2; return 1; fi
     cp "$src" "$dest"; }
 
-run_tier(){ local s="$1" ep="$2" out rc
-    out=$(npm run "$s" 2>&1); rc=$?
-    if echo "$out" | grep -q "No test files found"; then bad "$s selected zero tests (hollow suite)"; return; fi
-    if [ "$rc" -ne 0 ]; then
-        if [ "$ep" = yes ] && echo "$out" | grep -qiE "ECONNREFUSED|MongoServerSelectionError|connection refused"; then block "$s endpoint not reachable; bring up the shared Mongo (make db-start, see CLAUDE.md integration endpoints) and re-run"
-        else bad "$s failed (see output)"; fi; return; fi
-    ok "$s selected tests and passed"; }
-
-# agent_check <tier>: prove the agent test runner (.building/scripts/agent-tests.sh) works
-# for one tier. The judge runs tests through this runner, so a project is only
-# loop-ready if it produces a terse summary on a passing tier. exit 3 is an
-# environment problem (block), other non-zero is a real failure of the path.
-agent_check(){ local tier="$1" out rc
-    out=$(bash .building/scripts/agent-tests.sh "$tier" 2>&1); rc=$?
-    case "$rc" in
-        0) if printf '%s' "$out" | grep -qE "^$tier: [0-9]+ passed"; then ok "agent test runner works for $tier (terse summary)"
-           else bad "agent test runner ran $tier but did not emit a terse summary; check .building/scripts/agent-tests.sh"; fi ;;
-        2) note "agent runner reports $tier selects zero tests; section 3 above hard-fails a hollow declared tier, so this only defers, it does not excuse it" ;;
-        3) block "agent test runner could not run $tier (environment); fix tooling and re-run" ;;
-        *) bad "agent test runner failed for $tier (exit $rc); the judge depends on this path" ;;
-    esac
-}
-
-# agent_hollow_check: prove the hollow-check runner is present and runnable. A
-# full functional proof would need a planted break; verifying it parses and
-# answers its usage contract (no args -> exit 64) is enough to know the judge
-# can invoke it. The functional proof is the loop using it on a real increment.
-agent_hollow_check(){
-    local rc
-    bash .building/scripts/agent-hollow.sh >/dev/null 2>&1; rc=$?
-    if [ "$rc" -eq 64 ]; then ok "agent hollow-check runner present and runnable"
-    else bad ".building/scripts/agent-hollow.sh usage check failed (exit $rc, expected 64); the judge's hollow check depends on it"; fi
-}
-
-# format_check: prove the project is prettier-clean. Formatting is a convention
-# the reviewer is entitled to bounce on (it cites eslint/prettier), but eslint is
-# configured formatting-blind (eslint-config-prettier switches those rules off), so
-# nothing gated formatting until here. On drift, fix on consent (prettier --write),
-# else FAIL: a formatting-dirty tree must not write a READY receipt.
-format_check(){
-    npx prettier --check . >/dev/null 2>&1 && { ok "formatting clean (prettier)"; return; }
-    note "formatting drift (prettier --check failed)"
-    if consent; then
-        npx prettier --write . >/dev/null 2>&1 && ok "formatted with prettier --write" || bad "prettier --write failed; format the tree manually"
-    else
-        need "formatting; re-run without --check to run prettier --write"
-    fi
+# detect_stack: name the project's stack from a marker file, so the orchestrator
+# sources one per-stack module instead of branching on stack at each check. A new
+# stack adds a marker and a case here, and its own scripts/setup/<stack>.sh.
+detect_stack(){
+    if [ -f package.json ]; then echo ts; return; fi
+    echo ""   # unrecognised: the orchestrator reports it as a hard fail below
 }
 
 # ============================================================================
@@ -115,102 +82,23 @@ esac; done
 echo "== Project setup gate =="
 
 # ---------------------------------------------------------------------------
-# 1. Report tooling: derive from vitest, match coverage, verify.
+# Stack-specific checks: detect the stack and run its module. The module owns the
+# tooling, test tiers, coverage and runner placement; it accumulates into `fail`
+# through the shared helpers exactly as the inline checks did, so a TypeScript
+# project's output and receipt are unchanged by the seam. An unrecognised stack is
+# a hard fail: nothing downstream can prove an environment it does not understand.
 # ---------------------------------------------------------------------------
-vmaj=$(node_major vitest)
-if [ -z "$vmaj" ]; then bad "vitest not installed; install it before setup"; else
-    cmaj=$(node_major @vitest/coverage-v8)
-    if [ -n "$cmaj" ] && [ "$cmaj" = "$vmaj" ]; then ok "coverage tooling matches vitest $vmaj"; else
-        [ -n "$cmaj" ] && note "coverage mismatched (vitest $vmaj, coverage $cmaj)" || note "coverage missing (need ^$vmaj)"
-        if consent; then npm install -D "@vitest/coverage-v8@^${vmaj}" && ok "installed coverage ^$vmaj" || bad "install failed"
-        else need "coverage tooling; re-run without --check"; fi
-    fi
-fi
-
-# ---------------------------------------------------------------------------
-# 2. Testing convention: tier scripts + configs, scaffold with consent.
-# ---------------------------------------------------------------------------
-have_unit=$(has_script "server:test:unit"); have_int=$(has_script "server:test:integration"); have_fmt=$(has_script "format:check")
-gaps=()
-[ "$have_unit" = "1" ] || gaps+=("npm script server:test:unit")
-[ "$have_int" = "1" ]  || gaps+=("npm script server:test:integration")
-[ "$have_fmt" = "1" ]  || gaps+=("npm script format:check")
-[ -f vitest.unit.config.ts ] || gaps+=("vitest.unit.config.ts")
-[ -f vitest.integration.config.ts ] || gaps+=("vitest.integration.config.ts")
-# .building/scripts/agent-tests.sh is the agent test path the build loop's judge calls
-# (terse on pass, full on failure). It is workflow tooling, not part of the
-# project proper, so the setup gate places it rather than the generator.
-cmp -s .building/scripts/agent-tests.sh "$TEMPLATES_DIR/agent-tests.sh" || gaps+=(".building/scripts/agent-tests.sh (absent or stale)")
-cmp -s .building/scripts/agent-hollow.sh "$TEMPLATES_DIR/agent-hollow.sh" || gaps+=(".building/scripts/agent-hollow.sh (absent or stale)")
-if [ ${#gaps[@]} -gt 0 ]; then
-    note "testing convention incomplete; missing: ${gaps[*]}"
-    note "scaffold writes the two tier configs, the two npm scripts and the agent test runner (boilerplate)"
-    if consent; then
-        [ -f vitest.unit.config.ts ] || copy_template vitest.unit.config.ts vitest.unit.config.ts || bad "could not write vitest.unit.config.ts from template"
-        [ -f vitest.integration.config.ts ] || copy_template vitest.integration.config.ts vitest.integration.config.ts || bad "could not write vitest.integration.config.ts from template"
-        [ "$have_unit" = "1" ] || npm pkg set "scripts.server:test:unit=vitest run -c vitest.unit.config.ts" >/dev/null
-        [ "$have_int" = "1" ]  || npm pkg set "scripts.server:test:integration=vitest run -c vitest.integration.config.ts" >/dev/null
-        [ "$have_fmt" = "1" ]  || npm pkg set "scripts.format:check=prettier --check ." >/dev/null
-        if ! cmp -s .building/scripts/agent-tests.sh "$TEMPLATES_DIR/agent-tests.sh"; then
-            mkdir -p .building/scripts
-            if copy_template agent-tests.sh .building/scripts/agent-tests.sh; then chmod +x .building/scripts/agent-tests.sh
-            else bad "could not write .building/scripts/agent-tests.sh from template"; fi
-        fi
-        if ! cmp -s .building/scripts/agent-hollow.sh "$TEMPLATES_DIR/agent-hollow.sh"; then
-            mkdir -p .building/scripts
-            if copy_template agent-hollow.sh .building/scripts/agent-hollow.sh; then chmod +x .building/scripts/agent-hollow.sh
-            else bad "could not write .building/scripts/agent-hollow.sh from template"; fi
-        fi
-        ok "scaffolded testing convention (configs + scripts + agent test runner)"
-        have_unit=$(has_script "server:test:unit"); have_int=$(has_script "server:test:integration"); have_fmt=$(has_script "format:check")
-    else
-        need "testing convention; re-run without --check to scaffold"
-    fi
-else
-    ok "testing convention present (tier configs + scripts + agent test runner)"
-fi
-
-# CLAUDE.md convention sections are project judgement, report only (never scaffold endpoints)
-if [ -f CLAUDE.md ]; then
-    grep -qi "Integration endpoints" CLAUDE.md && ok "CLAUDE.md declares integration endpoints" || bad "CLAUDE.md missing an 'Integration endpoints' section; add your endpoint and its bring-up command"
-else
-    bad "no CLAUDE.md; add one declaring conventions and integration endpoints"
-fi
-
-# ---------------------------------------------------------------------------
-# 3. Run each tier; non-zero selection + pass.
-# ---------------------------------------------------------------------------
-[ "$have_unit" = "1" ] && run_tier "server:test:unit" no
-[ "$have_int" = "1" ]  && run_tier "server:test:integration" yes
-
-# ---------------------------------------------------------------------------
-# 3b. Prove the agent test path works. The judge runs tests through
-# .building/scripts/agent-tests.sh, not the human npm scripts, so a project is only
-# loop-ready if that path runs and reports a terse summary. Verify it against
-# each tier the project declares: unit if declared, integration if declared. An
-# integration-only project (no unit tier) must still have its agent path proven,
-# because the judge will use it for integration.
-# ---------------------------------------------------------------------------
-if [ -f .building/scripts/agent-tests.sh ]; then
-    # Mirror section 3: prove the agent path for each tier the project declares.
-    # Skip integration if the run is already in a blocked state (fail=3): a block
-    # means fix the environment and re-run, so the skipped check happens then.
-    [ "$have_unit" = "1" ] && agent_check unit
-    [ "$have_int" = "1" ] && [ "$fail" -ne 3 ] && agent_check integration
-fi
-
-# 3c. Prove the hollow-check runner (the judge's negative-run command) is present
-# and runnable, on the same loop-ready footing as the test runner above.
-[ -f .building/scripts/agent-hollow.sh ] && agent_hollow_check
-
-# 3d. Prove the tree is formatter-clean. Only meaningful if the project has the
-# format:check script (scaffolded above); skip silently if it somehow lacks it.
-[ "$have_fmt" = "1" ] && format_check
-
-# ---------------------------------------------------------------------------
-# 4. Coverage runs.
-# ---------------------------------------------------------------------------
-[ -n "$vmaj" ] && { npx vitest run --coverage --reporter=dot >/dev/null 2>&1 && ok "coverage runs" || bad "coverage run failed; check the vitest config"; }
+stack="$(detect_stack)"
+case "$stack" in
+    ts)
+        # shellcheck source=setup/ts.sh
+        . "$SETUP_DIR/ts.sh"
+        ts_setup
+        ;;
+    *)
+        bad "could not detect a supported stack (expected package.json for TypeScript); add the project's marker file"
+        ;;
+esac
 
 # ---------------------------------------------------------------------------
 # 5. Git, remote, gh, identity, main on remote.
