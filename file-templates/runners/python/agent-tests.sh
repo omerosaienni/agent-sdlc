@@ -51,7 +51,13 @@ done
 run_one() {
     local label="$1" dir="$2" out rc target
     if [ "${#scope[@]}" -gt 0 ]; then target=("${scope[@]}"); else target=("$dir"); fi
-    out="$(uv run pytest "${target[@]}" 2>&1)"; rc=$?
+    # PYTHONDONTWRITEBYTECODE: do not write .pyc during a run. The hollow check
+    # restores a source file by an mtime-preserving copy; a .pyc cached from the
+    # faulted source could then be re-imported as stale bytecode after restore, so
+    # the restore-verify would wrongly stay red (HALT). Writing no bytecode removes
+    # that whole class of stale-cache reads. This sets the env for the pytest child
+    # we spawn; it is not caller-chosen behaviour read from the environment.
+    out="$(PYTHONDONTWRITEBYTECODE=1 uv run pytest "${target[@]}" 2>&1)"; rc=$?
 
     if [ "$verbose" = 1 ]; then
         printf '%s\n' "$out"
