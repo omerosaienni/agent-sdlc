@@ -33,3 +33,4 @@ link owned by something else) and restores any `.bak` it made.
 | `omero-conventions.md` | universal conventions: prose style (British English, no em dashes) and comment discipline (why not what) |
 | `omero-branch-naming.md` | `<type>/<kebab>` branch names (enforced by the git hooks) |
 | `omero-git-authorship.md` | commits authored by the user alone, no AI co-author trailers or footers |
+| `omero-script-args.md` | caller-chosen behaviour is an argument or flag, never an env var (points at script-layout.md) |
