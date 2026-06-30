@@ -11,5 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # The generator suites scaffold a real project and let it make its initial
+      # commit; the generator requires a configured git identity (it never invents
+      # an author). A fresh runner has none, so set one before the tests run.
+      - name: Configure a git identity for the generator tests
+        run: |
+          git config --global user.name "agent-sdlc ci"
+          git config --global user.email "ci@agent-sdlc.test"
       - name: Run test suites
         run: ./tests/run.sh
