@@ -24,7 +24,7 @@ Then drive a project through these four `/omero-*` skills, in order:
 ```text
 /omero-create-ts-project <project-name> [--mongo] [--react] [--express]  # 1a. scaffold a TypeScript project (optional Mongo/React/Express layers)
 /omero-create-python-project <project-name>     # 1b. or scaffold a Python project (src-layout, uv, pytest, strict pyright)
-/omero-design-partner "<intent>" <feature-name>  # 2. converge intent into feature sheet(s)
+/omero-design-feature "<intent>" <feature-name>  # 2. converge intent into feature sheet(s)
 /omero-setup-project                            # 3. prove the project ready (writes the setup receipt)
 /omero-build-full <path-to-sheet>               # 4. deliver the sheet, one PR per increment (a local commit if no remote)
 ```
@@ -36,7 +36,7 @@ Steps 2 and 3 are independent prerequisites and can run in either order; step 4 
 The work is driven by these four `/omero-*` skills (thin wrappers over the contracts; two more are setup helpers, `omero-install-project-rules`, which installs stack rules into a repo and is normally run for you by the generator, and `omero-install-global-rules`, which runs the once-per-machine global setup (the global rules and git guards), see [`skills/README.md`](skills/README.md)):
 
 1. `omero-create-ts-project` scaffolds a TypeScript project, with optional Mongo, React and Express layers and a layer-aware GitHub Actions CI workflow (the generator, separate from the pipeline). `omero-create-python-project` is the second generator, scaffolding a src-layout, uv-managed Python project with a strict pyright gate and a pytest tier split.
-2. `omero-design-partner` converges intent into validated feature sheet(s).
+2. `omero-design-feature` converges intent into validated feature sheet(s).
 3. `omero-setup-project` proves the project ready and writes the setup receipt.
 4. `omero-build-full` delivers the sheet, one increment per branch (one PR per increment with a GitHub remote, otherwise a local commit to main).
 
