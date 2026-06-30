@@ -38,10 +38,10 @@ You provide (the gate does not install these): the integration endpoints up (e.g
 
 The gate proves, by running things, and scaffolds boilerplate on consent:
 
-- git is a repo with a local main branch, `gh` is authenticated and the commit identity is on the allowlist. A missing remote is a warning, not a failure: local building works without one, but pushing branches and opening PRs need it. The build loop detects this and continues locally when no remote is present, committing each increment to local main; adding the remote later resumes the push/PR flow for subsequent increments.
+- git is a repo with a local main branch, `gh` is authenticated and the commit identity is on the allowlist. A missing remote is a warning, not a failure; the build loop then continues locally (the mechanism is build-judge-loop.md, Remote presence).
 - report tooling matches (the coverage provider is derived from the installed test runner).
 - the project's declared test-tier commands select non-zero tests and pass.
-- the declared integration endpoint is reachable (it runs the integration tier; a downed endpoint is reported as BLOCKED, not a failure).
+- the declared integration endpoint is reachable (a downed endpoint is a block, not a failure; project-setup.md, Endpoint handling).
 - `.building` is gitignored.
 
 ## External tooling
