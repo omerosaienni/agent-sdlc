@@ -1,5 +1,5 @@
 ---
-name: omero-design-partner
+name: omero-design-feature
 description: Converge a fuzzy intent into a validated feature sheet (its increments) for the build loop. Narrow, deterministic, ends in a typed artifact.
 disable-model-invocation: true
 argument-hint: "[brief intent, and a short feature name e.g. products]"

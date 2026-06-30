@@ -45,7 +45,7 @@ done
 # Renamed-away names must not reappear anywhere in the tracked tree (the rename's
 # whole point). Each rename increment adds its old name here as it lands; only
 # completed renames are listed so the check stays green increment by increment.
-for old in omero-build-loop omero-project-setup; do
+for old in omero-build-loop omero-project-setup omero-design-partner; do
     found="$(grep -rl "$old" "$REPO_ROOT" --include='*.md' --include='*.sh' 2>/dev/null | grep -v '/.building/' | grep -v '/tests/skills/test.sh')"
     if [ -z "$found" ]; then _t_ok "no lingering reference to renamed skill $old"
     else _t_bad "renamed skill $old still referenced in: $found"; fi
