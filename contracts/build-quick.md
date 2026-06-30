@@ -42,4 +42,4 @@ Checkpoint:
 - Resume routing has no completion-gate branch here: a build-quick queue with every increment merged is simply complete (see Completion).
 
 ## The tradeoff
-build-quick buys the most speed (no integration tier, no endpoint, no documentation, no completion gate) for the least proof: an increment is verified at the type-check and unit level only, with integration left entirely to you outside this loop. Use it for fast inner-loop work where unit coverage is the bar; use omero-build-loop (full or lite profile) when integration or documentation must be part of the build.
+build-quick buys the most speed (no integration tier, no endpoint, no documentation, no completion gate) for the least proof: an increment is verified at the type-check and unit level only, with integration left entirely to you outside this loop. Use it for fast inner-loop work where unit coverage is the bar; use omero-build-full (full or lite profile) when integration or documentation must be part of the build.

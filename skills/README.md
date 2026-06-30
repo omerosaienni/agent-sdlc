@@ -19,7 +19,7 @@ install-skills.sh adds and updates skills; it does NOT remove them. Deleting a s
 ## Manifest: what this repo manages
 
 Repo-managed (installed from here, the source of truth):
-- omero-build-loop, points at contracts/build-judge-loop.md
+- omero-build-full, points at contracts/build-judge-loop.md
 - omero-build-quick, points at contracts/build-quick.md (fast variant: typecheck + unit only, no integration tier, documentation or completion gate)
 - omero-design-partner, points at contracts/design-partner.md
 - omero-project-setup, points at contracts/project-setup.md and runs scripts/project-setup.sh
