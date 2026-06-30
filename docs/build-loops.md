@@ -61,4 +61,4 @@ Everything the loop generates lives under one gitignored folder, `.building/`; c
 
 ## Tests
 
-Two tiers (unit, integration), the judge's responsibility; the rules are in the core contract (Test tiers). Unit runs anywhere, integration needs live endpoints, a tier that should have tests but selects zero is a hollow suite and fails.
+Two tiers (unit, integration), the judge's responsibility; the rules are in the judge contract (judge.md, Test tiers). Unit runs anywhere, integration needs live endpoints, a tier that should have tests but selects zero is a hollow suite and fails.

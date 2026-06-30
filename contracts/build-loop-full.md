@@ -1,13 +1,13 @@
 # Build profile: full
 
-Delta over core build-judge-loop.md (defines roles, review/judge loops, gates, test-tier and endpoint definitions, branch/PR flow, state, modes, remote presence, checkpoint, escalation, resume). This file adds ONLY what full changes.
+Delta over core build-judge-loop.md (defines roles, review/judge loops, the orchestration gates, branch/PR flow, state, modes, remote presence, checkpoint, escalation, resume). This file adds ONLY what full changes.
 
 - full = default profile. Every increment is fully verified and documented before it ships, so there is no completion gate.
 - Selected by `profile: full` (or absent) in state.json (state.schema.md). A queue runs full unless the human sets `profile` to lite (build-loop-lite.md). The loop never writes the field.
 
 ## Per-increment verification
-- After the type-check gate and the unit tier (build-judge-loop.md, Test tiers), the judge runs the integration tier.
-- Before running integration, judge checks declared endpoint readiness (build-judge-loop.md, Integration endpoints). Unready endpoint = environment block, not rejection, consumes no attempt.
+- After the type-check gate and the unit tier (judge.md, Test tiers), the judge runs the integration tier.
+- Before running integration, judge checks declared endpoint readiness (judge.md, Integration endpoints). Unready endpoint = environment block, not rejection, consumes no attempt.
 - Judge passes an increment only if BOTH unit tier AND integration tier pass (type-check clean, hollow-test satisfied). So every increment is type-checked, unit-tested and integration-tested before passing.
 
 ## Documentation and commit

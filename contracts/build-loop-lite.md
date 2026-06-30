@@ -1,12 +1,12 @@
 # Build profile: lite
 
-Delta over core build-judge-loop.md (defines roles, review/judge loops, gates, test-tier and endpoint definitions, branch/PR flow, state, modes, remote presence, checkpoint, escalation, resume). lite defers the integration tier and the per-increment document agent to a completion gate, trading per-increment thoroughness for speed. Everything else (type-check, unit-tier and hollow-test gates, reviewer, budgets, branch rule, checkpoint) is exactly the core.
+Delta over core build-judge-loop.md (defines roles, review/judge loops, the orchestration gates, branch/PR flow, state, modes, remote presence, checkpoint, escalation, resume). lite defers the integration tier and the per-increment document agent to a completion gate, trading per-increment thoroughness for speed. Everything else (type-check, unit-tier and hollow-test gates, reviewer, budgets, branch rule, checkpoint) is exactly the core.
 
 - Selected by `profile: lite` in state.json (state.schema.md), human-set like `mode`, never written by the loop. Absent = full (build-loop-full.md).
 - Orthogonal to `mode`: sequential-attended and parallel-attended still apply.
 
 ## Per-increment verification (integration deferred)
-- After the type-check gate and the unit tier (build-judge-loop.md, Test tiers), the judge STOPS: does NOT run the integration tier per increment, does NOT check endpoint readiness. So no live endpoint or Docker needed while iterating.
+- After the type-check gate and the unit tier (judge.md, Test tiers), the judge STOPS: does NOT run the integration tier per increment, does NOT check endpoint readiness. So no live endpoint or Docker needed while iterating.
 - Hollow-test still runs. Each increment is gated by the type-check, the unit tier and the hollow-test only.
 
 ## Documentation and commit (docs deferred)
