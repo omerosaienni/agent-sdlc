@@ -15,39 +15,24 @@ HOLLOW="$REPO_ROOT/file-templates/runners/agent-hollow.sh"
 
 # --- the hollow verdict reads the exit code, not the words ----------------------
 # Build a throwaway project dir with .building/scripts/ holding the shared hollow
-# runner and a STUB agent-tests.sh whose exit code we control. RC_FILE carries the
-# code the stub returns; the stub prints deliberately NON-vitest words so a verdict
-# that depended on output strings would misclassify.
+# runner. A source file with a unique fault target and a dummy test file are all the
+# hollow runner needs (it only requires the fault string to occur exactly once).
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/.building/scripts" "$work/src"
 cp "$HOLLOW" "$work/.building/scripts/agent-hollow.sh"; chmod +x "$work/.building/scripts/agent-hollow.sh"
-
-cat > "$work/.building/scripts/agent-tests.sh" <<'STUB'
-#!/usr/bin/env bash
-# Stub test runner: return the code in .building/rc, print stack-arbitrary words.
-# Models any stack's agent-tests.sh: only the exit code is the contract.
-echo "pytest-ish: some words that are NOT vitest output"
-exit "$(cat .building/rc 2>/dev/null || echo 0)"
-STUB
-chmod +x "$work/.building/scripts/agent-tests.sh"
-
-# A source file with a unique fault target, and a (dummy) test file: the hollow
-# runner only needs them to exist and the fault string to occur exactly once.
 echo 'export const answer = 42;' > "$work/src/a.ts"
 echo '// test' > "$work/src/a.test.ts"
 
-# run_hollow <rc>: set the stub's return code, run the shared hollow runner once,
-# echo its own exit code. The restore-verify run uses the SAME rc, so a non-green
-# rc on the negative run also fails the restore (HALT) unless we reset rc to 0
-# first. To isolate the NEGATIVE-run classification we reset rc to 0 right after
-# the negative run by having the stub read rc fresh each call: see per-case setup.
+# hollow_verdict <neg_rc> <restore_rc>: write a STUB agent-tests.sh whose exit code
+# we control, run the shared hollow runner once, and echo its own exit code. The
+# hollow runner calls the stub twice (the negative run, then the restore-verify
+# run); we want them to return neg_rc then restore_rc, so the stub pops one code
+# per call from a two-line sequence file. The stub prints deliberately NON-vitest
+# words, so a verdict that depended on output text rather than the exit code would
+# misclassify, which is the property under test.
 hollow_verdict() {
     local neg_rc="$1" restore_rc="${2:-0}" ec
-    # The negative run and the restore-verify run both call the stub. We want the
-    # negative run to return neg_rc and the restore run to return restore_rc. The
-    # stub reads .building/rc each call, so a single value cannot differ between the
-    # two calls. Encode a two-shot sequence: first call pops the first line.
     printf '%s\n%s\n' "$neg_rc" "$restore_rc" > "$work/.building/rc.seq"
     cat > "$work/.building/scripts/agent-tests.sh" <<'STUB'
 #!/usr/bin/env bash
