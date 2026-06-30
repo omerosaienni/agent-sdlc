@@ -5,7 +5,7 @@
 # a tie, the off-path exclusion, the four-section partition, and the per-mode cut rule.
 # Sourced and run by tests/run.sh.
 
-suite_begin "board-state.sh"
+suite_begin "board-state.sh" unit
 
 V="$REPO_ROOT/scripts/board-state.sh"
 B="$REPO_ROOT/tests/fixtures/boards"

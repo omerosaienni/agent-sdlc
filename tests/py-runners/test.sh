@@ -9,7 +9,7 @@
 # end-to-end hollow check through the SHARED runner; it runs only when uv and the
 # Python generator are available and a sync succeeds, else it is reported skipped.
 
-suite_begin "py-runners (pytest + pyright exit-code contract)"
+suite_begin "py-runners (pytest + pyright exit-code contract)" integration
 
 PYDIR="$REPO_ROOT/file-templates/runners/python"
 

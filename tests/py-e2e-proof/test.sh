@@ -13,7 +13,7 @@
 # builds generated projects, not the meta-repo): it exercises the same real pieces
 # the loop's setup gate and judge use, which is what the proof needs.
 
-suite_begin "py-e2e-proof (Python build path end to end)"
+suite_begin "py-e2e-proof (Python build path end to end)" integration
 
 GEN="$REPO_ROOT/scripts/init-python-project.sh"
 SETUP="$REPO_ROOT/scripts/project-setup.sh"

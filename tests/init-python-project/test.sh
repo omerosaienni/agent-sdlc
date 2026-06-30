@@ -8,7 +8,7 @@
 # pyright) runs only when uv is available AND a sync succeeds; otherwise it is
 # reported skipped, never silently passed, because it needs to fetch packages.
 
-suite_begin "init-python-project.sh (Python generator)"
+suite_begin "init-python-project.sh (Python generator)" integration
 
 GEN="$REPO_ROOT/scripts/init-python-project.sh"
 

@@ -5,7 +5,7 @@
 # The installer auto-discovers every skills/*/SKILL.md, so a new skill needs no
 # installer edit; these checks guard the skill's own frontmatter and scoping.
 
-suite_begin "skills (create-project skill contracts)"
+suite_begin "skills (create-project skill contracts)" structural
 
 SKILLS="$REPO_ROOT/skills"
 PY="$SKILLS/omero-create-python-project/SKILL.md"
