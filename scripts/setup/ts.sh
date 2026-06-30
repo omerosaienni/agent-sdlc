@@ -57,6 +57,21 @@ agent_hollow_check() {
     else bad ".building/scripts/agent-hollow.sh usage check failed (exit $rc, expected 64); the judge's hollow check depends on it"; fi
 }
 
+# agent_typecheck_check: prove the type-check runner is present and runnable. Setup
+# now places all three runners, so it proves this one too. A clean tsconfig type-checks
+# (exit 0); a missing tsconfig is an environment block (exit 3). Either proves the
+# runner itself works (it parsed and ran); only a usage/exec failure is a hard fail.
+agent_typecheck_check() {
+    local rc
+    bash .building/scripts/agent-typecheck.sh >/dev/null 2>&1; rc=$?
+    case "$rc" in
+        0) ok "agent type-check runner works (clean)" ;;
+        1) ok "agent type-check runner works (reported type errors; the runner ran)" ;;
+        3) block "agent type-check runner could not run (no tsconfig or tsc absent); fix tooling and re-run" ;;
+        *) bad ".building/scripts/agent-typecheck.sh failed (exit $rc); the judge's type-check gate depends on it" ;;
+    esac
+}
+
 # format_check: prove the project is prettier-clean. Formatting is a convention
 # the reviewer is entitled to bounce on (it cites eslint/prettier), but eslint is
 # configured formatting-blind (eslint-config-prettier switches those rules off), so
@@ -101,37 +116,45 @@ ts_setup() {
     [ "$have_fmt" = "1" ]  || gaps+=("npm script format:check")
     [ -f vitest.unit.config.ts ] || gaps+=("vitest.unit.config.ts")
     [ -f vitest.integration.config.ts ] || gaps+=("vitest.integration.config.ts")
-    # .building/scripts/agent-tests.sh is the agent test path the build loop's judge calls
-    # (terse on pass, full on failure). It is workflow tooling, not part of the
-    # project proper, so the setup gate places it rather than the generator.
-    cmp -s .building/scripts/agent-tests.sh "$TEMPLATES_DIR/agent-tests.sh" || gaps+=(".building/scripts/agent-tests.sh (absent or stale)")
-    cmp -s .building/scripts/agent-hollow.sh "$TEMPLATES_DIR/agent-hollow.sh" || gaps+=(".building/scripts/agent-hollow.sh (absent or stale)")
+    # The three agent runners the judge calls live under .building/scripts/ (gitignored
+    # workflow tooling, not the project proper, so setup places them, not the generator).
+    # Setup places ALL THREE so one actor owns runner placement: the TypeScript test and
+    # type-check runners come from file-templates/runners/ts/, the shared hollow runner
+    # from file-templates/runners/ (one file across stacks; see contracts/agent-runner.md).
+    cmp -s .building/scripts/agent-tests.sh "$TEMPLATES_DIR/runners/ts/agent-tests.sh" || gaps+=(".building/scripts/agent-tests.sh (absent or stale)")
+    cmp -s .building/scripts/agent-typecheck.sh "$TEMPLATES_DIR/runners/ts/agent-typecheck.sh" || gaps+=(".building/scripts/agent-typecheck.sh (absent or stale)")
+    cmp -s .building/scripts/agent-hollow.sh "$TEMPLATES_DIR/runners/agent-hollow.sh" || gaps+=(".building/scripts/agent-hollow.sh (absent or stale)")
     if [ ${#gaps[@]} -gt 0 ]; then
         note "testing convention incomplete; missing: ${gaps[*]}"
-        note "scaffold writes the two tier configs, the two npm scripts and the agent test runner (boilerplate)"
+        note "scaffold writes the two tier configs, the two npm scripts and the three agent runners (boilerplate)"
         if consent; then
             [ -f vitest.unit.config.ts ] || copy_template vitest.unit.config.ts vitest.unit.config.ts || bad "could not write vitest.unit.config.ts from template"
             [ -f vitest.integration.config.ts ] || copy_template vitest.integration.config.ts vitest.integration.config.ts || bad "could not write vitest.integration.config.ts from template"
             [ "$have_unit" = "1" ] || npm pkg set "scripts.server:test:unit=vitest run -c vitest.unit.config.ts" >/dev/null
             [ "$have_int" = "1" ]  || npm pkg set "scripts.server:test:integration=vitest run -c vitest.integration.config.ts" >/dev/null
             [ "$have_fmt" = "1" ]  || npm pkg set "scripts.format:check=prettier --check ." >/dev/null
-            if ! cmp -s .building/scripts/agent-tests.sh "$TEMPLATES_DIR/agent-tests.sh"; then
+            if ! cmp -s .building/scripts/agent-tests.sh "$TEMPLATES_DIR/runners/ts/agent-tests.sh"; then
                 mkdir -p .building/scripts
-                if copy_template agent-tests.sh .building/scripts/agent-tests.sh; then chmod +x .building/scripts/agent-tests.sh
+                if copy_template runners/ts/agent-tests.sh .building/scripts/agent-tests.sh; then chmod +x .building/scripts/agent-tests.sh
                 else bad "could not write .building/scripts/agent-tests.sh from template"; fi
             fi
-            if ! cmp -s .building/scripts/agent-hollow.sh "$TEMPLATES_DIR/agent-hollow.sh"; then
+            if ! cmp -s .building/scripts/agent-typecheck.sh "$TEMPLATES_DIR/runners/ts/agent-typecheck.sh"; then
                 mkdir -p .building/scripts
-                if copy_template agent-hollow.sh .building/scripts/agent-hollow.sh; then chmod +x .building/scripts/agent-hollow.sh
+                if copy_template runners/ts/agent-typecheck.sh .building/scripts/agent-typecheck.sh; then chmod +x .building/scripts/agent-typecheck.sh
+                else bad "could not write .building/scripts/agent-typecheck.sh from template"; fi
+            fi
+            if ! cmp -s .building/scripts/agent-hollow.sh "$TEMPLATES_DIR/runners/agent-hollow.sh"; then
+                mkdir -p .building/scripts
+                if copy_template runners/agent-hollow.sh .building/scripts/agent-hollow.sh; then chmod +x .building/scripts/agent-hollow.sh
                 else bad "could not write .building/scripts/agent-hollow.sh from template"; fi
             fi
-            ok "scaffolded testing convention (configs + scripts + agent test runner)"
+            ok "scaffolded testing convention (configs + scripts + agent runners)"
             have_unit=$(has_script "server:test:unit"); have_int=$(has_script "server:test:integration"); have_fmt=$(has_script "format:check")
         else
             need "testing convention; re-run without --check to scaffold"
         fi
     else
-        ok "testing convention present (tier configs + scripts + agent test runner)"
+        ok "testing convention present (tier configs + scripts + agent runners)"
     fi
 
     # CLAUDE.md convention sections are project judgement, report only (never scaffold endpoints)
@@ -163,9 +186,11 @@ ts_setup() {
         [ "$have_int" = "1" ] && [ "$fail" -ne 3 ] && agent_check integration
     fi
 
-    # 3c. Prove the hollow-check runner (the judge's negative-run command) is present
-    # and runnable, on the same loop-ready footing as the test runner above.
+    # 3c. Prove the hollow-check and type-check runners (the judge's negative-run and
+    # gate commands) are present and runnable, on the same loop-ready footing as the
+    # test runner above. Setup places all three runners, so it proves all three.
     [ -f .building/scripts/agent-hollow.sh ] && agent_hollow_check
+    [ -f .building/scripts/agent-typecheck.sh ] && agent_typecheck_check
 
     # 3d. Prove the tree is formatter-clean. Only meaningful if the project has the
     # format:check script (scaffolded above); skip silently if it somehow lacks it.
