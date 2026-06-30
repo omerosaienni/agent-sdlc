@@ -21,4 +21,4 @@ Pass the project name (kebab-case), optionally a target directory and the layer 
 
 On success the generator prints the created project and the next steps. Report those next steps to the user as printed; do NOT re-list them inline here. On a non-zero exit, report the error line it printed (a name that is not kebab-case, a target that already exists, or a missing template) so the user can correct and re-run.
 
-This is the create step, separate from the pipeline. After the project exists, the user runs /omero-design-partner and /omero-project-setup in either order (independent prerequisites: design writes the feature sheet(s), setup proves the project environment ready), then /omero-build-full builds the sheet. Do NOT run those here; this skill only creates the project.
+This is the create step, separate from the pipeline. After the project exists, the user runs /omero-design-partner and /omero-setup-project in either order (independent prerequisites: design writes the feature sheet(s), setup proves the project environment ready), then /omero-build-full builds the sheet. Do NOT run those here; this skill only creates the project.

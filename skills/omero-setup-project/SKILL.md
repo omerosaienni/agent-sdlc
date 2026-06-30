@@ -1,5 +1,5 @@
 ---
-name: omero-project-setup
+name: omero-setup-project
 description: Prove a project is ready to build, by execution, at a single idempotent gate before the build loop. Derives and matches tooling, runs both test tiers and asserts non-zero selection, places and proves the agent test runner the judge uses, checks git and endpoints. Acts by default (idempotent, gap-only); use --check for a read-only health check.
 disable-model-invocation: true
 argument-hint: "[--check to verify only; default installs and scaffolds gaps as needed]"
