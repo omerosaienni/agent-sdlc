@@ -1,5 +1,5 @@
 ---
-name: omero-build-loop
+name: omero-build-full
 description: Deliver a feature sheet as small, independently verified increments. Four agent roles (builder, reviewer, judge, document) plus a passive orchestrator, a review loop and a judge loop, one branch per increment into main (one GitHub PR per increment with a remote, otherwise a local commit). Attended, mode-driven (sequential-attended or parallel-attended, read from state.json) and profile-driven (full or lite, also read from state.json). Judge type-checks, then runs the unit tier and, per profile, the integration tier.
 disable-model-invocation: true
 argument-hint: "[path to the feature sheet]"

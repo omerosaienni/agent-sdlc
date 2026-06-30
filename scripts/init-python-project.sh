@@ -154,4 +154,4 @@ echo
 echo "Then drive it through the pipeline. Two independent prerequisites, in either order:"
 echo "  /omero-design-partner   converges your intent into a feature sheet"
 echo "  /omero-project-setup    proves the project environment ready"
-echo "Then /omero-build-loop builds the sheet (needs both the sheet and the receipt)."
+echo "Then /omero-build-full builds the sheet (needs both the sheet and the receipt)."

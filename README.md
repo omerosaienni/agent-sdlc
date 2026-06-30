@@ -26,7 +26,7 @@ Then drive a project through these four `/omero-*` skills, in order:
 /omero-create-python-project <project-name>     # 1b. or scaffold a Python project (src-layout, uv, pytest, strict pyright)
 /omero-design-partner "<intent>" <feature-name>  # 2. converge intent into feature sheet(s)
 /omero-project-setup                            # 3. prove the project ready (writes the setup receipt)
-/omero-build-loop <path-to-sheet>               # 4. deliver the sheet, one PR per increment (a local commit if no remote)
+/omero-build-full <path-to-sheet>               # 4. deliver the sheet, one PR per increment (a local commit if no remote)
 ```
 
 Steps 2 and 3 are independent prerequisites and can run in either order; step 4 refuses to start without both the receipt and a schema-valid sheet. The feature name is a short kebab-case label you choose, for example `gym-tracker`. To exercise the loop itself before a real build, run it against [`examples/smoke-test-sheet.md`](examples/smoke-test-sheet.md), a one-increment sheet that runs the whole orchestration on a trivial case.
@@ -38,7 +38,7 @@ The work is driven by these four `/omero-*` skills (thin wrappers over the contr
 1. `omero-create-ts-project` scaffolds a TypeScript project, with optional Mongo, React and Express layers and a layer-aware GitHub Actions CI workflow (the generator, separate from the pipeline). `omero-create-python-project` is the second generator, scaffolding a src-layout, uv-managed Python project with a strict pyright gate and a pytest tier split.
 2. `omero-design-partner` converges intent into validated feature sheet(s).
 3. `omero-project-setup` proves the project ready and writes the setup receipt.
-4. `omero-build-loop` delivers the sheet, one increment per branch (one PR per increment with a GitHub remote, otherwise a local commit to main).
+4. `omero-build-full` delivers the sheet, one increment per branch (one PR per increment with a GitHub remote, otherwise a local commit to main).
 
 The build loop runs in one of two modes, sequential-attended or parallel-attended, read from `mode` in `state.json`. They share every role, gate and the checkpoint; they differ only in what the loop offers after a PR opens. Orthogonally it runs in one of two profiles, full (the default) or lite, read from `profile` in `state.json`: lite defers the integration tier and the documentation to a completion gate for fast iteration, while full verifies and documents every increment before it ships. See [docs/build-loops.md](docs/build-loops.md).
 

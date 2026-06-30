@@ -33,4 +33,22 @@ expect_exit 1 "installer has no hardcoded skill allowlist" grep -qE 'omero-creat
 expect_exit 0 "TS create skill still present (untouched)" test -f "$TS"
 expect_match 0 'disable-model-invocation: true' "TS skill unchanged in posture" cat "$TS"
 
+# --- naming convention: /omero-<verb>-<what>, dir matches name, no stale names --
+# Every skill directory's name matches the name: in its SKILL.md (a rename must
+# change both), and no renamed-away skill name lingers anywhere in the tree.
+for d in "$SKILLS"/omero-*/; do
+    sk="$(basename "$d")"
+    decl="$(grep -m1 '^name:' "$d/SKILL.md" 2>/dev/null | sed -E 's/^name:[[:space:]]*//')"
+    expect_exit 0 "skill dir $sk matches its name: frontmatter" test "$sk" = "$decl"
+done
+
+# Renamed-away names must not reappear anywhere in the tracked tree (the rename's
+# whole point). Each rename increment adds its old name here as it lands; only
+# completed renames are listed so the check stays green increment by increment.
+for old in omero-build-loop; do
+    found="$(grep -rl "$old" "$REPO_ROOT" --include='*.md' --include='*.sh' 2>/dev/null | grep -v '/.building/' | grep -v '/tests/skills/test.sh')"
+    if [ -z "$found" ]; then _t_ok "no lingering reference to renamed skill $old"
+    else _t_bad "renamed skill $old still referenced in: $found"; fi
+done
+
 suite_summary
