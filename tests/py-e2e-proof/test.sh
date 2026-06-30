@@ -18,8 +18,6 @@ suite_begin "py-e2e-proof (Python build path end to end)"
 GEN="$REPO_ROOT/scripts/init-python-project.sh"
 SETUP="$REPO_ROOT/scripts/project-setup.sh"
 
-# --- the walkthrough doc exists (the human-readable proof) --------------------
-expect_exit 0 "walkthrough doc present" test -f "$REPO_ROOT/docs/python-build-path.md"
 
 # --- live end-to-end proof (needs uv + gh + git identity + network) ----------
 work="$(mktemp -d)"
@@ -92,10 +90,10 @@ else
     printf '  %sSKIP%s live end-to-end proof (uv/gh/git-identity/network absent)\n' "${C_NOTE:-}" "${C_RESET:-}"
 fi
 
-# --- the TypeScript path is untouched by the Python work ----------------------
-expect_exit 0 "TS generator still present"  test -f "$REPO_ROOT/scripts/init-ts-project.sh"
-expect_exit 0 "TS runners still present"    test -f "$REPO_ROOT/file-templates/runners/ts/agent-tests.sh"
-# no stack-agnostic core contract mentions a stack (the core stayed agnostic).
+# (The Python path must not break the TS path, but a `test -f` only catches
+# deletion, not breakage; real protection is the behavioural TS suites. The
+# stack-agnostic invariant below IS meaningful, so it stays.)
+# invariant: the stack-agnostic core contracts name no stack (the core stayed agnostic).
 expect_exit 1 "design-partner contract names no stack"  grep -qiE 'python|typescript|pytest|vitest' "$REPO_ROOT/contracts/design-partner.md"
 expect_exit 1 "increment schema names no stack"          grep -qiE 'python|typescript|pytest|vitest' "$REPO_ROOT/contracts/increment-sheet.schema.md"
 

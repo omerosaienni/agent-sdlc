@@ -20,9 +20,8 @@ TS="$REPO_ROOT/scripts/setup/ts.sh"
 expect_exit 0  "--help prints and exits clean"        bash "$G" --help
 expect_exit 64 "unknown argument -> usage error"      bash "$G" --bogus
 
-# --- the per-stack module exists and is sourced-discipline clean -------------
-expect_exit 0 "scripts/setup/ts.sh exists" test -f "$TS"
-
+# --- the per-stack module is sourced-discipline clean (the grep checks below
+#     also prove it exists) --------------------------------------------------
 # ts.sh must not run its own set -e, parse arguments, or be executed standalone:
 # it is sourced into the orchestrator's scope (script-layout.md, Multi-file).
 expect_exit 1 "ts.sh declares no own 'set -e/-euo'" \
@@ -50,8 +49,7 @@ expect_exit 0 "orchestrator still owns the receipt"  grep -qE 'setup-ok' "$G"
 
 # --- the Python per-stack module (py-setup-module) ---------------------------
 PY="$REPO_ROOT/scripts/setup/python.sh"
-expect_exit 0 "scripts/setup/python.sh exists" test -f "$PY"
-# sourced-component discipline, same as ts.sh.
+# sourced-component discipline, same as ts.sh (the grep checks also prove it exists).
 expect_exit 1 "python.sh declares no own 'set -e/-euo'" grep -qE '^set -e|^set -euo' "$PY"
 expect_exit 1 "python.sh parses no arguments"           grep -qE 'for [a-z]+ in "\$@"|while \[ "\$#"' "$PY"
 expect_exit 0 "python.sh defines python_setup"          grep -qE '^python_setup\(\)' "$PY"
