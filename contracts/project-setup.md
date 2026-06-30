@@ -2,6 +2,8 @@
 
 Prove a project is ready to build, by execution not assertion, at a single point before the build loop runs. Setup proves the static environment facts once; the build loop then assumes them and checks only dynamic liveness. Runs scripts/project-setup.sh and interprets its verdict.
 
+The gate is stack-neutral: scripts/project-setup.sh is an orchestrator owning the spine (git, commit identity, .building gitignore, the verdict and the receipt) that detects the project's stack from its marker file (package.json for TypeScript, pyproject.toml for Python) and sources the matching per-stack module under scripts/setup/ for the tooling, tier and runner checks. Both markers present, or neither, is a hard fail. A new stack adds its marker and its own scripts/setup/<stack>.sh; nothing in the spine branches on stack.
+
 ## Idempotency (invariant, inviolable)
 Safe to run any number of times. On an already-ready project it changes nothing and reports READY. Every acting step is guarded on current state and acts only on the gap:
 - install tooling only if absent or mismatched

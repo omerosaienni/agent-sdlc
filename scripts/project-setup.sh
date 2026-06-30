@@ -64,7 +64,15 @@ copy_template(){ local src="$TEMPLATES_DIR/$1" dest="$2"
 # sources one per-stack module instead of branching on stack at each check. A new
 # stack adds a marker and a case here, and its own scripts/setup/<stack>.sh.
 detect_stack(){
-    if [ -f package.json ]; then echo ts; return; fi
+    # Marker files name the stack. Both present is ambiguous (which stack is the
+    # project?), so report it rather than guess; the dispatch turns "" into a hard
+    # fail. A new stack adds its marker here and its own scripts/setup/<stack>.sh.
+    local ts=0 py=0
+    [ -f package.json ] && ts=1
+    [ -f pyproject.toml ] && py=1
+    if [ "$ts" = 1 ] && [ "$py" = 1 ]; then echo "ambiguous"; return; fi
+    [ "$ts" = 1 ] && { echo ts; return; }
+    [ "$py" = 1 ] && { echo python; return; }
     echo ""   # unrecognised: the orchestrator reports it as a hard fail below
 }
 
@@ -95,8 +103,16 @@ case "$stack" in
         . "$SETUP_DIR/ts.sh"
         ts_setup
         ;;
+    python)
+        # shellcheck source=setup/python.sh
+        . "$SETUP_DIR/python.sh"
+        python_setup
+        ;;
+    ambiguous)
+        bad "both package.json and pyproject.toml present; cannot tell which stack this is. Keep one marker, or split the stacks into separate projects"
+        ;;
     *)
-        bad "could not detect a supported stack (expected package.json for TypeScript); add the project's marker file"
+        bad "could not detect a supported stack (expected package.json for TypeScript or pyproject.toml for Python); add the project's marker file"
         ;;
 esac
 

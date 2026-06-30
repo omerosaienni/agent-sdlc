@@ -48,4 +48,48 @@ expect_exit 0 "orchestrator defines detect_stack"   grep -qE '^detect_stack\(\)'
 expect_exit 0 "orchestrator sources the stack module" grep -qE '\$SETUP_DIR/ts.sh' "$G"
 expect_exit 0 "orchestrator still owns the receipt"  grep -qE 'setup-ok' "$G"
 
+# --- the Python per-stack module (py-setup-module) ---------------------------
+PY="$REPO_ROOT/scripts/setup/python.sh"
+expect_exit 0 "scripts/setup/python.sh exists" test -f "$PY"
+# sourced-component discipline, same as ts.sh.
+expect_exit 1 "python.sh declares no own 'set -e/-euo'" grep -qE '^set -e|^set -euo' "$PY"
+expect_exit 1 "python.sh parses no arguments"           grep -qE 'for [a-z]+ in "\$@"|while \[ "\$#"' "$PY"
+expect_exit 0 "python.sh defines python_setup"          grep -qE '^python_setup\(\)' "$PY"
+# python.sh drives Python tooling, not TypeScript.
+expect_exit 1 "python.sh references no vitest"  grep -qE 'vitest' "$PY"
+expect_exit 1 "python.sh references no npm"     grep -qE 'npm ' "$PY"
+expect_exit 0 "python.sh drives uv"             grep -qE 'uv (sync|run|add|lock)' "$PY"
+# the orchestrator dispatches python and rejects an ambiguous double-marker.
+expect_exit 0 "orchestrator sources python module"  grep -qE '\$SETUP_DIR/python.sh' "$G"
+expect_exit 0 "orchestrator detects pyproject.toml" grep -qE 'pyproject.toml' "$G"
+expect_exit 0 "orchestrator handles ambiguous stack" grep -qE 'ambiguous' "$G"
+
+# --- live READY proof: scaffold a Python project, run the gate to READY ------
+# Needs uv + network (uv sync) + git identity. Reported skipped otherwise.
+GEN="$REPO_ROOT/scripts/init-python-project.sh"
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+proj="$work/setuptest"
+if command -v uv >/dev/null 2>&1 && command -v gh >/dev/null 2>&1 \
+   && [ -n "$(git config --global user.email 2>/dev/null)" ] \
+   && bash "$GEN" setuptest "$proj" >/dev/null 2>&1 \
+   && ( cd "$proj" && uv sync >/dev/null 2>&1 ); then
+    # the gate requires the identity allowlist; set it for this scratch repo.
+    ( cd "$proj" && git config sdlc.identityAllowlist "$(git config user.email)" )
+    if ( cd "$proj" && bash "$G" >/dev/null 2>&1 ); then
+        _t_ok "live: setup gate reaches READY on a scaffolded Python project"
+    else
+        _t_bad "live: setup gate did NOT reach READY on a scaffolded Python project"
+    fi
+    expect_exit 0 "live: receipt written" test -f "$proj/.building/setup-ok"
+    # idempotency: a second run is still READY.
+    if ( cd "$proj" && bash "$G" >/dev/null 2>&1 ); then
+        _t_ok "live: setup gate idempotent (second run still READY)"
+    else
+        _t_bad "live: setup gate not idempotent on Python project"
+    fi
+else
+    printf '  %sSKIP%s live Python READY proof (uv/gh/git-identity/network absent)\n' "${C_NOTE:-}" "${C_RESET:-}"
+fi
+
 suite_summary
