@@ -64,7 +64,7 @@ while [ $# -gt 0 ]; do
             STACKS+=("${1#--}")
             ;;
         -h | --help)
-            usage
+            grep '^#' "$0" | grep -v '^#!' | sed 's/^# \{0,1\}//'; exit 0
             ;;
         -*)
             err "unknown flag: $1"

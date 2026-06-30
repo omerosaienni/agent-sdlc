@@ -71,6 +71,10 @@ err()  { printf '%s%s%s\n' "$C_ERR" "$1" "$C_RESET" >&2; }
 # ============================================================================
 
 VERB="${1:-}"
+# --help/-h reprints the header block and exits, before requiring a verb.
+case "$VERB" in
+    -h|--help) grep '^#' "$0" | grep -v '^#!' | sed 's/^# \{0,1\}//'; exit 0 ;;
+esac
 shift || true
 EMAIL=""
 ROOTS=()

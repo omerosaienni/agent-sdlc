@@ -1,5 +1,5 @@
 ---
-version: 2.0.0
+version: 2.1.0
 status: active
 ---
 
@@ -11,11 +11,11 @@ Canonical structure every shell script in this repo follows. The skeleton is fix
 Semver frontmatter. major: breaking, existing scripts now violate the layout. minor: additive section/option, compliant scripts unaffected. patch: wording. Frontmatter is version and status only; the title is the H1, dates are in git.
 
 ## Skeleton (top to bottom)
-1. Shebang + header comment: `#!/usr/bin/env bash`, then one block stating what it does, usage, every flag, exit codes. `--help` may print it back.
+1. Shebang + header comment: `#!/usr/bin/env bash`, then one block stating what it does, usage, every flag, exit codes. A terminal-callable script MUST answer `--help` (and `-h`) by printing this block to stdout and exiting 0 (the convention: `grep '^#' "$0" | grep -v '^#!' | sed 's/^# \{0,1\}//'`). Sourced components (a lib or layer with no shebang-run path, defining functions in an orchestrator's scope) are exempt: they are never called directly.
 2. `set` options: `set -euo pipefail` by default. `set -uo pipefail` (no `-e`) only if the script accumulates its own failures (e.g. a fail counter deciding the exit), and a comment MUST name the exception. A silent missing `-e` is a defect.
 3. Constants: fixed values near the top, env-overridable only where the value is genuinely a dial.
 4. Helpers: all functions in one block before any call. Colour, output, logic helpers together.
-5. Argument parsing: one loop. Flags, never env vars, for caller-chosen behaviour. `--help` handled, unknown options error via the usage helper.
+5. Argument parsing: one loop. Flags, never env vars, for caller-chosen behaviour. `--help`/`-h` prints the header and exits 0 (success, to stdout, distinct from the error path); unknown options error via the usage helper (stderr, non-zero). Do not route `--help` through a usage helper that exits non-zero: asking for help is success, not an error.
 6. Resolve and validate inputs: compute and check everything before any side effect. Nothing destructive runs before this passes.
 7. The work, in banner'd ordered sections. Each unit of work is a labelled block:
    ```
