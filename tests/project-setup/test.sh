@@ -11,7 +11,7 @@
 # check bodies no longer live inline in the orchestrator. A full scaffold-to-READY
 # run is proven by py-e2e-proof and by running the gate against a real project.
 
-suite_begin "project-setup.sh (stack seam)"
+suite_begin "project-setup.sh (stack seam)" integration
 
 G="$REPO_ROOT/scripts/project-setup.sh"
 TS="$REPO_ROOT/scripts/setup/ts.sh"

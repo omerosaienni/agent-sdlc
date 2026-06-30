@@ -3,7 +3,7 @@
 # code AND, for failures, names the rule. The states are validated against the valid
 # sheet fixture (matching ids prod-api, prod-ui). Sourced and run by tests/run.sh.
 
-suite_begin "validate-state.sh"
+suite_begin "validate-state.sh" unit
 
 V="$REPO_ROOT/scripts/validate-state.sh"
 S="$REPO_ROOT/tests/fixtures/states"

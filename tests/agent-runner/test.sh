@@ -9,7 +9,7 @@
 # agent-hollow.sh against it proves the verdict comes from the code, not the words.
 # The same proof, with a Python-flavoured stub, is reused by the Python runners.
 
-suite_begin "agent-runner seam (shared hollow + per-stack layout)"
+suite_begin "agent-runner seam (shared hollow + per-stack layout)" unit
 
 HOLLOW="$REPO_ROOT/file-templates/runners/agent-hollow.sh"
 

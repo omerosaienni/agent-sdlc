@@ -4,11 +4,29 @@
 # and `expect_match` to record cases; `suite_summary` prints the verdict and returns
 # non-zero if any case failed. Expects REPO_ROOT and the colour vars set by the caller.
 
-# Per-suite counters, reset by suite_begin.
+# Per-suite counters and kind, reset/set by suite_begin.
 _t_pass=0
 _t_fail=0
+_t_kind=""
 
-suite_begin() { _t_pass=0; _t_fail=0; printf '%s# %s%s\n' "${C_STEP:-}" "$1" "${C_RESET:-}"; }
+# Valid suite kinds (agent-sdlc's own test taxonomy, see docs):
+#   unit        a pure script or stub, run-anywhere, no external tooling
+#   integration runs real external tooling (uv/pytest/pyright/npm), self-skips if absent
+#   structural  reads files and asserts conformance, executes nothing under test
+_T_KINDS="unit integration structural"
+
+# suite_begin <name> <kind>: start a suite. The kind is a required ARGUMENT (not an
+# env var), recorded for the run to group and tally by; run.sh reads _t_kind after
+# sourcing the suite. An absent or unknown kind is a hard error: a suite must
+# categorise itself.
+suite_begin() {
+    _t_pass=0; _t_fail=0; _t_kind="${2:-}"
+    printf '%s# %s%s' "${C_STEP:-}" "$1" "${C_RESET:-}"
+    case " $_T_KINDS " in
+        *" $_t_kind "*) printf ' %s[%s]%s\n' "${C_STEP:-}" "$_t_kind" "${C_RESET:-}" ;;
+        *) printf '\n'; _t_bad "suite did not declare a valid kind (got '${_t_kind:-<none>}', want one of: $_T_KINDS)" ;;
+    esac
+}
 
 _t_ok()   { _t_pass=$((_t_pass+1)); printf '  %sOK%s   %s\n' "${C_OK:-}" "${C_RESET:-}" "$1"; }
 _t_bad()  { _t_fail=$((_t_fail+1)); printf '  %sFAIL%s %s\n' "${C_ERR:-}" "${C_RESET:-}" "$1"; }

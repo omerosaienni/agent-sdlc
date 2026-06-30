@@ -3,7 +3,7 @@
 # code AND, for failures, names the rule it should. Sourced and run by tests/run.sh,
 # which sets REPO_ROOT, the colour vars, and sources tests/lib.sh first.
 
-suite_begin "validate-sheet.sh"
+suite_begin "validate-sheet.sh" unit
 
 V="$REPO_ROOT/scripts/validate-sheet.sh"
 F="$REPO_ROOT/tests/fixtures/sheets"

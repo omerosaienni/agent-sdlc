@@ -63,15 +63,28 @@ fi
 # Discover and run suites
 # ============================================================================
 
+# Suites stream their output in discovery order; the per-kind grouping is the
+# summary at the end (reordering or buffering live output would cost more than it
+# is worth). Each suite records its kind in _t_kind via suite_begin; we read it
+# right after sourcing and accumulate a "name:kind:result" line per suite, plus a
+# bad-kind counter so a suite that fails to declare a valid kind fails the run.
 failed=0
 ran=0
+badkind=0
+results=""
 for suite in "$REPO_ROOT"/tests/*/test.sh; do
     [ -f "$suite" ] || continue
     name="$(basename "$(dirname "$suite")")"
     [ -n "$only" ] && [ "$name" != "$only" ] && continue
     ran=$((ran+1))
+    _t_kind=""
     # shellcheck source=/dev/null
-    . "$suite" || failed=$((failed+1))
+    if . "$suite"; then res=pass; else res=fail; failed=$((failed+1)); fi
+    case " $_T_KINDS " in
+        *" $_t_kind "*) : ;;
+        *) badkind=$((badkind+1)); _t_kind="UNDECLARED" ;;
+    esac
+    results="${results}${name}:${_t_kind}:${res}"$'\n'
 done
 
 # ============================================================================
@@ -83,10 +96,24 @@ if [ -n "$only" ] && [ "$ran" -eq 0 ]; then
     exit 64
 fi
 
+# Per-kind grouping and tally. Iterate the known kinds (plus UNDECLARED for any
+# suite that did not categorise itself), printing each kind's suites and a tally.
 echo
-if [ "$failed" -eq 0 ]; then
+printf '%s== suites by kind ==%s\n' "${C_STEP:-}" "${C_RESET:-}"
+for kind in $_T_KINDS UNDECLARED; do
+    block="$(printf '%s' "$results" | awk -F: -v k="$kind" '$2==k')"
+    [ -z "$block" ] && continue
+    kpass=$(printf '%s\n' "$block" | grep -c ':pass$')
+    kfail=$(printf '%s\n' "$block" | grep -c ':fail$')
+    printf '%s [%d passed%s]\n' "$kind" "$kpass" "$([ "$kfail" -gt 0 ] && printf ', %d failed' "$kfail")"
+    printf '%s\n' "$block" | awk -F: '{printf "  - %s (%s)\n", $1, $3}'
+done
+
+echo
+if [ "$failed" -eq 0 ] && [ "$badkind" -eq 0 ]; then
     printf '%s%d suite(s) passed%s\n' "$C_OK" "$ran" "$C_RESET"
     exit 0
 fi
-printf '%s%d of %d suite(s) failed%s\n' "$C_ERR" "$failed" "$ran" "$C_RESET"
+[ "$badkind" -gt 0 ] && printf '%s%d suite(s) did not declare a valid kind%s\n' "$C_ERR" "$badkind" "$C_RESET"
+[ "$failed" -gt 0 ] && printf '%s%d of %d suite(s) failed%s\n' "$C_ERR" "$failed" "$ran" "$C_RESET"
 exit 1
