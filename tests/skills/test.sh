@@ -11,8 +11,8 @@ SKILLS="$REPO_ROOT/skills"
 PY="$SKILLS/omero-create-python-project/SKILL.md"
 TS="$SKILLS/omero-create-ts-project/SKILL.md"
 
-# --- the Python create skill exists and is well-formed -----------------------
-expect_exit 0 "python create skill exists"            test -f "$PY"
+# --- the Python create skill is well-formed (the cat checks below also prove it
+#     exists: a missing file fails them just as loudly) -------------------------
 expect_match 0 'name: omero-create-python-project' "python skill declares its name"   cat "$PY"
 expect_match 0 'disable-model-invocation: true'    "python skill is not model-invocable" cat "$PY"
 # allowed-tools must scope to the python generator path, not the TS one, not a glob.
@@ -30,7 +30,7 @@ expect_match 0 'for dir in' "installer auto-discovers skill dirs" cat "$SKILLS/i
 expect_exit 1 "installer has no hardcoded skill allowlist" grep -qE 'omero-create-(ts|python)-project' "$SKILLS/install-skills.sh"
 
 # --- it mirrors the TS create skill's shape (same contract, different stack) --
-expect_exit 0 "TS create skill still present (untouched)" test -f "$TS"
+# (the cat check proves the TS skill is still present and untouched in posture.)
 expect_match 0 'disable-model-invocation: true' "TS skill unchanged in posture" cat "$TS"
 
 # --- naming convention: /omero-<verb>-<what>, dir matches name, no stale names --

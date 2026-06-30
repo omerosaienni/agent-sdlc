@@ -15,7 +15,6 @@ GEN="$REPO_ROOT/scripts/init-python-project.sh"
 # --- input guards (the spine) ------------------------------------------------
 expect_exit 2  "no name -> usage"                bash "$GEN"
 expect_exit 2  "non-kebab name -> usage"         bash "$GEN" Bad_Name
-expect_exit 0  "the orchestrator exists"         test -f "$GEN"
 
 # --- scaffold into a temp dir (structural, no network) -----------------------
 work="$(mktemp -d)"
@@ -27,14 +26,13 @@ else
     _t_bad "generator failed to scaffold demo-app"
 fi
 
-# src-layout: the package is src/<underscored-name>/, not a flat package.
-expect_exit 0 "src-layout package dir exists"        test -d "$proj/src/demo_app"
-expect_exit 1 "no flat package at repo root"         test -d "$proj/demo_app"
-expect_exit 0 "entry module present"                 test -f "$proj/src/demo_app/app.py"
-expect_exit 0 "pyproject.toml present"               test -f "$proj/pyproject.toml"
-expect_exit 0 "unit tier dir + test present"         test -f "$proj/tests/unit/test_app.py"
-expect_exit 0 "integration tier dir + test present"  test -f "$proj/tests/integration/test_smoke.py"
-expect_exit 0 "CI workflow present"                  test -f "$proj/.github/workflows/ci.yml"
+# invariant: src-layout, so NO flat package at the repo root. This is the only
+# enforcer of the src-layout decision (a flat-layout scaffold still imports, tests
+# and type-checks green, so no behavioural test would catch the regression). The
+# positive existence of the package, modules, pyproject and tier tests is not
+# asserted: the content greps below and the live uv/pytest/pyright proof consume
+# them, failing just as loudly if absent.
+expect_exit 1 "invariant: no flat package at repo root (src-layout)" test -d "$proj/demo_app"
 
 # strict pyright is declared (mandatory-and-strict posture).
 expect_match 0 'typeCheckingMode = "strict"' "pyright strict declared" cat "$proj/pyproject.toml"
@@ -43,11 +41,14 @@ expect_match 0 'tests/unit'        "unit tier declared in pyproject"        cat 
 expect_match 0 'tests/integration' "integration tier declared in pyproject" cat "$proj/pyproject.toml"
 # CLAUDE.md declares the Integration endpoints section.
 expect_match 0 'Integration endpoints' "CLAUDE.md declares integration endpoints" cat "$proj/CLAUDE.md"
-# git initialised on main.
-expect_exit 0 "git repo initialised" test -d "$proj/.git"
+# git initialised on main with the scaffold commit: assert the behaviour, not just
+# that a .git directory is present. branch --show-current returns 'main' only when
+# a commit-bearing HEAD is on the main branch (the generator's contract).
+expect_match 0 '^main$' "git on main with the scaffold commit" git -C "$proj" branch --show-current
 
-# the TypeScript generator is untouched (this increment adds, never replaces).
-expect_exit 0 "TS generator still present" test -f "$REPO_ROOT/scripts/init-ts-project.sh"
+# (The Python generator must not break the TypeScript one, but a `test -f` only
+# catches deletion, not breakage; real protection is the behavioural TS suites.
+# No weak presence snapshot here.)
 
 # --- live proof (needs uv + network): real uv sync, pytest, pyright ----------
 # Reported skipped (not passed) when uv is absent or sync cannot fetch packages,

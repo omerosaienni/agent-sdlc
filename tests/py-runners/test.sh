@@ -13,10 +13,9 @@ suite_begin "py-runners (pytest + pyright exit-code contract)"
 
 PYDIR="$REPO_ROOT/file-templates/runners/python"
 
-# --- the templates exist under the python runner dir -------------------------
-expect_exit 0 "python agent-tests.sh template exists"     test -f "$PYDIR/agent-tests.sh"
-expect_exit 0 "python agent-typecheck.sh template exists"  test -f "$PYDIR/agent-typecheck.sh"
-# they drive the Python tooling, not vitest/tsc.
+# --- the templates drive Python tooling, not vitest/tsc ----------------------
+# (existence is not asserted separately: these cat/grep checks and the live matrix
+# below consume the files, so a missing template fails them just as loudly.)
 expect_match 0 'uv run pytest'   "agent-tests.sh drives uv run pytest"   cat "$PYDIR/agent-tests.sh"
 expect_match 0 'uv run pyright'  "agent-typecheck.sh drives uv run pyright" cat "$PYDIR/agent-typecheck.sh"
 # usage guards (the spine).

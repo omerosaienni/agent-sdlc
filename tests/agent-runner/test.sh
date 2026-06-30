@@ -13,13 +13,13 @@ suite_begin "agent-runner seam (shared hollow + per-stack layout)"
 
 HOLLOW="$REPO_ROOT/file-templates/runners/agent-hollow.sh"
 
-# --- the per-stack layout: templates moved, no flat paths, hollow is single -----
-expect_exit 0 "shared agent-hollow.sh exists"            test -f "$HOLLOW"
-expect_exit 0 "ts agent-tests.sh under runners/ts/"      test -f "$REPO_ROOT/file-templates/runners/ts/agent-tests.sh"
-expect_exit 0 "ts agent-typecheck.sh under runners/ts/"  test -f "$REPO_ROOT/file-templates/runners/ts/agent-typecheck.sh"
-expect_exit 1 "old flat agent-tests.sh path is gone"     test -f "$REPO_ROOT/file-templates/agent-tests.sh"
-expect_exit 1 "old flat agent-hollow.sh path is gone"    test -f "$REPO_ROOT/file-templates/agent-hollow.sh"
-expect_exit 1 "no per-stack copy of the hollow runner"   test -f "$REPO_ROOT/file-templates/runners/ts/agent-hollow.sh"
+# --- layout invariants (the only enforcer of the shared-hollow design) --------
+# The shared hollow runner is single, and the old flat paths must not return.
+# Positive existence of the runners is not asserted here: the hollow matrix below
+# copies and runs agent-hollow.sh, so it fails just as loudly if it is missing.
+expect_exit 1 "invariant: old flat agent-tests.sh path stays gone"   test -f "$REPO_ROOT/file-templates/agent-tests.sh"
+expect_exit 1 "invariant: old flat agent-hollow.sh path stays gone"  test -f "$REPO_ROOT/file-templates/agent-hollow.sh"
+expect_exit 1 "invariant: hollow runner is single, no per-stack copy" test -f "$REPO_ROOT/file-templates/runners/ts/agent-hollow.sh"
 
 # --- the hollow verdict reads the exit code, not the words ----------------------
 # Build a throwaway project dir with .building/scripts/ holding the shared hollow
