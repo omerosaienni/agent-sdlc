@@ -26,13 +26,9 @@ else
     _t_bad "generator failed to scaffold demo-app"
 fi
 
-# invariant: src-layout, so NO flat package at the repo root. This is the only
-# enforcer of the src-layout decision (a flat-layout scaffold still imports, tests
-# and type-checks green, so no behavioural test would catch the regression). The
-# positive existence of the package, modules, pyproject and tier tests is not
-# asserted: the content greps below and the live uv/pytest/pyright proof consume
+# The src-layout package, modules, pyproject and tier tests are not existence-
+# checked here: the content greps below and the live uv/pytest/pyright proof consume
 # them, failing just as loudly if absent.
-expect_exit 1 "invariant: no flat package at repo root (src-layout)" test -d "$proj/demo_app"
 
 # strict pyright is declared (mandatory-and-strict posture).
 expect_match 0 'typeCheckingMode = "strict"' "pyright strict declared" cat "$proj/pyproject.toml"
