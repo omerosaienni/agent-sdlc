@@ -14,11 +14,15 @@
 # The fault must be BEHAVIOURAL and still compile (flip a value or comparison).
 # <old-string> must occur exactly once in <src-file>, and differ from <new-string>.
 #
+# The verdict reads ONLY the test runner's exit code, never its output text, so
+# this one script serves every stack (contracts/agent-runner.md): codes are the
+# contract, words are advisory.
+#
 # Verdict (what the negative run proves about <test-file>):
 #   exit 0  ASSERTS   a test failed on the fault: the test is real, not hollow
 #   exit 1  HOLLOW    the tier stayed green with the code broken: hollow test, FAIL
-#   exit 2  BAD FAULT no tests ran (the fault broke the build, not behaviour):
-#                     the judge must pick a behavioural fault and retry
+#   exit 2  BAD FAULT the fault was not behavioural (no tests selected, or it broke
+#                     the build/import so the tier could not run): re-pick and retry
 #   exit 3  HALT      restore did not return the tier to green: do not proceed
 #   exit 64 usage / <old-string> not found exactly once / old == new
 set -euo pipefail
@@ -49,24 +53,27 @@ content="$(cat "$src")"
 printf '%s\n' "${content/"$old"/"$new"}" > "$src"
 
 # Scoped negative run through the project's runner (single source of truth for
-# HOW tests run). Capture output: a real assertion failure prints "Tests N failed"
-# with N>=1; a fault that breaks the build so no test runs makes the runner report
-# zero selected tests ("0 tests selected (hollow suite)"); green means the test
-# never asserted the broken behaviour.
-# Capture without letting a non-zero runner exit trip set -e (a failing test is
-# the expected outcome here, not a script error).
+# HOW tests run). The verdict reads only the runner's EXIT CODE, never its output
+# text, so this one script serves every stack: the codes are the stack-neutral
+# contract (contracts/agent-runner.md), the words are advisory. Capture output only
+# to print on the unexpected path. Capture without letting a non-zero runner exit
+# trip set -e (a failing test is the expected outcome here, not a script error).
 if out="$(.building/scripts/agent-tests.sh "$tier" "$testfile" 2>&1)"; then rc=0; else rc=$?; fi
 
-verdict=""
-if [ "$rc" -eq 0 ]; then
-    verdict="HOLLOW"; code=1
-elif printf '%s' "$out" | grep -qE "Tests +[1-9][0-9]* failed"; then
-    verdict="ASSERTS"; code=0
-elif printf '%s' "$out" | grep -qiE "Tests +no tests|No test files found|0 tests selected"; then
-    verdict="BAD FAULT (no tests ran; fault was not behavioural)"; code=2
-else
-    verdict="BAD FAULT (tier did not run a test; treat as non-behavioural)"; code=2
-fi
+# Map agent-tests.sh's exit code straight to the verdict (agent-runner.md):
+#   0 the tier stayed green with the code broken -> the test never asserted: HOLLOW
+#   1 a test failed on the fault -> the test is real: ASSERTS
+#   2 zero tests selected -> the fault was not behavioural: re-pick (BAD FAULT)
+#   3 the tier could not run -> our fault broke the build/import, not behaviour, so
+#     during THIS negative run that is a non-behavioural fault to re-pick, NOT a halt
+#     (a halt is only a failed restore, below). Same on every stack.
+case "$rc" in
+    0) verdict="HOLLOW"; code=1 ;;
+    1) verdict="ASSERTS"; code=0 ;;
+    2) verdict="BAD FAULT (no tests selected; fault was not behavioural)"; code=2 ;;
+    3) verdict="BAD FAULT (fault stopped the tier running; not behavioural)"; code=2 ;;
+    *) verdict="BAD FAULT (unexpected runner exit $rc); $out"; code=2 ;;
+esac
 
 # Explicit restore now, then verify green before reporting (the trap is a backstop).
 restore; trap - EXIT

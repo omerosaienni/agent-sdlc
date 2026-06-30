@@ -283,13 +283,14 @@ restores the file from an exit trap, then re-verifies green, returning a verdict
 by exit code. Setup writes it from the template if absent or out of date (step 2) and
 proves it is runnable (step 3) on the same loop-ready footing as the test runner.
 
-The type-check runner (`.building/scripts/agent-typecheck.sh`, from the shared
+The type-check runner (`.building/scripts/agent-typecheck.sh`, from the stack's
 template) is the judge's gate, run first before the tiers because nothing else
 type-checks: the tiers run through esbuild and tsx, which strip types. A clean
 type-check (exit 0) is required to pass; a type error (exit 1) is a hard fail like a
 failing test, and a type-check that cannot run at all (exit 3, no tsconfig or tsc
-absent) is an environment block. The build loop's judge places and runs it; the
-setup gate (today) places and proves only the test and hollow-check runners.
+absent) is an environment block. The setup gate places all three agent runners
+(test, hollow-check and type-check) and proves each runnable, so one actor owns
+runner placement; the build loop's judge runs the type-check per increment.
 
 ### Modes
 
