@@ -35,6 +35,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOKS_SRC="$SCRIPT_DIR/../hooks"
 
 # XDG-standard home for git config (sits next to ~/.config/git/config).
+# XDG_CONFIG_HOME is a standard, widely-honoured env var, so it is an allowed
+# exemption from the args-not-env-vars rule (claude-rules/omero-script-args.md):
+# honouring it is the convention, not a caller-specific behaviour override.
 HOOKS_DEST="${XDG_CONFIG_HOME:-$HOME/.config}/git/hooks"
 
 # The hooks this repo owns and installs.

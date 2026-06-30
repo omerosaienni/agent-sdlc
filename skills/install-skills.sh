@@ -2,13 +2,27 @@
 # Install the repo's skills into ~/.claude/skills, substituting the repo path.
 # The repo is the source of truth. Never hand-edit the installed copies; edit the
 # repo skill and re-run this. Idempotent: safe to run repeatedly.
+#
+# Usage:
+#   install-skills.sh                install into ~/.claude/skills (the default)
+#   install-skills.sh --dest <dir>   install into <dir> instead
 set -euo pipefail
 
 # resolve this repo's absolute location from the script's own path
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SDLC_REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
 SRC="$SDLC_REPO/skills"
-DEST="${CLAUDE_SKILLS_DIR:-$HOME/.claude/skills}"
+
+# Destination is caller-chosen via a flag, not an env var (claude-rules/omero-script-args.md).
+DEST="$HOME/.claude/skills"
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --dest) DEST="${2:-}"; shift 2 ;;
+        -h|--help) grep '^#' "$0" | grep -v '^#!' | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) echo "unknown argument: $1" >&2; echo "usage: install-skills.sh [--dest <dir>]" >&2; exit 64 ;;
+    esac
+done
+[ -n "$DEST" ] || { echo "--dest requires a directory" >&2; exit 64; }
 
 [ -d "$SRC" ] || { echo "no skills/ directory at $SRC"; exit 1; }
 mkdir -p "$DEST"

@@ -11,8 +11,9 @@
 # Call the verb you want explicitly.
 #
 # Usage:
-#   setup-global-claude-rules.sh install      # symlink every rule into ~/.claude/rules
-#   setup-global-claude-rules.sh uninstall    # remove the symlinks this repo owns
+#   setup-global-claude-rules.sh install               # symlink every rule into ~/.claude/rules
+#   setup-global-claude-rules.sh uninstall             # remove the symlinks this repo owns
+#   setup-global-claude-rules.sh install --dest <dir>  # use <dir>/rules instead of ~/.claude/rules
 set -euo pipefail
 
 # ============================================================================
@@ -21,7 +22,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RULES_SRC="$SCRIPT_DIR/../claude-rules"
-RULES_DEST="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/rules"
+# The config dir is caller-chosen via --dest (parsed below), not an env var
+# (claude-rules/omero-script-args.md). Default to ~/.claude.
+CONFIG_DIR="$HOME/.claude"
 
 # ============================================================================
 # Output helpers
@@ -115,15 +118,21 @@ do_uninstall() {
 # Dispatch
 # ============================================================================
 
-case "${1:-}" in
-    install)
-        do_install
-        ;;
-    uninstall)
-        do_uninstall
-        ;;
-    *)
-        err "usage: setup-global-claude-rules.sh install|uninstall"
-        exit 2
-        ;;
+# Parse a verb (install|uninstall) plus an optional --dest <dir>.
+verb=""
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        install|uninstall) verb="$1"; shift ;;
+        --dest) CONFIG_DIR="${2:-}"; shift 2 ;;
+        -h|--help) grep '^#' "$0" | grep -v '^#!' | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) err "usage: setup-global-claude-rules.sh install|uninstall [--dest <dir>]"; exit 2 ;;
+    esac
+done
+[ -n "$CONFIG_DIR" ] || { err "--dest requires a directory"; exit 2; }
+RULES_DEST="$CONFIG_DIR/rules"
+
+case "$verb" in
+    install)   do_install ;;
+    uninstall) do_uninstall ;;
+    *) err "usage: setup-global-claude-rules.sh install|uninstall [--dest <dir>]"; exit 2 ;;
 esac
