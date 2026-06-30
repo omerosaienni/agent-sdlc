@@ -25,7 +25,7 @@ Then drive a project through these four `/omero-*` skills, in order:
 /omero-create-ts-project <project-name> [--mongo] [--react] [--express]  # 1a. scaffold a TypeScript project (optional Mongo/React/Express layers)
 /omero-create-python-project <project-name>     # 1b. or scaffold a Python project (src-layout, uv, pytest, strict pyright)
 /omero-design-partner "<intent>" <feature-name>  # 2. converge intent into feature sheet(s)
-/omero-project-setup                            # 3. prove the project ready (writes the setup receipt)
+/omero-setup-project                            # 3. prove the project ready (writes the setup receipt)
 /omero-build-full <path-to-sheet>               # 4. deliver the sheet, one PR per increment (a local commit if no remote)
 ```
 
@@ -37,7 +37,7 @@ The work is driven by these four `/omero-*` skills (thin wrappers over the contr
 
 1. `omero-create-ts-project` scaffolds a TypeScript project, with optional Mongo, React and Express layers and a layer-aware GitHub Actions CI workflow (the generator, separate from the pipeline). `omero-create-python-project` is the second generator, scaffolding a src-layout, uv-managed Python project with a strict pyright gate and a pytest tier split.
 2. `omero-design-partner` converges intent into validated feature sheet(s).
-3. `omero-project-setup` proves the project ready and writes the setup receipt.
+3. `omero-setup-project` proves the project ready and writes the setup receipt.
 4. `omero-build-full` delivers the sheet, one increment per branch (one PR per increment with a GitHub remote, otherwise a local commit to main).
 
 The build loop runs in one of two modes, sequential-attended or parallel-attended, read from `mode` in `state.json`. They share every role, gate and the checkpoint; they differ only in what the loop offers after a PR opens. Orthogonally it runs in one of two profiles, full (the default) or lite, read from `profile` in `state.json`: lite defers the integration tier and the documentation to a completion gate for fast iteration, while full verifies and documents every increment before it ships. See [docs/build-loops.md](docs/build-loops.md).
