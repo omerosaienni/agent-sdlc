@@ -4,8 +4,8 @@
 # receipt proved by real pytest and pyright, add a small typed application
 # increment (a LangGraph-shaped node) with a unit test, then run the judge's own
 # verification sequence on it through the placed runners: type-check first, then
-# the unit tier, then the hollow negative run, all by exit code. Finally confirm
-# the TypeScript path still works and no stack-agnostic core file is needed.
+# the unit tier, then the hollow negative run, all by exit code. Finally assert
+# the stack-agnostic core contracts still name no stack, so the core stayed agnostic.
 # Sourced and run by tests/run.sh.
 #
 # This is the executable form of the walkthrough in docs/python-build-path.md. It

@@ -150,7 +150,6 @@ step "build surface (package.json, tsconfig, Makefile)"
 START_SCRIPT="tsx src/server/index.ts"
 [ "$WITH_EXPRESS" = 1 ] && START_SCRIPT="tsx --env-file-if-exists=.env src/server/index.ts"
 
-# package.json
 write_file "$DIR/package.json" <<EOF
 {
   "name": "${NAME}",
@@ -200,7 +199,6 @@ if [ "${#TSCONFIG_INCLUDE}" -gt 100 ]; then
     TSCONFIG_INCLUDE="${TSCONFIG_INCLUDE%,}"$'\n'"  ]"
 fi
 
-# tsconfig.json
 write_file "$DIR/tsconfig.json" <<EOF
 {
   "compilerOptions": {

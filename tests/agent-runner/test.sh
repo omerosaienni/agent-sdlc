@@ -59,8 +59,7 @@ expect_exit 0  "rc2 negative run -> BAD FAULT (exit 2)"  test "$(hollow_verdict 
 # negative run rc 3 -> BAD FAULT, not HALT (fault broke the build, re-pick).
 expect_exit 0  "rc3 negative run -> BAD FAULT (exit 2)"  test "$(hollow_verdict 3 0)" = 2
 # restore-verify run non-green (rc 1) -> HALT (hollow's own exit 3), even though
-# the negative run asserted. This is the rc-3-asymmetry's partner: a failed
-# restore halts regardless of the negative verdict.
+# the negative run asserted: a failed restore halts regardless of the negative verdict.
 expect_exit 0  "non-green restore -> HALT (exit 3)"      test "$(hollow_verdict 1 1)" = 3
 
 suite_summary

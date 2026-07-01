@@ -42,7 +42,7 @@ expect_json "parallel: cut_allowed true (ready non-empty)" \
   "assert.strictEqual(b.mode,'parallel-attended'); assert.strictEqual(b.cut_allowed,true);" \
   "$V" "$B/diamond-parallel.json" "$DM_SHEET"
 
-# Mermaid: roots vs dependents classed, every edge present.
+# Mermaid: roots vs dependents classed, representative edges present.
 expect_json "mermaid: root classed root, sink classed dependent, edges present" \
   "assert.ok(/class root[, ]/.test(b.mermaid)||/class root;/.test(b.mermaid)); assert.ok(b.mermaid.includes('root --> mid-a')); assert.ok(b.mermaid.includes('mid-a --> sink'));" \
   "$V" "$DM_STATE" "$DM_SHEET"

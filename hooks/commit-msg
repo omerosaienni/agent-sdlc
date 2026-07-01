@@ -5,9 +5,8 @@
 # history rewrite can remove. This guard stops it at write time.
 #
 # Matched, case-insensitive: a Co-authored-by trailer naming a known assistant,
-# and a "Generated with <assistant>" footer. Word boundaries keep it off honest
-# prose (anthropology, an author surnamed Bard) since the names sit inside a
-# trailer line here, not free text.
+# and a "Generated with <assistant>" footer. Word boundaries stop a name matching
+# inside a larger word (e.g. "anthropic" within "philanthropic").
 msg_file="$1"
 
 assistants='claude|anthropic|copilot|cursor|codeium|chatgpt|openai|gpt-[0-9]|gemini|bard|llama|codewhisperer|tabnine|sourcegraph|cody|devin|aider'
