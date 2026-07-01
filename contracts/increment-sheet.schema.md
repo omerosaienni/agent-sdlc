@@ -78,7 +78,7 @@ This is the exact shape build validates and state.json keys on. A variant (bare 
 - Enforced mechanically by `scripts/validate-sheet.sh <sheet>`: rules 1-5, 8, plus goal present-and-non-empty.
 - The script is the source of truth for those checks. On disagreement with this prose, the script is what runs: fix the prose. Rules here are the spec, the script is the gate (mirrors claude-rules/omero-git-authorship.md).
 - Parse keys only on the two fixed tokens (`### <id>: <title>` heading, `depends_on: [...]` bullet), so densifying the prose fields needs no change here.
-- NOT checked (judgement, the design partner's): rule 6 runnable-not-opinion, rule 7 independently-buildable, goal usefulness. A clean run is necessary, not sufficient.
+- NOT checked (judgement, the design partner's): rule 6 runnable-not-opinion, rule 7 independently-buildable, goal usefulness. A clean run is necessary, not sufficient. Design-level soundness across increments (contradictions, dead-code cuts, hidden multi-increments) is the design review's, not this script's: design-review.md.
 - Exits: 0 valid, 1 rejection (fixable), 3 node absent, 4 structural defect, 64 usage. A defect outranks a rejection when both are present.
 - Defect vs rejection: the DAG is the law. A cycle (rule 4) or no increments = non-DAG/non-sheet = structural DEFECT (exit 4, regenerate upstream, an upstream-producer bug). Every other failure = a locatable REJECTION (exit 1); a dangling depends_on (rule 3) is a typo in an edge, still a DAG, so a rejection.
 - Fixtures: tests/fixtures/sheets/ (valid + one per failing rule), run by tests/run.sh and the tests workflow on every PR into main.

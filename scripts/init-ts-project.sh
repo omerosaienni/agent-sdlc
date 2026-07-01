@@ -572,6 +572,7 @@ fi
 [ "$WITH_EXPRESS" = 1 ] && echo "  make server-start"
 echo
 echo "Then drive it through the pipeline. Two independent prerequisites, in either order:"
-echo "  /omero-design-feature   converges your intent into a feature sheet"
+echo "  /omero-design-sheet     converges your intent into a feature sheet"
+echo "  /omero-review-sheet     reviews the sheet for design soundness before build"
 echo "  /omero-setup-project    proves the project environment ready"
 echo "Then /omero-build-full builds the sheet (needs both the sheet and the receipt)."
