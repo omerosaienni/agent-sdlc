@@ -21,7 +21,8 @@ install-skills.sh adds and updates skills; it does NOT remove them. Deleting a s
 Repo-managed (installed from here, the source of truth):
 - omero-build-full, points at contracts/build-judge-loop.md
 - omero-build-quick, points at contracts/build-quick.md (fast variant: typecheck + unit only, no integration tier, documentation or completion gate)
-- omero-design-feature, points at contracts/design-partner.md
+- omero-design-sheet, points at contracts/design-partner.md (produces the feature sheet)
+- omero-review-sheet, points at contracts/design-review.md (reviews the sheet for design soundness before build)
 - omero-setup-project, points at contracts/project-setup.md and runs scripts/project-setup.sh
 - omero-create-ts-project, runs scripts/init-ts-project.sh (the project generator, no contract: deterministic; TypeScript base, optional --mongo, --react and --express layers)
 - omero-install-project-rules, runs scripts/install-project-rules.sh (installs stack rules into a repo's .claude/rules/)
