@@ -22,7 +22,7 @@ setup_color() {
     fi
 }
 
-# step announces an area of work: one clean line by default.
+# step announces an area of work: one line, always printed.
 step() { printf '%s==>%s %s\n' "$C_STEP" "$C_RESET" "$1"; }
 
 # note prints a detail line only under --verbose.

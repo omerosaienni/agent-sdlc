@@ -8,8 +8,9 @@
 # .building gitignore, the receipt and the exit codes), detects the project's
 # stack, and sources the matching per-stack module under scripts/setup/ for the
 # stack-specific checks (tooling, test tiers, coverage, placing the agent runners).
-# Detection: package.json -> TypeScript (scripts/setup/ts.sh). A second stack adds
-# its own module and one detection line; no check body branches on stack inline.
+# Detection: package.json -> TypeScript (setup/ts.sh), pyproject.toml -> Python
+# (setup/python.sh). A further stack adds its own module and one detection line;
+# no check body branches on stack inline.
 #
 # Usage:
 #   project-setup.sh            set up: install and scaffold gaps as needed (default)
@@ -66,7 +67,7 @@ copy_template(){ local src="$TEMPLATES_DIR/$1" dest="$2"
 detect_stack(){
     # Marker files name the stack. Both present is ambiguous (which stack is the
     # project?), so report it rather than guess; the dispatch turns "" into a hard
-    # fail. A new stack adds its marker here and its own scripts/setup/<stack>.sh.
+    # fail.
     local ts=0 py=0
     [ -f package.json ] && ts=1
     [ -f pyproject.toml ] && py=1

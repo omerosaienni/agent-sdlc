@@ -10,6 +10,10 @@ The build phase delivers a sheet one increment at a time: a single loop, one [pe
 
 The four roles and their ordering are summarised in [roles.md](roles.md); the full cycle, budgets and escalation are in the core contract (Flow). In short: builder, then reviewer (can bounce), then judge (runs the tiers, proves tests aren't hollow), then document, then commit and PR (or local integration). Either loop exhausting three attempts escalates and freezes that increment's dependents. The per-increment state machine is [`diagrams/increment-states.svg`](diagrams/increment-states.svg).
 
+The same cycle seen as an artifact flow, what each role produces and hands to the next (the commit carries code and docs, the reports stay local under `.building/`):
+
+![The per-increment cycle as a data flow: shared inputs to builder to reviewer to judge to document to commit](diagrams/loop-data-flow.svg)
+
 ## Two modes: what you are choosing
 
 `mode` is a per-queue setting (sequential-attended default, or parallel-attended); the mechanics are in the core contract (Modes). The choice is about control, not speed:

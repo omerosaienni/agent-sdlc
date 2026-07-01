@@ -29,9 +29,7 @@ const PORT = process.env.MONGO_PORT ?? '27017';
 // told not to chase that advertisement and to stay on the configured host.
 const URI = \`mongodb://\${HOST}:\${PORT}/?directConnection=true\`;
 
-// Database this project uses inside the shared server. One place so all modules
-// agree. Named after the project, so the shared server lists one database per
-// project.
+// The database this project uses inside the shared mongod. One place so every module agrees.
 export const DB_NAME = '${DB_NAME}';
 
 // One shared MongoClient per process. MongoClient construction is lazy in the
@@ -195,7 +193,7 @@ EOF
 import { afterAll, describe, expect, it } from 'vitest';
 import { getDb, closeClient } from './db/index.js';
 
-// replSetGetStatus returns a typed members array. We only care about state.
+// Minimal local type for the replSetGetStatus result: only the fields the assertions read.
 interface ReplSetMember {
   stateStr: string;
 }

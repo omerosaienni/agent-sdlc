@@ -87,9 +87,7 @@ format_check() {
     fi
 }
 
-# ts_setup: run the whole TypeScript check sequence, in the same order the gate
-# ran them before the seam was extracted. Output and receipt stay byte-identical
-# to the pre-refactor single-file gate, because the bodies are unchanged.
+# ts_setup: run the whole TypeScript check sequence, in order.
 ts_setup() {
     # -----------------------------------------------------------------------
     # 1. Report tooling: derive from vitest, match coverage, verify.
