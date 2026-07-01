@@ -61,6 +61,18 @@ if command -v uv >/dev/null 2>&1 && ( cd "$proj" && uv sync >/dev/null 2>&1 ); t
     else
         _t_bad "live: uv run pyright reported errors on the fresh scaffold"
     fi
+    # A module tested in both tiers gives tests/unit/test_x.py and tests/integration/
+    # test_x.py the same basename. Under pytest's default prepend import mode that is
+    # an import-file-mismatch on a combined-tier run; the scaffold sets import-mode to
+    # importlib (via addopts) to avoid it. Prove a combined run collects both.
+    printf 'def test_u():\n    assert True\n' > "$proj/tests/unit/test_dup.py"
+    printf 'def test_i():\n    assert True\n' > "$proj/tests/integration/test_dup.py"
+    if ( cd "$proj" && uv run pytest tests/unit tests/integration >/dev/null 2>&1 ); then
+        _t_ok "live: combined-tier run collects a same-basename test in both tiers (import-mode importlib)"
+    else
+        _t_bad "live: combined-tier run failed on a same-basename test in both tiers (import-mode regression)"
+    fi
+    rm -f "$proj/tests/unit/test_dup.py" "$proj/tests/integration/test_dup.py"
 else
     printf '  %sSKIP%s live uv sync/pytest/pyright proof (uv absent or no network to fetch packages)\n' "${C_NOTE:-}" "${C_RESET:-}"
 fi
