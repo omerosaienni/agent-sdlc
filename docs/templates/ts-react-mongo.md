@@ -34,8 +34,12 @@ workspace tooling to maintain.
   vitest.unit.config.ts          constant (backend unit, *.test.ts)
   vitest.integration.config.ts   constant (backend integration, *.integration.test.ts)
   vitest.client.config.ts        constant, React only (frontend jsdom, *.test.tsx)
+  config/
+    services.yaml                constant shape (mongo and client ports + addresses, one block per layer)
+  .env                           gitignored, generated from config/services.yaml by make config
   scripts/
     rs-init.sh                   constant (idempotent replica set init)
+    config-env.sh                constant (turns config/services.yaml into .env)
   src/
     server/                      Node + Mongo backend
       db/index.ts                constant pattern (one shared client, getDb/closeClient)
@@ -68,6 +72,9 @@ workspace tooling to maintain.
 **Infra / tooling**
 - docker-compose.yml (shared-mongo, single-node replica set, shared named volume)
 - scripts/rs-init.sh (idempotent, polls for PRIMARY; run by `make db-start`, once per server)
+- config/services.yaml + scripts/config-env.sh: the ports and addresses (one block per
+  layer), turned by `make config` into a gitignored `.env` the Vite client and docker
+  compose read, so ports live in one file (the code defaults match the YAML)
 - The Makefile target set (backend always; frontend targets with React)
 - The three vitest configs and the suffix convention (`*.test.ts` backend unit,
   `*.integration.test.ts` backend integration, `*.test.tsx` frontend)
@@ -125,7 +132,7 @@ db-seed            ## Generate and load faker seed data
 
 # ---- server ----
 server-start             ## Start the entry point (src/server/index.ts)
-server-test-unit         ## Server unit tier (no database)
+server-test-unit         ## Server unit tier (no external services)
 server-test-integration  ## Server integration tier (needs db up)
 
 # ---- client (React only) ----

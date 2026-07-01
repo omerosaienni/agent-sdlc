@@ -1,9 +1,9 @@
 # agent-sdlc
 
 > An AI-agent build system, shared as a working reference. It is opinionated toward
-> one stack (TypeScript, MongoDB, vitest, GitHub) and published so the ideas are
-> visible and reusable. Offered as-is, with no support promised and no commitment to
-> generalise it. Take what is useful. MIT licensed.
+> one primary stack (TypeScript, MongoDB, vitest, GitHub), with a second Python path,
+> and published so the ideas are visible and reusable. Offered as-is, with no support
+> promised and no commitment to generalise it. Take what is useful. MIT licensed.
 
 Reusable AI agent operating contracts. Each contract is a project-agnostic rulebook for how an agent works; a project consumes a contract by supplying the small project-specific pieces it leaves open. The contracts under [`contracts/`](contracts/) are the source of truth for behaviour, dense reference. The [`docs/`](docs/README.md) folder explains the whole system; start there.
 
@@ -39,7 +39,7 @@ The work is driven by these `/omero-*` skills (thin wrappers over the contracts;
 1. `omero-create-ts-project` scaffolds a TypeScript project, with optional Mongo, React and Express layers and a layer-aware GitHub Actions CI workflow (the generator, separate from the pipeline). `omero-create-python-project` is the second generator, scaffolding a src-layout, uv-managed Python project with a strict pyright gate and a pytest tier split.
 2. `omero-design-sheet` converges intent into validated feature sheet(s); `omero-review-sheet` reviews a sheet for design soundness (inter-increment contradictions, dead-code cuts) before it crosses to build.
 3. `omero-setup-project` proves the project ready and writes the setup receipt.
-4. `omero-build-full` delivers the sheet, one increment per branch (one PR per increment with a GitHub remote, otherwise a local commit to main).
+4. `omero-build-full` delivers the sheet, one increment per branch (one PR per increment with a GitHub remote, otherwise a local commit to main). `omero-build-quick` is the fast alternative: the same loop and roles, but the judge verifies each increment with the type-check and unit tier only (no integration tier, no documentation, no completion gate), so no live endpoint is needed.
 
 The build loop runs in one of two modes, sequential-attended or parallel-attended, read from `mode` in `state.json`. They share every role, gate and the checkpoint; they differ only in what the loop offers after a PR opens. Orthogonally it runs in one of two profiles, full (the default) or lite, read from `profile` in `state.json`: lite defers the integration tier and the documentation to a completion gate for fast iteration, while full verifies and documents every increment before it ships. See [docs/build-loops.md](docs/build-loops.md).
 
@@ -61,7 +61,7 @@ The build loop runs in one of two modes, sequential-attended or parallel-attende
 | [`contracts/`](contracts/) | The operating contracts. The source of truth for behaviour, dense reference. |
 | [`docs/`](docs/README.md) | The documentation pages and the diagrams. |
 | [`skills/`](skills/README.md) | The thin `/omero-*` skill wrappers and the installer that points them at this repo. |
-| [`scripts/`](scripts/) | The shell scripts: the layered project generator (and its `scripts/generator/` layers), the setup gate, the report-tooling helper, the sheet and state validators, the board computer, the per-project rules installer and the global hooks and rules installers. |
+| [`scripts/`](scripts/) | The shell scripts: the layered project generators (TypeScript and Python) and their `scripts/generator/` layers, the setup gate, the report-tooling helper, the sheet and state validators, the board computer, the per-project rules installer and the global hooks and rules installers. |
 | [`tests/`](tests/) | The repo's own test suites (one folder per script under test) and their fixtures, run by `tests/run.sh` and the tests workflow on every PR into main. |
 | [`file-templates/`](file-templates/) | The shared constant files (agent runners, report and checkpoint templates, vitest configs) the scripts copy from so nothing drifts. |
 | [`claude-rules/`](claude-rules/README.md) | The global Claude rules (conventions, branch naming), symlinked into `~/.claude/rules`. |

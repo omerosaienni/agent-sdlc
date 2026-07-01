@@ -7,7 +7,7 @@ Three phases, two gates. Design and setup are independent prerequisites; both mu
 ## The three phases
 
 1. **Design** (`/omero-design-sheet`) converges a fuzzy intent into a feature sheet, written to `.building/features/<feature-name>/increments.md` where `<feature-name>` is a short kebab-case name you give the feature. Gate: the sheet, validated against [`../contracts/increment-sheet.schema.md`](../contracts/increment-sheet.schema.md). The mechanical gate cannot see design-level soundness across increments (contradictions, dead-code cuts), so `/omero-review-sheet` ([`../contracts/design-review.md`](../contracts/design-review.md)) reviews the emitted sheet for those before build; run it after design and re-converge on a bounce.
-2. **Setup** (`/omero-setup-project`) proves the environment is buildable by running things: tooling matches, the test tiers select non-zero tests, the agent test runner is placed and works, configs are valid, git is ready. It runs `scripts/project-setup.sh`. Gate: the receipt at `.building/setup-ok`. Idempotent, so it doubles as a re-runnable health check.
+2. **Setup** (`/omero-setup-project`) proves the environment is buildable by running things: tooling matches, the test tiers select non-zero tests, the agent runners (test, hollow-check, type-check) are placed and work, configs are valid, git is ready. It runs `scripts/project-setup.sh`. Gate: the receipt at `.building/setup-ok`. Idempotent, so it doubles as a re-runnable health check.
 3. **Build** (`/omero-build-full`) delivers the sheet one increment at a time. It checks the receipt on entry, then for each increment runs builder, reviewer, tiered judge, document, then a PR and your merge with a remote, or a local commit integrated into main without one. The loop runs in one of two modes, sequential-attended or parallel-attended, read from `mode` in `state.json`, and one of two profiles, full (the default) or lite, read from `profile`: lite defers the integration tier and the documentation to a completion gate. See [`build-loops.md`](build-loops.md).
 
 The two gates are independent: re-running design (a new sheet) does not invalidate the setup receipt, and a tooling change invalidates the receipt, not the sheet.
@@ -22,7 +22,7 @@ A project is created by a stack-specific generator, separate from the pipeline. 
 
 ## Pipeline tooling
 
-Beyond the generator above, more scripts back the pipeline itself, stack-agnostic (scripts.md documents each, generator included):
+Beyond the generators above, more scripts back the pipeline itself, stack-agnostic (scripts.md documents each, generators included):
 
 - `scripts/project-setup.sh` is the setup gate: it proves a project ready by execution and writes the receipt.
 - `scripts/ensure-report-tooling.sh` installs and verifies the coverage tooling the judge needs.
@@ -48,6 +48,6 @@ The gate proves, by running things, and scaffolds boilerplate on consent:
 
 ## External tooling
 
-Most tooling is project-level, not installed by hand: a generated project lists vitest, typescript, eslint, prettier, tsx and the MongoDB driver in its package.json, and `npm install` plus the setup gate bring and prove them.
+Most tooling is project-level, not installed by hand: a generated TypeScript project lists vitest, typescript, eslint, prettier and tsx in its package.json (and the MongoDB driver with `--mongo`), and `npm install` plus the setup gate bring and prove them (a generated Python project is the uv equivalent, `uv sync` resolving pyright, pytest and the rest from pyproject.toml).
 
-One optional external tool is referenced by generated projects but is not required by the pipeline. The scaffolded Makefile carries `graph` and `graph-viz` targets that call [graphify](https://github.com/safishamsi/graphify), a local-first codebase knowledge-graph tool pinned to a local Ollama backend. The build loop never invokes it; the targets are a convenience for exploring a project as a graph. Without graphify those two Make targets are the only thing that will not run. Because the Makefile targets pin the Ollama backend, install the Ollama extra: `uv tool install "graphifyy[ollama]"`. Note the double y in the package name (the CLI command is still `graphify`), and the `[ollama]` extra: a bare `uv tool install graphifyy` installs the CLI but not the `openai` package the Ollama backend needs, so `make graph` then fails until the extra is added.
+One optional external tool is referenced by generated projects but is not required by the pipeline. The scaffolded TypeScript project's Makefile carries `graph` and `graph-viz` targets that call [graphify](https://github.com/safishamsi/graphify), a local-first codebase knowledge-graph tool pinned to a local Ollama backend. The build loop never invokes it; the targets are a convenience for exploring a project as a graph. Without graphify those two Make targets are the only thing that will not run. Because the Makefile targets pin the Ollama backend, install the Ollama extra: `uv tool install "graphifyy[ollama]"`. Note the double y in the package name (the CLI command is still `graphify`), and the `[ollama]` extra: a bare `uv tool install graphifyy` installs the CLI but not the `openai` package the Ollama backend needs, so `make graph` then fails until the extra is added.

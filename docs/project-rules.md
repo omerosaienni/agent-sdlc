@@ -20,6 +20,10 @@ Universal conventions that hold regardless of stack, version-controlled in
   discipline (why not what).
 - `omero-branch-naming.md`: `<type>/<kebab>` branch names (the git `pre-push` hook
   enforces the same standard; see [hooks](../hooks/README.md)).
+- `omero-git-authorship.md`: commits authored by the user alone, no AI co-author
+  trailers or footers (the `commit-msg` hook enforces this; see [hooks](../hooks/README.md)).
+- `omero-script-args.md`: caller-chosen behaviour is an argument or flag, never an
+  env var (points at the script-layout contract).
 
 Install (symlink, so an edit in the repo is live everywhere with no re-run):
 
