@@ -6,7 +6,7 @@ How a Python (LangGraph) project goes through the same four phases the pipeline 
 
 1. **Create.** `/omero-create-python-project <name>` runs `scripts/init-python-project.sh`, the second generator (alongside the TypeScript one). It scaffolds a modern src-layout, uv-managed project: `pyproject.toml` with a strict pyright config and a pytest unit/integration tier split (`tests/unit/`, `tests/integration/`), `src/<package>/` with a typed entry module to grow into the LangGraph app, a CI workflow, and git on `main`.
 
-2. **Design.** `/omero-design-feature` is unchanged: it converges intent into a schema-valid increment sheet. It is stack-agnostic and emits the same sheet shape regardless of stack.
+2. **Design.** `/omero-design-sheet` is unchanged: it converges intent into a schema-valid increment sheet. It is stack-agnostic and emits the same sheet shape regardless of stack. `/omero-review-sheet` reviews it for design soundness before build, also stack-agnostic.
 
 3. **Setup.** `/omero-setup-project` runs the gate, which detects the stack from `pyproject.toml`, sources `scripts/setup/python.sh`, and proves the environment by execution: `uv sync` resolves and installs, both pytest tiers run and select a non-zero count, pyright type-checks, coverage runs, and the three agent runners (test, type-check, hollow) are placed from `file-templates/runners/python/` (and the shared hollow runner) and proved. On success it writes the same `.building/setup-ok` receipt as the TypeScript path.
 
