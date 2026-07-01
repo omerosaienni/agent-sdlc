@@ -44,6 +44,12 @@ packages = ["src/${PKG}"]
 # Tiers split by directory. The human verbose paths are \`uv run pytest tests/unit\`
 # and \`uv run pytest tests/integration\`; the agent runner drives the same split.
 testpaths = ["tests/unit", "tests/integration"]
+# importlib import mode so the same module tested in both tiers (tests/unit/test_x.py
+# and tests/integration/test_x.py) does not collide: default prepend mode imports test
+# files by basename and rejects two \`test_x\` without __init__.py packaging, which a
+# combined-tier run (\`uv run pytest tests/unit tests/integration\`) would trip. Import
+# mode is a command-line option, so it is set via addopts, not a standalone ini key.
+addopts = "--import-mode=importlib"
 
 [tool.pyright]
 # Mandatory and strict: this is the type-check gate, the analogue of tsc --noEmit.
