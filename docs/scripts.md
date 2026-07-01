@@ -1,9 +1,12 @@
 # Scripts
 
-The pipeline scripts stand a project up and prove it ready for the build loop:
-the generator, the setup gate, and a small dependency helper, plus the sheet
-validator that gates the build loop's input. This documents what each does and how
-they connect. (The repo also has scripts outside the pipeline:
+The pipeline scripts stand a project up, prove it ready for the build loop, and
+gate the loop's own inputs: the project generator, the setup gate, and a small
+dependency helper, plus the sheet and state validators and the checkpoint board
+computer. This documents what each does and how they connect. A second generator,
+`init-python-project.sh`, scaffolds a Python project the same setup gate and loop
+then consume; its end-to-end walkthrough is [`python-build-path.md`](python-build-path.md),
+so it is pointed at rather than restated here. (The repo also has scripts outside the pipeline:
 the per-project rules installer, documented in [`project-rules.md`](project-rules.md),
 the global git-hooks and Claude-rules installers, documented in
 [`../hooks/`](../hooks/README.md) and [`project-rules.md`](project-rules.md), and the
@@ -19,10 +22,12 @@ prose.
 ## How they connect
 
 The pipeline scripts, one job each: one creates a project, one proves it ready, one
-is a small dependency helper the gate also uses, and one validates the sheet the
-build loop is about to build. The first three are the create-verify-build
-environment flow (create, then verify, then the loop consumes the receipt); the
-validator gates a different input, the sheet, at the loop's entry.
+is a small dependency helper the gate also uses, one validates the sheet the build
+loop is about to build, one validates the loop's recovery state on re-entry, and one
+computes the checkpoint board. The first three are the create-verify-build
+environment flow (create, then verify, then the loop consumes the receipt); the last
+three serve the loop itself, gating and feeding it (the sheet at entry, the state on
+resume, the board at every checkpoint).
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#e4edf4','primaryTextColor':'#1d2733','primaryBorderColor':'#5b6b7a','lineColor':'#5b6b7a','fontSize':'14px'}}}%%
@@ -103,7 +108,7 @@ flowchart TD
     editor --> mongo["--mongo (optional)<br/>db helper (src/server/db),<br/>docker infra, integration tier + seed"]
     mongo --> react["--react (optional)<br/>src/client (Vite), src/common,<br/>frontend tier"]
     react --> express["--express (optional)<br/>versioned Express server<br/>(src/server/app.ts) + supertest tests"]
-    express --> build["assemble shared files<br/>package.json, tsconfig, Makefile,<br/>.github/workflows/ci.yml<br/>(from base + layer fragments)"]
+    express --> build["assemble shared files<br/>package.json, tsconfig, Makefile,<br/>.github/workflows/ci.yml, config/services.yaml<br/>(from base + layer fragments)"]
     build --> docs["docs<br/>CLAUDE.md (identity + runtime), README"]
     docs --> git["git init + initial commit<br/>(idempotent)"]
     git --> rules["stack rules<br/>install-project-rules.sh --typescript [--mongo] [--react]"]
@@ -162,6 +167,7 @@ flowchart TD
         makefile["Makefile"]
         pkg["package.json"]
         ci[".github/workflows/ci.yml"]
+        cfg["config/services.yaml (with a service layer)"]
     end
 
     subgraph docs["Docs + editor"]
@@ -178,15 +184,15 @@ flowchart TD
     classDef node fill:#e4edf4,stroke:#5b6b7a,color:#1d2733;
     classDef group fill:#f4f6f8,stroke:#5b6b7a,color:#1d2733;
     class name,dbname param;
-    class vitest,tsconfig,lint,ignores,index,indextest,dbts,compose,smoke,seed,client,common,app,srvboot,ci,makefile,pkg,claude,rules,readme,vscode node;
+    class vitest,tsconfig,lint,ignores,index,indextest,dbts,compose,smoke,seed,client,common,app,srvboot,ci,makefile,pkg,cfg,claude,rules,readme,vscode node;
     class tooling,base,mongolayer,reactlayer,expresslayer,build,docs group;
 ```
 
-The entry point, the seed helper and the smoke test all use `src/server/db/index.ts`,
-so the database helper is exercised from birth: the unit tier tests the entry point, and
-the integration tier runs a replica-set smoke test through the real helper (it
+The seed helper and the smoke test both use `src/server/db/index.ts`,
+so the database helper is exercised from birth: the integration tier runs a replica-set
+smoke test through the real helper (it
 asserts the set reports a PRIMARY, so it fails if mongod is down or the replica
-set was never initiated). The seed helper (`make seed`, faker-backed) proves the
+set was never initiated). The seed helper (`make db-seed`, faker-backed) proves the
 faker to Mongo path end to end and is a domain-free starting point you grow.
 
 ### CI workflow
@@ -195,7 +201,7 @@ The generator writes `.github/workflows/ci.yml`, assembled from layer fragments 
 the Makefile and `package.json`. The base contributes a job each for `lint`,
 `format:check`, `typecheck` (one `tsc --noEmit` spans all of `src`, so it covers the
 client too) and the unit tier; `--mongo` appends an `integration` job that runs `make
-up` then `seed` then the integration tier on a real mongod; `--react` appends a
+db-start` then `db:seed` then the integration tier on a real mongod; `--react` appends a
 `client` job running the frontend tier, which is where client component tests are
 gated. It triggers on every pull request into `main`, which is what the build loop
 opens per increment, so each increment is checked before you merge it. The jobs use
@@ -231,7 +237,7 @@ found setup to apply, re-run without `--check`), 3 BLOCKED (endpoint down).
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#e4edf4','primaryTextColor':'#1d2733','primaryBorderColor':'#5b6b7a','lineColor':'#5b6b7a','fontSize':'14px'}}}%%
 flowchart TD
     s1["1. report tooling<br/>coverage matches vitest major"]
-    s2["2. testing convention<br/>tier configs + npm scripts<br/>+ agent runners (test, hollow)"]
+    s2["2. testing convention<br/>tier configs + npm scripts<br/>+ agent runners (test, type-check, hollow)"]
     s3["3. run each tier<br/>non-zero selection + pass<br/>+ agent runners work + prettier --check clean"]
     s4["4. coverage runs"]
     s5["5. git, remote, gh, identity, main"]

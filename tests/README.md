@@ -8,7 +8,7 @@ Every suite declares its kind as the second argument to `suite_begin` (an argume
 
 - **unit**: a pure script or stub, run-anywhere, no external tooling. (`validate-sheet`, `validate-state`, `board-state`, `agent-runner`.)
 - **integration**: runs real external tooling (uv, pytest, pyright, npm) and self-skips when the tooling or network is absent. (`init-python-project`, `project-setup`, `py-runners`, `py-e2e-proof`.)
-- **structural**: reads files and asserts conformance (frontmatter, naming, no stale strings), executes nothing under test. (`skills`.)
+- **structural**: reads files and asserts conformance (frontmatter, naming, no stale strings), executes nothing under test. (`skills`, `script-help`.)
 
 ```
 suite_begin "validate-sheet.sh" unit
