@@ -2,6 +2,7 @@
 
 git-town ships via the GitHub API and needs a token. It does NOT read the gh keyring itself.
 
+- The token prefix is ONLY for `git town ship`. `gh` itself reads its own keyring: never prefix `gh` (`gh pr merge`, `gh pr view`, `gh pr create`, ...) with `GITHUB_TOKEN=...`.
 - Ship: `GITHUB_TOKEN="$(gh auth token)" git town ship -m "<msg>"`. Without the env var: "the Git Town driver for your forge does not support shipping via the API".
 - Never `git config git-town.github-token` (plaintext on disk = exposure). Env var for the ship child only, never exported or written.
 - `git town sync --stack` and local ops need no token.
