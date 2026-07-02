@@ -25,7 +25,7 @@ The build loop's per-feature recovery record and cross-conversation memory: one 
   "mode": "parallel-attended",
   "profile": "lite",
   "increments": {
-    "ci-workflow": { "depends_on": [], "status": "merged", "review_count": 1, "judge_count": 1, "branch": "feat/ci-workflow-pr-checks" }
+    "ci_01-workflow": { "depends_on": [], "status": "merged", "review_count": 1, "judge_count": 1, "branch": "feat/ci_01-workflow-pr-checks" }
   },
   "completion": { "integration": "passed", "docs": "pr-open" }
 }

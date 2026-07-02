@@ -11,7 +11,7 @@ Delta over core build-judge-loop.md (defines roles, review/judge loops, the orch
 - Judge passes an increment only if BOTH unit tier AND integration tier pass (type-check clean, hollow-test satisfied). So every increment is type-checked, unit-tested and integration-tested before passing.
 
 ## Documentation and commit
-- On judge pass the document agent runs per increment (document-agent.md): assembles doc payload + reports into docs/modules/<id>-<module-filename>.md and an idempotent docs/ARCHITECTURE.md section, before the commit. Producer, never a gate.
+- On judge pass the document agent runs per increment (document-agent.md): assembles doc payload + reports into docs/modules/<id>.md and an idempotent docs/ARCHITECTURE.md section, before the commit. Producer, never a gate.
 - Commit carries code and docs. Orchestrator then opens a PR with a remote or integrates into local main without one (build-judge-loop.md, Remote presence), and renders the post-PR checkpoint.
 
 ## Monotonic green

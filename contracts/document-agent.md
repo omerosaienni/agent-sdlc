@@ -13,7 +13,7 @@ The inputs and what each contributes are the typed seam, defined once in doc-pay
 - lite completion-gate sweep (build-loop-lite.md): assemble those same per-increment inputs across every increment in one pass, producing each increment's Outputs below. Assembly is per increment either way, just batched.
 
 ## Outputs
-- Per-increment doc: docs/modules/<id>-<module-filename>.md. Named after the primary module file it documents, so it tracks the code not the title. Renders the payload fields (doc-payload.schema.md) as a clean module reference.
+- Per-increment doc: docs/modules/<id>.md. Named by the increment id alone (increment-sheet.schema.md), which already carries feature and increment, so a doc file traces to its increment with no lookup and a multi-module increment needs no filename choice. Renders the payload fields (doc-payload.schema.md) as a clean module reference.
 - Project rollup: idempotent section in docs/ARCHITECTURE.md between markers <!-- <id> --> and <!-- /<id> -->. Re-documenting an increment REPLACES its block, never duplicates. Carries a module index, accumulated key-decisions log, and dependency graph.
 - Dependency graph: the coloured Mermaid (roots one colour, dependents another) is the `mermaid` field of `scripts/board-state.sh` (build-judge-loop.md, The board), embedded inside docs/ARCHITECTURE.md. The same script the orchestrator's board uses owns the graph, so the two never drift; do not re-derive it from depends_on by hand. Mermaid because it is text, regenerable, and GitHub renders it.
 

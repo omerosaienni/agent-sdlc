@@ -17,7 +17,7 @@ This sheet describes ONE feature: a `## Goal` paragraph plus the ordered list of
 ## Increment fields (all required, non-empty)
 Each field has ONE job and states it ONCE. The reader is an AI builder that reads every field, so cross-field repetition is pure cost: state a fact in the field that owns it, never echo it in another. The sheet is the verdict of the design, not a re-explanation; terse and scannable, not defensive prose.
 
-- id: unique short id. Used by state.json and depends_on. Carried in the heading (see Serialisation).
+- id: `<feature>_<NN>-<increment>`, e.g. `claude-metrics_03-metrics-persist`. The feature stem (the kebab feature name) and `_` scope it; `NN` is a two-digit display-order number for scanning and sorting only, NOT a build-order source (depends_on alone orders the build, validation 5); `<increment>` is a short kebab name. The whole string is carried verbatim by state.json keys, depends_on, the doc file (document-agent.md) and the branch (build-judge-loop.md); nothing rewrites it. Carried in the heading (see Serialisation).
 - title: one line. Carried in the heading (see Serialisation).
 - depends_on: list of ids that must be merged before this starts. Empty if none. Drives order and dependent-freeze.
 - description: the instruction, what to build. Enough for a builder with no other context, no more. Does not restate the done bar or the criteria.
@@ -60,7 +60,7 @@ Worked example (dense, each field stating its one thing once):
 - Field labels plain lowercase, exactly depends_on, description, done_definition, acceptance_criteria, test_notes. No bold, no reordering, no extra fields.
 - depends_on: inline bracketed list, ids comma-separated, `[]` when empty.
 - acceptance_criteria and test_notes: nested bullet lists, one item per line (the two multi-value fields). The label line carries no inline value; the items follow as indented bullets.
-- ids short and unique within the sheet (validation 2). A short per-feature prefix (e.g. `prod-api`, `prod-ui`) is recommended, not required: keeps ids self-identifying and, because branch names form one git namespace across feature queues, makes cross-queue branches naturally distinct.
+- ids unique within the sheet (validation 2) and in the `<feature>_<NN>-<increment>` grammar the id field defines. The feature stem makes every id self-identifying and, because branch names form one git namespace across feature queues, makes cross-queue branches distinct by construction (no collision fallback needed).
 
 This is the exact shape build validates and state.json keys on. A variant (bare `### 1`, separate `**id**:` bullet, bold labels) is a drift to correct, not an alternative.
 
