@@ -84,7 +84,7 @@ detect_stack(){
 mode="act"
 for a in "$@"; do case "$a" in
     --check) mode="check" ;;
-    -h|--help) grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) awk 'NR>1 && !/^#/{exit} NR>1{sub(/^# ?/,""); print}' "$0"; exit 0 ;;
     *) echo "unknown argument: $a" >&2; exit 64 ;;
 esac; done
 

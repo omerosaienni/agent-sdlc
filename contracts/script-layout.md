@@ -1,5 +1,5 @@
 ---
-version: 2.1.0
+version: 2.1.1
 status: active
 ---
 
@@ -11,7 +11,7 @@ Canonical structure every shell script in this repo follows. The skeleton is fix
 Semver frontmatter. major: breaking, existing scripts now violate the layout. minor: additive section/option, compliant scripts unaffected. patch: wording. Frontmatter is version and status only; the title is the H1, dates are in git.
 
 ## Skeleton (top to bottom)
-1. Shebang + header comment: `#!/usr/bin/env bash`, then one block stating what it does, usage, every flag, exit codes. A terminal-callable script MUST answer `--help` (and `-h`) by printing this block to stdout and exiting 0 (the convention: `grep '^#' "$0" | grep -v '^#!' | sed 's/^# \{0,1\}//'`). Sourced components (a lib or layer with no shebang-run path, defining functions in an orchestrator's scope) are exempt: they are never called directly.
+1. Shebang + header comment: `#!/usr/bin/env bash`, then one block stating what it does, usage, every flag, exit codes. A terminal-callable script MUST answer `--help` (and `-h`) by printing this block to stdout and exiting 0 (the convention: `awk 'NR>1 && !/^#/{exit} NR>1{sub(/^# ?/,""); print}' "$0"`, which prints the leading comment block only and stops at the first non-comment line, so later section banners and inline why-comments do not leak into help). Sourced components (a lib or layer with no shebang-run path, defining functions in an orchestrator's scope) are exempt: they are never called directly.
 2. `set` options: `set -euo pipefail` by default. `set -uo pipefail` (no `-e`) only if the script accumulates its own failures (e.g. a fail counter deciding the exit), and a comment MUST name the exception. A silent missing `-e` is a defect.
 3. Constants: fixed values near the top, env-overridable only where the value is genuinely a dial.
 4. Helpers: all functions in one block before any call. Colour, output, logic helpers together.

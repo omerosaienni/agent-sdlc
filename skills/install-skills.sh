@@ -18,7 +18,7 @@ DEST="$HOME/.claude/skills"
 while [ "$#" -gt 0 ]; do
     case "$1" in
         --dest) DEST="${2:-}"; shift 2 ;;
-        -h|--help) grep '^#' "$0" | grep -v '^#!' | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) awk 'NR>1 && !/^#/{exit} NR>1{sub(/^# ?/,""); print}' "$0"; exit 0 ;;
         *) echo "unknown argument: $1" >&2; echo "usage: install-skills.sh [--dest <dir>]" >&2; exit 64 ;;
     esac
 done

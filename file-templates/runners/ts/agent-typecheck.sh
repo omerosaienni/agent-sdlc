@@ -33,7 +33,7 @@ while [ "$#" -gt 0 ]; do
     case "$1" in
         -p|--project) project="${2:-}"; shift 2 ;;
         -v|--verbose) verbose=1; shift ;;
-        -h|--help) grep '^#' "$0" | grep -v '^#!' | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) awk 'NR>1 && !/^#/{exit} NR>1{sub(/^# ?/,""); print}' "$0"; exit 0 ;;
         -*) echo "unknown option: $1" >&2; exit 64 ;;
         *) echo "unexpected argument: $1" >&2; exit 64 ;;
     esac

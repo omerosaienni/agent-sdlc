@@ -31,7 +31,7 @@ set -uo pipefail   # no -e: checks run in node, the script decides the exit code
 # Helpers
 # ============================================================================
 
-usage() { grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0; }
+usage() { awk 'NR>1 && !/^#/{exit} NR>1{sub(/^# ?/,""); print}' "$0"; exit 0; }
 
 # Colour only at a real terminal, TERM not dumb, not opted out (NO_COLOR / --no-color).
 setup_color() {

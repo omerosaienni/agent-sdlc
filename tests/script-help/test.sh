@@ -9,12 +9,21 @@
 
 suite_begin "script --help convention" structural
 
-# check_help <script>: run it with --help, assert exit 0 and non-empty stdout.
+# check_help <script>: run it with --help, assert exit 0, non-empty stdout, and that
+# help prints the header block ONLY. The convention (contracts/script-layout.md) stops
+# at the first non-comment line, so a leaked section banner (`# ====`) in help means the
+# script used the old grep-all-comments idiom; that is a failure, not a warning.
 check_help() {
-    local s="$1" out rc
+    local s="$1" out rc b
     out="$(bash "$s" --help 2>/dev/null)"; rc=$?
-    if [ "$rc" -eq 0 ] && [ -n "$out" ]; then _t_ok "$(basename "$s") --help (exit 0, prints usage)"
-    else _t_bad "$(basename "$s") --help: exit $rc, $([ -n "$out" ] && echo 'printed' || echo 'printed NOTHING')"; fi
+    b="$(printf '%s\n' "$out" | grep -c '====')"
+    if [ "$rc" -ne 0 ] || [ -z "$out" ]; then
+        _t_bad "$(basename "$s") --help: exit $rc, $([ -n "$out" ] && echo 'printed' || echo 'printed NOTHING')"
+    elif [ "$b" -ne 0 ]; then
+        _t_bad "$(basename "$s") --help: leaked $b section banner line(s); help must print the header block only"
+    else
+        _t_ok "$(basename "$s") --help (exit 0, header block only)"
+    fi
 }
 
 # Every directly-callable script. The glob is non-recursive, so sourced components
