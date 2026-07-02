@@ -39,7 +39,7 @@ flowchart TD
     g2["2. on a feature branch<br/>(not main/master/detached)"]
     g3["3. git, gh, git town present"]
     g4["4. no plaintext token in git config<br/>(exposure guard)"]
-    g5["5. gh authenticated (keyring)"]
+    g5["5. gh authenticated,<br/>shippable keyring token"]
     g6["6. an OPEN PR exists"]
     g7["7. required remote checks pass<br/>(zero required checks BLOCKS)"]
     g8["8. optional scripts/ci-local.sh<br/>(run if present, else warn)"]
@@ -66,8 +66,10 @@ flowchart TD
 
 The token guard (step 4) is the load-bearing one: a plaintext `git-town.github-token`
 in `.git/config` is a real exposure that has happened once, so finding one is a hard
-block with a rotate-and-remove remedy. git town authenticates via the gh keyring, so a
-config token is both unnecessary and dangerous.
+block with a rotate-and-remove remedy. It is separate from how the ship authenticates
+(step 5): the token that ships is read transiently from the gh keyring via `gh auth
+token` and passed to the `git town ship` child process only, never written to config or
+disk. The contract has the full auth model.
 
 Step 8 is the merge-time home for the heavy full-CI run. The pre-push hook runs only
 the fast per-commit gates, so running `scripts/ci-local.sh` here is not a duplicate. It

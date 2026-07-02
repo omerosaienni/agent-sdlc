@@ -16,9 +16,11 @@
 # reparents any stacked children. It ships only DIRECT children of main; a deeper stack
 # branch it refuses, and this script surfaces that refusal rather than forcing --to-parent.
 #
-# Auth: git town uses the gh CLI's keyring credential. This script never writes a token
-# into git config; a plaintext git-town.github-token in .git/config is the exposure being
-# prevented, so finding one is a hard block. Rotate and remove it, do not depend on it.
+# Auth: git town ships via the GitHub API and needs a token to do it. It does NOT read the
+# gh keyring on its own, but it DOES honour a GITHUB_TOKEN env var, so this script supplies
+# `gh auth token` to the ship child process only. The token stays in the gh keyring and is
+# never written to git config or disk. A plaintext git-town.github-token in .git/config is a
+# different thing, the exposure being prevented, so finding one is still a hard block.
 #
 # Usage:
 #   merge-pr.sh                 ship the current branch's PR (message defaults to the PR title)
@@ -106,11 +108,17 @@ if git config --get git-town.github-token >/dev/null 2>&1; then
 fi
 
 # ============================================================================
-# Auth: keyring only. git town uses the gh CLI credential.
+# Auth: a keyring token git town can ship with. Supplied to the ship child, not git config.
 # ============================================================================
 
+# gh auth status is not enough: git town ships via the GitHub API and needs an actual token,
+# which `gh auth token` returns from the keyring. An empty token means shipping would fail
+# with the driver-does-not-support-API-shipping error, so block now with the real remedy.
 gh auth status >/dev/null 2>&1 || block "gh is not authenticated." \
     "Run 'gh auth login' (keyring). Do not set a token in git config."
+github_token="$(gh auth token 2>/dev/null)"
+[ -n "$github_token" ] || block "gh has no token to ship with ('gh auth token' is empty)." \
+    "Run 'gh auth login' so git town can ship via the GitHub API. Do not set a token in git config."
 
 # ============================================================================
 # PR: an OPEN PR must exist for this branch. Resolve number, state and title.
@@ -173,7 +181,11 @@ fi
 # --dry-run passes straight through. If this branch is not a direct child of main, git town
 # refuses; that refusal is surfaced verbatim so the operator ships or deletes ancestors
 # first, rather than this script forcing --to-parent blindly.
+#
+# GITHUB_TOKEN is set on the git town child only (the omero-script-args exempt case: a script
+# configuring a child process it spawns). git town reads it to ship via the API; it never
+# lands in git config or on disk.
 ship_args=(ship -m "$message")
 [ "$dry_run" -eq 1 ] && ship_args+=(--dry-run)
 echo "merge-pr.sh: git town ${ship_args[*]}" >&2
-git town "${ship_args[@]}"
+GITHUB_TOKEN="$github_token" git town "${ship_args[@]}"
