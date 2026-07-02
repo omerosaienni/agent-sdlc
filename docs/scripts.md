@@ -9,10 +9,11 @@ then consume; its end-to-end walkthrough is [`python-build-path.md`](python-buil
 so it is pointed at rather than restated here. (The repo also has scripts outside the pipeline:
 the per-project rules installer, documented in [`project-rules.md`](project-rules.md),
 the global git-hooks and Claude-rules installers, documented in
-[`../hooks/`](../hooks/README.md) and [`project-rules.md`](project-rules.md), and the
+[`../hooks/`](../hooks/README.md) and [`project-rules.md`](project-rules.md), the
 skills installer (`skills/install-skills.sh`), documented in
-[`../skills/`](../skills/README.md). Those are not part of the create-verify-build
-flow described here.)
+[`../skills/`](../skills/README.md), and the merge gate (`scripts/merge-pr.sh`),
+documented in [`merge-pr.md`](merge-pr.md). Those are not part of the
+create-verify-build flow described here.)
 
 They follow the layout in `contracts/script-layout.md`. The diagrams here are
 inline Mermaid (rendered by GitHub) rather than standalone SVGs, because a script's

@@ -24,6 +24,7 @@ Repo-managed (installed from here, the source of truth):
 - omero-design-sheet, points at contracts/design-partner.md (produces the feature sheet)
 - omero-review-sheet, points at contracts/design-review.md (reviews the sheet for design soundness before build)
 - omero-setup-project, points at contracts/project-setup.md and runs scripts/project-setup.sh
+- omero-merge-pr, points at contracts/merge-pr.md and runs scripts/merge-pr.sh (ships a green PR: require the required remote checks pass, then git town ship; stack-agnostic, outside the build pipeline)
 - omero-create-ts-project, runs scripts/init-ts-project.sh (the project generator, no contract: deterministic; TypeScript base, optional --mongo, --react and --express layers)
 - omero-create-python-project, runs scripts/init-python-project.sh (the second project generator, no contract: deterministic; src-layout, uv, pytest unit/integration tiers, strict pyright)
 - omero-install-project-rules, runs scripts/install-project-rules.sh (installs stack rules into a repo's .claude/rules/)
