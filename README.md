@@ -28,6 +28,7 @@ Then drive a project through these four `/omero-*` skills, in order:
 /omero-review-sheet <path-to-sheet>             # 2a. review the sheet for design soundness before build
 /omero-setup-project                            # 3. prove the project ready (writes the setup receipt)
 /omero-build-full <path-to-sheet>               # 4. deliver the sheet, one PR per increment (a local commit if no remote)
+/omero-build-quick <path-to-sheet>              # 4. or the fast build: judge verifies with type-check and unit tier only, no live endpoint
 ```
 
 The design pass (2) produces the sheet and the review (2a) checks it for design soundness; the design pass and setup (3) are independent prerequisites and can run in either order; step 4 refuses to start without both the receipt and a schema-valid sheet. The feature name is a short kebab-case label you choose, for example `gym-tracker`. To exercise the loop itself before a real build, run it against [`examples/smoke-test-sheet.md`](examples/smoke-test-sheet.md), a one-increment sheet that runs the whole orchestration on a trivial case.
@@ -49,7 +50,7 @@ The build loop runs in one of two modes, sequential-attended or parallel-attende
 | --- | --- |
 | [docs/](docs/README.md) | Documentation index and contract list |
 | [docs/pipeline.md](docs/pipeline.md) | The three phases and two gates, creating a project, tooling, prerequisites |
-| [docs/build-loops.md](docs/build-loops.md) | The one build loop, its two modes and two profiles, the checkpoint, tests, recovery |
+| [docs/build-loops.md](docs/build-loops.md) | The one build loop, its two modes and two profiles, the fast build-quick path, the checkpoint, tests, recovery |
 | [docs/roles.md](docs/roles.md) | The four agent roles and the ordering invariant |
 | [docs/building-folder.md](docs/building-folder.md) | The gitignored `.building/` workspace |
 | [docs/scripts.md](docs/scripts.md) | The pipeline shell scripts and how they connect |

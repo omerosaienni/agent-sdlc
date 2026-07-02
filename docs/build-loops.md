@@ -39,6 +39,15 @@ A remote is not required to build. The loop detects remote presence itself and p
 
 The trade is honest: lite buys speed at the cost of per-increment integration-green and per-increment docs, both established once at the end rather than each increment.
 
+## The fast path: build-quick
+
+`omero-build-quick` is a separate fast build, its own skill rather than a profile (it is not selected by the `profile` field); the deltas over the core are in [`../contracts/build-quick.md`](../contracts/build-quick.md). It runs the same loop, the same four roles and the same review and judge discipline, and changes only two things:
+
+- **verification depth**: the judge gates each increment on the type-check and unit tier only (plus the hollow-test check), never the integration tier and never an endpoint check, so no live endpoint or Docker is ever needed;
+- **documentation**: the document role does not run, so increments carry code only and there is no completion gate.
+
+The trade is the sharpest of the three: build-quick buys the most speed for the least proof, an increment is verified at the unit level only, with integration left entirely to you outside the loop. Use it for fast inner-loop work where unit coverage is the bar; use `omero-build-full` (full or lite) when integration or documentation must be part of the build.
+
 ## Multiple queues
 
 A project can hold several feature queues at once, each its own sheet and state, built and completed independently. The per-queue isolation and the three project-wide shared things (setup, main's greenness, the cross-queue checkpoint reminder) are in the core contract (Multiple feature queues).
