@@ -8,4 +8,4 @@ Name every branch you create `<type>/<kebab-description>`.
 
 Branches only. Commit *messages* still take a plain imperative with no type prefix. Do not conflate the two surfaces.
 
-Enforced by a global `pre-push` hook (`setup-global-git-hooks.sh`); `main`/`master` exempt.
+Enforced by a global `pre-push` hook, installed by `scripts/setup-global-git-hooks.sh install` in the agent-sdlc repo (re-run it to propagate a source edit to the live hook); `main`/`master` exempt.
