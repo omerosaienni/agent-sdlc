@@ -41,7 +41,7 @@ flowchart TD
     g4["4. no plaintext token in git config<br/>(exposure guard)"]
     g5["5. gh authenticated,<br/>shippable keyring token"]
     g6["6. an OPEN PR exists"]
-    g7["7. required remote checks pass<br/>(zero required checks BLOCKS)"]
+    g7["7. required remote checks pass<br/>(zero required checks warns)"]
     g8["8. optional scripts/ci-local.sh<br/>(run if present, else warn)"]
     ship["9. git town ship -m <msg><br/>merge, delete branch, sync main,<br/>reparent stacked children"]
     blocked["BLOCKED<br/>reason + remedy on stderr, exit 1"]

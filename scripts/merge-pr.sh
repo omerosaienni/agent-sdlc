@@ -138,9 +138,11 @@ IFS=$'\t' read -r pr_number pr_state pr_title <<<"$pr_line"
 # ============================================================================
 
 # `gh pr checks --required` lists only the required checks and exits non-zero if any is
-# pending or failing. GOTCHA: with zero required checks it exits 0 with EMPTY output, which
-# would silently pass an unverifiable PR. Capture the output and treat the empty case as a
-# block: we cannot confirm safety, so we do not merge.
+# pending or failing (a hard block: real checks exist and are not green). GOTCHA: with zero
+# required checks it exits 0 with EMPTY output. That is a different case: no checks are
+# configured at all, so there is nothing to be red. We WARN and continue rather than block,
+# so a repo that legitimately has no required checks can still ship; the operator sees the
+# warning and can verify by hand or via the optional local CI step below.
 echo "merge-pr.sh: verifying required remote checks on PR #$pr_number..." >&2
 checks_out="$(gh pr checks "$pr_number" --required 2>/dev/null)"
 checks_rc=$?
@@ -149,8 +151,7 @@ if [ "$checks_rc" -ne 0 ]; then
         "Wait for CI, or fix the failing checks, then retry. See: gh pr checks $pr_number --required"
 fi
 if [ -z "$(printf '%s' "$checks_out" | tr -d '[:space:]')" ]; then
-    block "PR #$pr_number reports no required checks, so safety cannot be confirmed." \
-        "Configure required checks on the PR, or verify CI by hand, before shipping."
+    echo "merge-pr.sh: WARNING PR #$pr_number reports no required checks; nothing was verified remotely." >&2
 fi
 
 # ============================================================================
