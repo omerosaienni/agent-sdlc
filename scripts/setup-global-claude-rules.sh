@@ -124,7 +124,7 @@ while [ "$#" -gt 0 ]; do
     case "$1" in
         install|uninstall) verb="$1"; shift ;;
         --dest) CONFIG_DIR="${2:-}"; shift 2 ;;
-        -h|--help) grep '^#' "$0" | grep -v '^#!' | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) awk 'NR>1 && !/^#/{exit} NR>1{sub(/^# ?/,""); print}' "$0"; exit 0 ;;
         *) err "usage: setup-global-claude-rules.sh install|uninstall [--dest <dir>]"; exit 2 ;;
     esac
 done

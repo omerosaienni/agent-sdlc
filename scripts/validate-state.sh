@@ -29,7 +29,7 @@ set -uo pipefail   # no -e: checks run in node, the script decides the exit from
 # Helpers
 # ============================================================================
 
-usage() { grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0; }
+usage() { awk 'NR>1 && !/^#/{exit} NR>1{sub(/^# ?/,""); print}' "$0"; exit 0; }
 
 setup_color() {
     if [ "$use_color" = never ] || [ -n "${NO_COLOR:-}" ] \

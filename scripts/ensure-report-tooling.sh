@@ -14,7 +14,7 @@ set -euo pipefail
 # Helpers
 # ============================================================================
 
-usage() { grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0; }
+usage() { awk 'NR>1 && !/^#/{exit} NR>1{sub(/^# ?/,""); print}' "$0"; exit 0; }
 
 # consent: true if the script may install. Installing is the default, since invoking
 # the script is the consent; --check is the read-only check that refuses.

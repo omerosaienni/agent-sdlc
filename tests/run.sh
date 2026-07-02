@@ -17,7 +17,7 @@ set -uo pipefail   # no -e: suites accumulate failures and the run decides the e
 # Helpers
 # ============================================================================
 
-usage() { grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0; }
+usage() { awk 'NR>1 && !/^#/{exit} NR>1{sub(/^# ?/,""); print}' "$0"; exit 0; }
 
 setup_color() {
     if [ -n "${NO_COLOR:-}" ] || [ ! -t 1 ] || [ "${TERM:-dumb}" = dumb ]; then

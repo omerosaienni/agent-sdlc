@@ -30,7 +30,7 @@ set -euo pipefail
 backup_root=".building/hollow"
 
 die(){ echo "$1" >&2; exit "${2:-1}"; }
-usage(){ grep '^#' "$0" | grep -v '^#!' | sed 's/^# \{0,1\}//'; }
+usage(){ awk 'NR>1 && !/^#/{exit} NR>1{sub(/^# ?/,""); print}' "$0"; }
 
 [ "$#" -eq 5 ] || { usage >&2; exit 64; }
 tier="$1"; src="$2"; testfile="$3"; old="$4"; new="$5"

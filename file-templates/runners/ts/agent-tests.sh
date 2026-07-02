@@ -33,7 +33,7 @@ for a in "$@"; do
     case "$a" in
         unit|integration|both) tier="$a" ;;
         -v|--verbose)          verbose=1 ;;
-        -h|--help) grep '^#' "$0" | grep -v '^#!' | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) awk 'NR>1 && !/^#/{exit} NR>1{sub(/^# ?/,""); print}' "$0"; exit 0 ;;
         -*) echo "unknown option: $a" >&2; exit 64 ;;
         *) scope+=("$a") ;;
     esac
