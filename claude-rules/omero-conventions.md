@@ -2,8 +2,14 @@
 
 Universal conventions that apply to every project. Terse on purpose: this loads every session.
 
-## Prose (comments, docs, output)
-- British English.
+## British English everywhere
+No American spelling, anywhere, ever: prose AND code.
+
+- Prose (comments, docs, output, commit messages) and code alike: identifiers, symbol names, string literals, log messages.
+- colour not color; initialise not initialize; behaviour, licence (noun), cancelled, centre, analyse, catalogue. Never the -ize or -or American forms, even where the Americanism reads as "conventional" in a symbol name.
+- New code follows this; and fix American spelling in any symbol, comment or string you touch.
+
+## Other prose style
 - No em dashes. Restructure the sentence instead.
 - No Oxford commas.
 - No hyphens in compound modifiers.
