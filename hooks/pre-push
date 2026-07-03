@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Refuse a push from a branch whose name is off the standard, so every branch is
-# <type>/<kebab-description> (feat fix docs refactor rename chore test). No bypass:
+# <type>/<kebab-description> (feat fix docs refactor rename chore test epic). No bypass:
 # rename the branch to conform. main/master are exempt (the trunk, never a work branch).
 # The kebab class admits '_' because a build branch carries the increment id verbatim
 # (feat/<feature>_<NN>-<increment>), and that id joins feature to increment with '_'.
@@ -9,9 +9,9 @@ case "$branch" in
     main | master | "")
         ;;
     *)
-        if ! printf '%s' "$branch" | grep -Eq '^(feat|fix|docs|refactor|rename|chore|test)/[a-z0-9_]+(-[a-z0-9_]+)*$'; then
+        if ! printf '%s' "$branch" | grep -Eq '^(feat|fix|docs|refactor|rename|chore|test|epic)/[a-z0-9_]+(-[a-z0-9_]+)*$'; then
             echo "BLOCKED: branch '$branch' is off the naming standard." >&2
-            echo "Use <type>/<kebab-description>, type one of: feat fix docs refactor rename chore test" >&2
+            echo "Use <type>/<kebab-description>, type one of: feat fix docs refactor rename chore test epic" >&2
             echo "Rename: git branch -m <type>/<description>" >&2
             exit 1
         fi
