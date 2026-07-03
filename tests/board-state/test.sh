@@ -42,10 +42,17 @@ expect_json "parallel: cut_allowed true (ready non-empty)" \
   "assert.strictEqual(b.mode,'parallel-attended'); assert.strictEqual(b.cut_allowed,true);" \
   "$V" "$B/diamond-parallel.json" "$DM_SHEET"
 
-# Mermaid: roots vs dependents classed, representative edges present.
+# Mermaid: roots vs dependents classed, representative edges present. Node ids are
+# prefixed n_ so a sheet id never collides with a Mermaid keyword; labels keep the raw id.
 expect_json "mermaid: root classed root, sink classed dependent, edges present" \
-  "assert.ok(/class root[, ]/.test(b.mermaid)||/class root;/.test(b.mermaid)); assert.ok(b.mermaid.includes('root --> mid-a')); assert.ok(b.mermaid.includes('mid-a --> sink'));" \
+  "assert.ok(/class n_root[, ]/.test(b.mermaid)||/class n_root;/.test(b.mermaid)); assert.ok(b.mermaid.includes('n_root --> n_mid-a')); assert.ok(b.mermaid.includes('n_mid-a --> n_sink'));" \
   "$V" "$DM_STATE" "$DM_SHEET"
+
+# Mermaid: a sheet id that is a Mermaid keyword (graph) must not be emitted as a bare node
+# id (a parse error); it is prefixed, and the raw id survives in the label.
+expect_json "mermaid: keyword id 'graph' is prefixed, not emitted bare" \
+  "assert.ok(!/(^|\n)\s*graph\[/.test(b.mermaid)); assert.ok(b.mermaid.includes('n_graph[\"graph: Bare graph increment\"]')); assert.ok(b.mermaid.includes('n_graph --> n_run'));" \
+  "$V" "$B/keyword-id.json" "$B/keyword-id.md"
 
 # Input checking: a state that disagrees with the sheet is rejected before computing (exit 2).
 expect_exit 2 "disagreeing inputs -> exit 2 (not computed)" \

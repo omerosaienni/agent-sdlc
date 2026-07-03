@@ -1,0 +1,9 @@
+{
+  "sheet": ".building/features/keyword-id/increments.md",
+  "conventions": "CLAUDE.md",
+  "mode": "sequential-attended",
+  "increments": {
+    "graph": { "depends_on": [], "status": "pending", "review_count": 0, "judge_count": 0, "branch": null },
+    "run": { "depends_on": ["graph"], "status": "pending", "review_count": 0, "judge_count": 0, "branch": null }
+  }
+}
