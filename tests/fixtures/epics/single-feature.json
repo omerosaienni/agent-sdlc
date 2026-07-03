@@ -1,0 +1,6 @@
+{
+  "epic": "One standalone feature, no dependencies.",
+  "features": [
+    { "name": "foundation", "sheet": ".building/features/foundation/increments.md", "depends_on": [] }
+  ]
+}

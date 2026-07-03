@@ -1,0 +1,7 @@
+{
+  "epic": "A feature element missing its sheet.",
+  "features": [
+    { "name": "foundation", "sheet": ".building/features/foundation/increments.md", "depends_on": [] },
+    { "name": "customers", "depends_on": ["foundation"] }
+  ]
+}

@@ -3,7 +3,9 @@
 The pipeline scripts stand a project up, prove it ready for the build loop, and
 gate the loop's own inputs: the project generator, the setup gate, and a small
 dependency helper, plus the sheet and state validators and the checkpoint board
-computer. This documents what each does and how they connect. A second generator,
+computer. One more validator, `validate-epics.sh`, gates a design-phase output
+(the epic manifest) the loop never reads; it is documented here beside its sibling
+validators. This documents what each does and how they connect. A second generator,
 `init-python-project.sh`, scaffolds a Python project the same setup gate and loop
 then consume; its end-to-end walkthrough is [`python-build-path.md`](python-build-path.md),
 so it is pointed at rather than restated here. (The repo also has scripts outside the pipeline:
@@ -366,6 +368,29 @@ upstream desync to reconcile, a bad count is a fixable flaw) are the schema's, i
 [`../contracts/state.schema.md`](../contracts/state.schema.md) (Validation tooling).
 The build loop calls it on re-entry (build-judge-loop.md, Resume). Its tests and
 fixtures live under `tests/`, run on every PR into main.
+
+---
+
+## validate-epics.sh (the epic manifest validator)
+
+Validates an epic manifest against the rules of the epic manifest schema, so the
+design partner's build order artifact fails loud if it is malformed. Unlike the sheet
+and state validators, this gates a design-phase output the build loop never reads: the
+manifest is the human's build order reference across features, not a loop input.
+Read-only.
+
+```
+validate-epics.sh <epic.json>   validate, one line per rule, verdict last
+validate-epics.sh --help         print the header
+```
+
+The seven rules, the exit codes, and the defect-vs-rejection distinction (a cross
+feature cycle is an upstream bug to regenerate, a dangling depends_on is a fixable
+flaw) are the schema's, in
+[`../contracts/epic-manifest.schema.md`](../contracts/epic-manifest.schema.md)
+(Validation tooling). The design partner calls it before hand-off (design-partner.md);
+nothing in the build loop depends on it. Its tests and fixtures live under `tests/`,
+run on every PR into main.
 
 ---
 

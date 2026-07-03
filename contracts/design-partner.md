@@ -10,6 +10,7 @@ Converge fuzzy intent into one or more feature sheets, each conforming to increm
 ## IO
 - in: fuzzy intent, plus a short kebab-case feature name for each feature the work resolves into.
 - out: per feature, a schema-valid increment sheet in the schema's canonical serialisation (increment-sheet.schema.md, Serialisation). One sheet = one feature: its goal plus its increments. Format is fixed, not a per-run choice. Sheets are the only thing crossing to build. If a decision matters to the build it goes in a sheet; nothing crosses informally.
+- out: one epic manifest (epic-manifest.schema.md) recording the run's features in build order with their cross feature depends_on. Emitted every run, even a single feature epic (a one element list). A human driven build order document; the build loop does not read it. This is the machine-readable home of the cross feature order that the feature goals still state in prose.
 
 ## Entry (dispatch on the input)
 Resolve which feature(s) the run touches before eliciting anything. Skill may be invoked bare or with a name.
@@ -22,7 +23,7 @@ Partner brings the competence to slice well; the specific cut is discovered with
 - Prefer VERTICAL slices: a feature is an entity or capability end to end (read, write, screen), so it ships working to main. Avoid HORIZONTAL slices (all APIs, then all UIs): a layer alone merges as a half-built thing.
 - One intent often resolves into SEVERAL features (e.g. Customers, Products, Orders). One sheet per feature, as sibling folders. Name each; user confirms.
 - Cross-cutting work belonging to no single feature (foundation: server bootstrap, seed, shared types; or relationship glue: a cascade spanning two entities) is its own feature, usually an early one the others depend on.
-- Within a feature, increments are the build steps and carry depends_on (UI increment depends on API increment). Across features, ordering (Orders needs Customers merged first) is the human's to sequence: record it in prose in the dependent feature's goal, not as a machine edge.
+- Within a feature, increments are the build steps and carry depends_on (UI increment depends on API increment). Across features, ordering (Orders needs Customers merged first) is the human's to sequence: it is recorded twice, in prose in the dependent feature's goal (context for a builder reading one sheet) and as a machine edge in the epic manifest's depends_on (epic-manifest.schema.md), which is where the whole build order is read off. It is never a depends_on edge inside a sheet (those are within feature only).
 
 ## Load-bearing test
 Surface a decision only if resolving it one way vs another changes a sheet. If it does not, decide inline, state the assumption, move on. Do not manufacture decisions to appear thorough.
@@ -41,10 +42,11 @@ Every emitted sheet validates against the schema AND the user confirms. No turn 
 
 ## Hand-off
 - Write each feature's sheet to `.building/features/<feature-name>/increments.md`, creating the folder if needed, where <feature-name> is that feature's short kebab-case name.
-- Each file is the build phase input for that feature.
-- The feature name is the feature's key: many features coexist as sibling folders under `.building/features/`; re-running the same name overwrites it (latest wins).
-- `.building/` is gitignored, so sheets stay local; the build loop reads each from its path via the sheet path in state.json.
-- Design phase only writes sheets; it never triggers a build. Human builds each feature on command, one build-loop invocation per feature.
+- Write the epic manifest to `.building/epics/<epic-name>/epic.json` (epic-manifest.schema.md), where <epic-name> is a short kebab-case name for the whole run. It lists this run's features in build order with their cross feature depends_on. Emitted every run, single feature included. Validate it with `scripts/validate-epics.sh` before emitting; re-emit the whole manifest on a modifying run (latest wins, like a sheet).
+- Each sheet is the build phase input for that feature. The manifest is the human's build order reference; it is not a build input.
+- The feature name is the feature's key: many features coexist as sibling folders under `.building/features/`; re-running the same name overwrites it (latest wins). The manifest references each feature by that name and its existing sheet path; it does not own the feature folders.
+- `.building/` is gitignored, so sheets and the manifest stay local; the build loop reads each sheet from its path via the sheet path in state.json.
+- Design phase only writes sheets and the manifest; it never triggers a build. Human reads the manifest for the order, then builds each feature on command, one build-loop invocation per feature.
 
 ## Excludes
 No roles beyond user and partner, no severity, no commit. Design produces the sheets; building them is the next contract. Epic-level grouping of features is the human's, not modelled here.
