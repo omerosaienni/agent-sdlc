@@ -186,6 +186,10 @@ const cutAllowed = mode === 'parallel-attended'
 // --- Mermaid dependency graph (roots vs dependents, repo palette) --------------
 // A root has no depends_on; a dependent has at least one. Matches the document agent spec.
 const isRoot = (id) => deps.get(id).length === 0;
+// Sheet ids double as Mermaid node ids, and a bare id that is a Mermaid keyword
+// (graph, end, subgraph, class, click, ...) is a parse error. Prefix every node id so
+// no sheet id can collide with the grammar; the human id still shows in the label.
+const nodeId = (id) => `n_${id}`;
 const mermaid = (() => {
   const lines = [
     "%%{init: {'theme':'base','themeVariables':{'primaryColor':'#e4edf4','primaryTextColor':'#1d2733','primaryBorderColor':'#5b6b7a','lineColor':'#5b6b7a','fontSize':'14px'}}}%%",
@@ -193,12 +197,12 @@ const mermaid = (() => {
   ];
   for (const id of order) {
     const t = title.get(id) ? `${id}: ${title.get(id)}` : id;
-    lines.push(`    ${id}["${t.replace(/"/g, "'")}"]`);
+    lines.push(`    ${nodeId(id)}["${t.replace(/"/g, "'")}"]`);
   }
-  for (const id of order) for (const d of deps.get(id)) if (ids.has(d)) lines.push(`    ${d} --> ${id}`);
+  for (const id of order) for (const d of deps.get(id)) if (ids.has(d)) lines.push(`    ${nodeId(d)} --> ${nodeId(id)}`);
   lines.push('    classDef root fill:#dbe7f0,stroke:#5b6b7a,color:#1d2733;');
   lines.push('    classDef dependent fill:#e4edf4,stroke:#5b6b7a,color:#1d2733;');
-  const roots = order.filter(isRoot), depcls = order.filter((id) => !isRoot(id));
+  const roots = order.filter(isRoot).map(nodeId), depcls = order.filter((id) => !isRoot(id)).map(nodeId);
   if (roots.length) lines.push(`    class ${roots.join(',')} root;`);
   if (depcls.length) lines.push(`    class ${depcls.join(',')} dependent;`);
   return lines.join('\n');
