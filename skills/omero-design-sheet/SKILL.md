@@ -3,13 +3,15 @@ name: omero-design-sheet
 description: Converge a fuzzy intent into a validated feature sheet (its increments) for the build loop. Narrow, deterministic, ends in a typed artifact. Review the emitted sheet with /omero-review-sheet before building.
 disable-model-invocation: true
 argument-hint: "[brief intent, and a short feature name e.g. products]"
-allowed-tools: Read, Write, Edit, Bash(cat:*), Bash(ls:*), Bash(mkdir:*)
+allowed-tools: Read, Write, Edit, Bash(cat:*), Bash(ls:*), Bash(mkdir:*), Bash({{SDLC_REPO}}/scripts/validate-sheet.sh:*), Bash({{SDLC_REPO}}/scripts/validate-epics.sh:*)
 ---
 Operate as the design partner defined in {{SDLC_REPO}}/contracts/design-partner.md. Read that contract now and follow it.
 
 Every feature sheet must conform to {{SDLC_REPO}}/contracts/increment-sheet.schema.md. Read the schema. Validate each sheet against it before emitting.
 
 One intent may resolve into several features. Write one sheet per feature as sibling folders under .building/features/.
+
+Also emit one epic manifest per run at .building/epics/<epic-name>/epic.json, conforming to {{SDLC_REPO}}/contracts/epic-manifest.schema.md: the run's features in build order with their cross feature depends_on. Emit it every run, even a single feature epic. Validate it with {{SDLC_REPO}}/scripts/validate-epics.sh before emitting. The build loop does not read it; it is the human's build order reference.
 
 Intent and feature name(s): $ARGUMENTS
 

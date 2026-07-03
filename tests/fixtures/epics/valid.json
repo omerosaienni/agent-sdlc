@@ -1,0 +1,9 @@
+{
+  "epic": "A small CRM: customers, products and their orders.",
+  "features": [
+    { "name": "foundation", "sheet": ".building/features/foundation/increments.md", "depends_on": [] },
+    { "name": "customers", "sheet": ".building/features/customers/increments.md", "depends_on": ["foundation"] },
+    { "name": "products", "sheet": ".building/features/products/increments.md", "depends_on": ["foundation"] },
+    { "name": "orders", "sheet": ".building/features/orders/increments.md", "depends_on": ["customers", "products"] }
+  ]
+}

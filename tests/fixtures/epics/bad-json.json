@@ -1,0 +1,6 @@
+{
+  "epic": "Trailing comma makes this not JSON",
+  "features": [
+    { "name": "foundation", "sheet": ".building/features/foundation/increments.md", "depends_on": [] },
+  ]
+}

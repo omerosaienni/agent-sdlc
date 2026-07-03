@@ -11,7 +11,7 @@ Explains the whole system, and the place to start. The contracts under [`../cont
 ## Reference
 
 - [`building-folder.md`](building-folder.md): the gitignored `.building/` workspace, what each file is.
-- [`scripts.md`](scripts.md): the pipeline shell scripts (the generators, the setup gate, the report helper, the sheet and state validators, the board computer) and how they connect.
+- [`scripts.md`](scripts.md): the pipeline shell scripts (the generators, the setup gate, the report helper, the sheet, state and epic-manifest validators, the board computer) and how they connect.
 - [`python-build-path.md`](python-build-path.md): how a Python project goes through the same four phases, with only the underlying commands changing.
 - [`merge-pr.md`](merge-pr.md): the merge gate that ships a green PR (require the required remote checks pass, then `git town ship`); stack-agnostic, outside the pipeline.
 - [`script-layout-guide.md`](script-layout-guide.md): the human rationale behind the script-layout contract, with the worked reference example.
@@ -29,6 +29,7 @@ Explains the whole system, and the place to start. The contracts under [`../cont
 The operating contracts, each a project-agnostic rulebook a project consumes by supplying its small project-specific pieces:
 
 - [`../contracts/increment-sheet.schema.md`](../contracts/increment-sheet.schema.md): the typed design-to-build interface.
+- [`../contracts/epic-manifest.schema.md`](../contracts/epic-manifest.schema.md): phase 1's cross feature build order manifest (a human reference, not a build input).
 - [`../contracts/design-partner.md`](../contracts/design-partner.md): phase 1, design.
 - [`../contracts/design-review.md`](../contracts/design-review.md): phase 1, the independent design-soundness review of a finished sheet before build.
 - [`../contracts/project-setup.md`](../contracts/project-setup.md): phase 2, the idempotent readiness gate.

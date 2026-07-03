@@ -117,7 +117,7 @@ A project (repo) can hold several feature queues at once, each a sheet under .bu
 - Cross-queue visibility is the human's, with a reminder. The board renders the ACTIVE queue only. So open work in other queues is not silently forgotten, every checkpoint carries an OTHER QUEUES slot in its preamble, a fixed-format line per sibling queue filled from a scan of each sibling .building/build/*/state.json (state.schema.md), blank when there are none, sitting above the STATE BLOCK (which stays byte-identical): "other queue <feature-name>: <n> in flight, <n> awaiting merge, <n> escalated, <n> blocked". A lite sibling parked at its completion gate has open work no increment status shows, so the scan also reads the sibling's `completion` block and appends ", completion gate: <integration|docs state>" to that line when its gate is present and not yet complete (integration pending/failed, or docs pending/pr-open), so the docs PR awaiting a merge and a failed gate awaiting a fix are not silently forgotten. Like every checkpoint element it is a filled slot, not freeform prose; it changes no state, and the human still switches queues by invoking that queue's sheet.
 
 ## State and channels (file-based, no memory layer)
-All loop output, plus the feature sheets it builds from, lives under a single gitignored folder, .building/, with this structure:
+All loop output, plus the design phase's feature sheets and epic manifests it builds from, lives under a single gitignored folder, .building/, with this structure:
 
 ```
 .building/
@@ -126,6 +126,9 @@ All loop output, plus the feature sheets it builds from, lives under a single gi
     agent-tests.sh                the judge's test runner
     agent-hollow.sh               the judge's hollow-check runner
     agent-typecheck.sh            the judge's type-check runner
+  epics/                          the design phase's epic manifests, one folder per epic (build order reference, NOT a loop input)
+    <epic-name>/                   keyed by a short kebab epic name
+      epic.json                 the run's features in build order with cross feature depends_on (epic-manifest.schema.md)
   features/                       the feature sheets (build input), one folder per feature
     <feature-name>/                keyed by the feature name (e.g. greeting-spike)
       increments.md             the schema-valid sheet the loop builds
@@ -151,6 +154,7 @@ All loop output, plus the feature sheets it builds from, lives under a single gi
   - Status-to-stage mapping: building = builder; in-review = review loop; in-judgement = judge loop; documented = judge passed and (full) the document agent has run, or (lite) verified and ready to commit with docs deferred (build-loop-lite.md); pr-open = PR awaiting your merge (GitHub flow only); merged = on main (a remote merge, or local integration in the local-only flow); escalated and blocked = the two interruption states.
   - Branch names share one global git namespace, so they must be unique across features. The id carries its feature stem (`<feature>_<NN>-<increment>`, increment-sheet.schema.md), so the audit-naming convention (`feat/<id>-<kebab-title>`) makes every branch cross-feature-distinct by construction; no collision fallback is needed.
   - `completion` block (lite only, loop-written): tracks the completion gate (its integration run and its docs PR on branch `docs/<feature-name>-completion`); absent in full (build-loop-lite.md). The gate is not an increment, so it has no `increments` entry and no `work/<branch-name>/` folder; its docs PR reconciles and renders through the same surfaces as an increment PR (see Reconciliation, The board).
+- .building/epics/<epic-name>/epic.json: the epic manifest, written by the design partner (epic-manifest.schema.md), the run's features in build order with their cross feature depends_on. The human's build order reference: the loop NEVER reads or writes it and no gate depends on it. It sits above features/ because it spans them; a feature is referenced by its existing features/<feature-name>/ path, not owned by an epic.
 - .building/setup-ok: the setup receipt (written by the setup gate, read by the loop on entry). Project-level, not per feature: setup proves the project environment, which every feature shares, so the receipt sits at the top of .building/, beside scripts/, not under any one feature's build folder.
 - .building/build/<feature-name>/work/<branch-name>/: the agents' working files for one unit, keyed by its audit-named branch. builder.md, review-pass-N.md, judge.md (on pass), doc-payload.md. These ARE the record; there is no separate reports copy. Channels and records are the same files (machine reads them as channels, human reads them as records).
 - Re-running a unit overwrites its work folder in place: only the latest run is kept, not a dated history. Within a single run, review passes accumulate (review-pass-1, review-pass-2, ...).

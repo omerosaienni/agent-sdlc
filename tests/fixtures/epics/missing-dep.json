@@ -1,0 +1,7 @@
+{
+  "epic": "A depends_on naming a feature that is not here.",
+  "features": [
+    { "name": "foundation", "sheet": ".building/features/foundation/increments.md", "depends_on": [] },
+    { "name": "orders", "sheet": ".building/features/orders/increments.md", "depends_on": ["customers"] }
+  ]
+}

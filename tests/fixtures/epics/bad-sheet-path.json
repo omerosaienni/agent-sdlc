@@ -1,0 +1,7 @@
+{
+  "epic": "A sheet path that does not match its feature name.",
+  "features": [
+    { "name": "foundation", "sheet": ".building/features/foundation/increments.md", "depends_on": [] },
+    { "name": "customers", "sheet": ".building/features/clients/increments.md", "depends_on": ["foundation"] }
+  ]
+}

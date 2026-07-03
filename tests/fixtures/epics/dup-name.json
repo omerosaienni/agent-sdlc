@@ -1,0 +1,8 @@
+{
+  "epic": "Two features sharing a name.",
+  "features": [
+    { "name": "foundation", "sheet": ".building/features/foundation/increments.md", "depends_on": [] },
+    { "name": "customers", "sheet": ".building/features/customers/increments.md", "depends_on": ["foundation"] },
+    { "name": "customers", "sheet": ".building/features/customers/increments.md", "depends_on": ["foundation"] }
+  ]
+}
