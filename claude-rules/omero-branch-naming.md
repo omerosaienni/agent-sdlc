@@ -2,7 +2,7 @@
 
 Name every branch you create `<type>/<kebab-description>`.
 
-- Types: `feat fix docs refactor rename chore test`. Unclear → `chore`.
+- Types: `feat fix docs refactor rename chore test epic`. Unclear → `chore`. `epic` is for a long-lived integration branch that gathers a stack's tips.
 - Description: lowercase `a-z0-9`, words joined by `-`, with `_` allowed to carry a build increment id verbatim (`feat/<feature>_<NN>-<increment>`). No spaces, uppercase, or a second `/`.
 - Example: `fix/vscode-debug-local-bin`; a build branch: `feat/claude-metrics_03-metrics-persist`.
 
