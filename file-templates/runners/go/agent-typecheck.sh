@@ -79,12 +79,16 @@ report() {
 #   - the TOOLCHAIN itself is unusable (go.mod asks for a newer Go than is
 #     available, or a toolchain download cannot complete)
 #
+# Every marker below is one go prints itself. Matching a bare word like GOTOOLCHAIN
+# would be wrong however tempting: it appears in compiler and vet diagnostics about
+# code that merely mentions it, and each of those is a rejection the builder can fix.
+#
 # A stale go.mod or go.sum is NOT in either class: go mod tidy fixes it and the
 # builder can run that, so it stays a rejection. Classifying it as environment
 # consumes no attempt and leaves the loop with no way to route the one thing that
 # would fix it.
 env_failure() {
-    printf '%s' "$1" | grep -qE 'module lookup disabled|dial tcp|connection refused|i/o timeout|proxyconnect|TLS handshake timeout|GOPROXY=off|toolchain not available|go\.mod requires go >=|GOTOOLCHAIN'
+    printf '%s' "$1" | grep -qE 'module lookup disabled|dial tcp|connection refused|i/o timeout|proxyconnect|TLS handshake timeout|GOPROXY=off|toolchain not available|go\.mod requires go >='
 }
 
 # `go build ./...` drops a binary named after the module into the working tree

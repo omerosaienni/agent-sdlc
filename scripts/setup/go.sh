@@ -25,8 +25,11 @@
 #      not exist.
 #
 # Tiers split by BUILD TAG, not directory: the unit tier is every untagged test, the
-# integration tier is the files behind //go:build integration. So "is the
-# integration tier declared" is a source grep, not a directory test.
+# integration tier is the files behind //go:build integration. "Is the integration
+# tier declared" is therefore answered by asking the toolchain which files the tag
+# adds (see has_integration_tier), never by grepping for the tag string: a grep
+# matches the words in a prose comment and invents a tier that is then reported as
+# hollow.
 #
 # Provides:
 #   go_setup   run every Go check in order, accumulating into `fail`.
@@ -49,6 +52,21 @@ run_tier() { local tier="$1" label="$2" out rc
         3) bad "$label could not run (environment: the toolchain or the module, NOT an endpoint); fix it and re-run"; printf '%s\n' "$out" ;;
         *) bad "agent test runner returned an unexpected exit $rc for $label; the judge depends on this path" ;;
     esac; }
+
+# imports_a_dependency: does any package import something outside the standard
+# library and this module?
+#
+# Asked of the toolchain rather than by reading go.mod, because the generator
+# deliberately writes NO require block: a layer declares its dependency by importing
+# it and go mod tidy resolves it later. A go.mod parse therefore found nothing on
+# exactly the projects this guard exists to catch.
+imports_a_dependency() {
+    local module
+    module="$(go list -m 2>/dev/null)"
+    go list -e -f '{{range .Imports}}{{.}}
+{{end}}' ./... 2>/dev/null \
+        | awk -F/ -v self="$module" '$1 ~ /\./ && index($0, self) != 1 { found = 1 } END { exit !found }'
+}
 
 # has_integration_tier: does any package gain a test file under the integration tag?
 #
@@ -107,8 +125,8 @@ go_setup() {
         # cache against go.sum, so on a module that has never resolved anything it
         # passes vacuously: the go.sum test comes first, or the gate reports
         # "verified" for a project with no dependencies resolved at all.
-        if [ ! -f go.sum ] && grep -qE '^\s*(require|\t)[^)]*[a-z]+\.[a-z]+/' go.mod 2>/dev/null; then
-            need "the module declares dependencies but has no go.sum; re-run without --check to go mod tidy"
+        if [ ! -f go.sum ] && imports_a_dependency; then
+            need "the module imports third-party packages but has no go.sum; re-run without --check to go mod tidy"
         elif go mod verify >/dev/null 2>&1; then ok "module dependencies verified (not tidied under --check)"
         else need "module dependencies not resolved; re-run without --check to go mod tidy"; fi
     fi

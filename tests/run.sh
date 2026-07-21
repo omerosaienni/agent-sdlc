@@ -78,8 +78,19 @@ for suite in "$REPO_ROOT"/tests/*/test.sh; do
     [ -n "$only" ] && [ "$name" != "$only" ] && continue
     ran=$((ran+1))
     _t_kind=""
+    # Each suite gets its own TMPDIR, removed when it finishes.
+    #
+    # Suites are SOURCED into this one shell, so a suite's `trap ... EXIT` replaces
+    # the previous suite's and only the last one ever fires: every earlier suite
+    # leaked its scratch directory, which for the ones that npm-install or scaffold
+    # Go projects is hundreds of megabytes per run. Isolating TMPDIR fixes it for
+    # every suite at once, including ones that clean up correctly, and needs no
+    # cooperation from the suite. TMPDIR is the standard way to say where temporary
+    # files go, which is why it is an environment variable and not a flag.
+    suite_tmp="$(mktemp -d)"
     # shellcheck source=/dev/null
-    if . "$suite"; then res=pass; else res=fail; failed=$((failed+1)); fi
+    if TMPDIR="$suite_tmp" . "$suite"; then res=pass; else res=fail; failed=$((failed+1)); fi
+    rm -rf "$suite_tmp"
     case " $_T_KINDS " in
         *" $_t_kind "*) : ;;
         *) badkind=$((badkind+1)); _t_kind="UNDECLARED" ;;

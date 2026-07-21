@@ -18,7 +18,7 @@ Three things do not simply mirror the Python path, and each is a deliberate choi
 
 ### Tiers split by build tag, not directory
 
-Go co-locates `foo_test.go` beside `foo.go`, so a `tests/unit` and `tests/integration` directory split would fight the language. The tier split is by build tag instead: the unit tier is every untagged test (`go test ./...`), and the integration tier is the files carrying `//go:build integration` (`go test -tags=integration ./...`). Everything above the runners is unaffected, because the runner still answers `unit` and `integration` and still returns the same four exit codes. The setup gate's "is the integration tier declared" question becomes a source grep for the tag rather than a directory test.
+Go co-locates `foo_test.go` beside `foo.go`, so a `tests/unit` and `tests/integration` directory split would fight the language. The tier split is by build tag instead: the unit tier is every untagged test (`go test ./...`), and the integration tier is the files carrying `//go:build integration` (`go test -tags=integration ./...`). Everything above the runners is unaffected, because the runner still answers `unit` and `integration` and still returns the same four exit codes. The setup gate's "is the integration tier declared" question is answered by asking the toolchain which files the tag adds, never by grepping for the tag string: a grep matches the words in a prose comment and invents a tier that is then reported as hollow.
 
 ### `go test` conflates outcomes, so the runner classifies by output
 
