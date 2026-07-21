@@ -27,9 +27,14 @@ proj="$work/goapp"
 # The SKIP is gated on absent TOOLING alone. A generator regression is a defect, not
 # absent tooling, so it fails the suite instead of quietly skipping the whole proof
 # and leaving the run green.
-if ! command -v go >/dev/null 2>&1 || ! command -v gh >/dev/null 2>&1 \
+#
+# gh is probed with `gh auth status`, not `command -v gh`, because the setup gate
+# requires an AUTHENTICATED gh and treats an unauthenticated one as a hard failure.
+# Probing for the binary alone made a runner that ships gh without credentials fail
+# the whole suite as a defect, which is what CI does.
+if ! command -v go >/dev/null 2>&1 || ! gh auth status >/dev/null 2>&1 \
    || [ -z "$(git config --global user.email 2>/dev/null)" ]; then
-    printf '  %sSKIP%s live end-to-end proof (go/gh/git-identity absent)\n' "${C_NOTE:-}" "${C_RESET:-}"
+    printf '  %sSKIP%s live end-to-end proof (go absent, gh not authenticated, or no git identity)\n' "${C_NOTE:-}" "${C_RESET:-}"
 elif ! bash "$GEN" goapp "$proj" --http >/dev/null 2>&1; then
     _t_bad "the generator failed to scaffold the e2e fixture; the end-to-end proof could not run"
 else

@@ -201,9 +201,9 @@ gowork="$(mktemp -d)"
 goproj="$gowork/gosetup"
 # Gated on absent tooling ALONE: a generator regression must fail this suite, not
 # skip the live READY proof and leave the run green.
-if ! command -v go >/dev/null 2>&1 || ! command -v gh >/dev/null 2>&1 \
+if ! command -v go >/dev/null 2>&1 || ! gh auth status >/dev/null 2>&1 \
    || [ -z "$(git config --global user.email 2>/dev/null)" ]; then
-    printf '  %sSKIP%s live Go READY proof (go/gh/git-identity absent)\n' "${C_NOTE:-}" "${C_RESET:-}"
+    printf '  %sSKIP%s live Go READY proof (go absent, gh not authenticated, or no git identity)\n' "${C_NOTE:-}" "${C_RESET:-}"
 elif ! bash "$GOGEN" gosetup "$goproj" >/dev/null 2>&1; then
     _t_bad "the generator failed to scaffold the setup fixture; the live Go READY proof could not run"
 else
@@ -262,7 +262,7 @@ GEN="$REPO_ROOT/scripts/init-python-project.sh"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 proj="$work/setuptest"
-if command -v uv >/dev/null 2>&1 && command -v gh >/dev/null 2>&1 \
+if command -v uv >/dev/null 2>&1 && gh auth status >/dev/null 2>&1 \
    && [ -n "$(git config --global user.email 2>/dev/null)" ] \
    && bash "$GEN" setuptest "$proj" >/dev/null 2>&1 \
    && ( cd "$proj" && uv sync >/dev/null 2>&1 ); then
@@ -281,7 +281,7 @@ if command -v uv >/dev/null 2>&1 && command -v gh >/dev/null 2>&1 \
         _t_bad "live: setup gate not idempotent on Python project"
     fi
 else
-    printf '  %sSKIP%s live Python READY proof (uv/gh/git-identity/network absent)\n' "${C_NOTE:-}" "${C_RESET:-}"
+    printf '  %sSKIP%s live Python READY proof (uv absent, gh not authenticated, no git identity, or no network)\n' "${C_NOTE:-}" "${C_RESET:-}"
 fi
 
 suite_summary

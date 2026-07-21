@@ -9,6 +9,14 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # The setup gate the live proofs drive requires an AUTHENTICATED gh, and the
+    # runner ships the binary with no credentials. Without this the Go proofs
+    # skipped themselves on an honest tooling gate, so the one suite that exercises
+    # the whole path end to end never ran where it matters most. The automatic
+    # token is enough: the proofs scaffold LOCAL scratch projects and never create a
+    # remote (no origin is a note, not a failure), so nothing is pushed anywhere.
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v5
       # The generator suites scaffold a real project and let it make its initial
@@ -18,5 +26,12 @@ jobs:
         run: |
           git config --global user.name "agent-sdlc ci"
           git config --global user.email "ci@agent-sdlc.test"
+      # Go is not preinstalled at a pinned version, and the Go suites are the ones
+      # this branch adds. Without it they skip, which is exactly the hole that let a
+      # red branch look green.
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
       - name: Run test suites
         run: ./tests/run.sh
