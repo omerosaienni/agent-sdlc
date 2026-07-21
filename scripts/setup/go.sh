@@ -183,7 +183,24 @@ go_setup() {
 
     # -----------------------------------------------------------------------
     # 6. Coverage runs (verify by running, do not trust that it is built in).
+    #
+    #    Scoped to the packages that HOLD tests, not ./..., for two reasons. The
+    #    coverage of a package with no test files is not information, it is a
+    #    guaranteed zero. And covering ./... drags in `covdata`, the tool that
+    #    merges profiles across packages, which Go 1.25 builds on demand into
+    #    GOROOT/pkg/tool: when the toolchain was fetched as a module that
+    #    directory is read-only, so the build cannot happen and the run dies with
+    #    "no such tool covdata" even though every instrumented package passed.
+    #    Measuring what can be measured is the stronger check, not the weaker one.
     # -----------------------------------------------------------------------
-    if go test -cover ./... >/dev/null 2>&1; then ok "coverage runs (go test -cover)"
-    else bad "coverage run failed (go test -cover); the unit tier must pass under -cover"; fi
+    local covered
+    covered=$(go list -f '{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./... 2>/dev/null)
+    if [ -z "$covered" ]; then
+        bad "no package in the module holds a test file; coverage has nothing to measure"
+    # shellcheck disable=SC2086 # covered is a deliberate whitespace-separated package list
+    elif go test -cover $covered >/dev/null 2>&1; then
+        ok "coverage runs (go test -cover over the packages holding tests)"
+    else
+        bad "coverage run failed (go test -cover); the unit tier must pass under -cover"
+    fi
 }
