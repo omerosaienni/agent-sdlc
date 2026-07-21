@@ -344,6 +344,19 @@ GO
         test "$( ( cd "$netproj" && GOFLAGS=-mod=mod GOPROXY=off GOMODCACHE="$work/emptycache" \
             bash "$GODIR/agent-tests.sh" unit >/dev/null 2>&1 ); echo $? )" = 3
 
+    # An unusable TOOLCHAIN is an environment block, not a rejection. go.mod asking
+    # for a newer Go than is installed is not something a builder can fix, and both
+    # runners must agree about it: they disagreed on exactly this input while only
+    # the proxy case was covered.
+    toolproj="$work/toolchain"
+    mkdir -p "$toolproj"
+    printf 'module toolchain\n\ngo 1.99.0\n' > "$toolproj/go.mod"
+    printf 'package toolchain\n\n// F exists so the package compiles.\nfunc F() int { return 1 }\n' > "$toolproj/f.go"
+    expect_exit 0 "live: a toolchain the module cannot use is an environment block (typecheck 3)" \
+        test "$( ( cd "$toolproj" && GOTOOLCHAIN=local bash "$GODIR/agent-typecheck.sh" >/dev/null 2>&1 ); echo $? )" = 3
+    expect_exit 0 "live: the test runner agrees a toolchain block is 3" \
+        test "$( ( cd "$toolproj" && GOTOOLCHAIN=local bash "$GODIR/agent-tests.sh" unit >/dev/null 2>&1 ); echo $? )" = 3
+
     # A scoped file that declares no test function selects NOTHING. Falling back to
     # the whole package would let a neighbour's test answer for the file that was
     # asked about, so a helpers-only file would grade ASSERTS off someone else's

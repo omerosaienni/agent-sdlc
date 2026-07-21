@@ -168,6 +168,26 @@ else
     else
         _t_bad "live: setup gate not idempotent on the Go project"
     fi
+    # The gate's integration-tier branch is only reachable on a project that HAS a
+    # tagged test, and both live fixtures scaffolded layers without one, so the
+    # positive path of has_integration_tier ran in no suite at all. --sqlite ships a
+    # tagged test, so it exercises it; skipped rather than failed without a proxy,
+    # since that layer has a third-party dependency to resolve.
+    sqproj="$gowork/sqsetup"
+    if bash "$GOGEN" sqsetup "$sqproj" --sqlite >/dev/null 2>&1 \
+       && ( cd "$sqproj" && go mod tidy >/dev/null 2>&1 ); then
+        ( cd "$sqproj" && git config sdlc.identityAllowlist "$(git config user.email)" )
+        out="$( cd "$sqproj" && bash "$G" 2>&1 )"
+        if printf '%s' "$out" | grep -q 'integration tier selected tests and passed'; then
+            _t_ok "live: the gate runs the integration tier on a project that declares one"
+        else
+            _t_bad "live: the gate did not run the integration tier on a --sqlite project"
+            printf '       %s\n' "$out"
+        fi
+    else
+        printf '  %sSKIP%s live integration-tier gate proof (no module proxy for the sqlite layer)\n' "${C_NOTE:-}" "${C_RESET:-}"
+    fi
+
     # --check on an un-set-up project must report ACTION NEEDED (2), never FAILED.
     # The runners being absent is precisely what --check exists to report.
     fresh="$gowork/freshcheck"

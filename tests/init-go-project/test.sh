@@ -78,6 +78,25 @@ expect_match 0 'httpapi.ListenAndServe' "--http replaces the entry point with th
 expect_match 0 '^server:' "--http contributes its services.yaml block" cat "$ht/config/services.yaml"
 # config-env.sh ran during scaffold, so .env is seeded and the binary runs as built.
 expect_match 0 '^SERVER_PORT=' ".env seeded from services.yaml at scaffold time" cat "$ht/.env"
+# The generated server must be production-shaped, not a toy. Each of these was
+# added to the reference project by hand first, which is exactly how a template and
+# the project it is supposed to produce drift apart.
+for want in ReadHeaderTimeout ReadTimeout WriteTimeout IdleTimeout; do
+    expect_match 0 "$want" "--http sets $want (the zero value is no timeout at all)" \
+        cat "$ht/internal/httpapi/server.go"
+done
+expect_match 0 'srv.Shutdown' "--http shuts the server down rather than dying where it stands" \
+    cat "$ht/internal/httpapi/server.go"
+expect_match 0 'signal.NotifyContext' "--http listens for a termination signal" \
+    cat "$ht/cmd/ht-app/main.go"
+# log.Fatal skips every deferred call in the frame, so a main that holds one is
+# making a promise it does not keep. The work belongs in a function returning error.
+expect_match 0 'func run\(\) error' "--http puts the work in run() so deferred cleanup is reachable" \
+    cat "$ht/cmd/ht-app/main.go"
+# The config file has to reach the binary. It reached only the Vite dev server, so
+# editing a port changed the client and left the server on its compiled default.
+expect_match 0 'set -a; \[ -f .env \]' "--http sources .env in server-start so services.yaml reaches the binary" \
+    cat "$ht/Makefile"
 
 rt="$work/rt-app"
 bash "$GEN" rt-app "$rt" --react >/dev/null 2>&1
@@ -134,6 +153,35 @@ if command -v go >/dev/null 2>&1 && ( cd "$sq" && go mod tidy >/dev/null 2>&1 );
     fi
 else
     printf '  %sSKIP%s live --sqlite proof (go absent or no network for the module proxy)\n' "${C_NOTE:-}" "${C_RESET:-}"
+fi
+
+# --- live proof: the --react layer really installs, builds and tests -----------
+# Needs Node and the npm registry, so it self-skips rather than silently passing.
+# Without it the whole client layer was asserted by grep alone, and a broken
+# package.json, tsconfig or client test would have shipped with the suite green.
+if command -v npm >/dev/null 2>&1 && ( cd "$rt" && npm --prefix client install --no-audit --no-fund >/dev/null 2>&1 ); then
+    inrt() { ( cd "$rt" && "$@" >/dev/null 2>&1 ); }
+    if inrt npm --prefix client run build; then _t_ok "live: --react client type-checks and builds"
+    else _t_bad "live: --react client failed to build"; fi
+    if inrt npm --prefix client run test; then _t_ok "live: --react client unit tier passes"
+    else _t_bad "live: --react client unit tier failed"; fi
+    # The sync is what puts the build where the binary embeds it. Without it the
+    # binary serves the placeholder for ever while every gate stays green.
+    if inrt make client-build && [ -f "$rt/internal/assets/static/index.html" ] \
+       && grep -q 'assets/' "$rt/internal/assets/static/index.html"; then
+        _t_ok "live: make client-build syncs the built client into the embedded assets"
+    else
+        _t_bad "live: make client-build did not put the built client where the binary embeds it"
+    fi
+    # And the intermediate output must stay untracked, or the same bundle is
+    # committed twice with diverging hashed names on every rebuild.
+    if ( cd "$rt" && git check-ignore -q client/dist ); then
+        _t_ok "live: the client's intermediate build output is gitignored"
+    else
+        _t_bad "live: client/dist is tracked; the bundle would be committed twice"
+    fi
+else
+    printf '  %sSKIP%s live --react client proof (npm absent or no registry access)\n' "${C_NOTE:-}" "${C_RESET:-}"
 fi
 
 suite_summary

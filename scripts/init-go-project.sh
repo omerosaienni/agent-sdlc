@@ -44,9 +44,15 @@ set -euo pipefail
 # Constants
 # ============================================================================
 
-# The language version written into go.mod. Names what the generated code targets
-# (range-over-int and net/http method patterns are 1.22, http.FileServerFS is 1.22),
-# not the toolchain that must build it: a newer toolchain builds it unchanged.
+# The language version written into go.mod: the FLOOR the generated code needs
+# (range-over-int and net/http method patterns are 1.22, http.FileServerFS is 1.22).
+#
+# It is a floor, not a pin. `go mod tidy` RAISES this directive when a dependency
+# requires a newer language version, and with the default GOTOOLCHAIN=auto go then
+# fetches that toolchain. So a scaffold with a layer that has dependencies shows a
+# higher directive after its first tidy, and a modified go.mod is expected there
+# rather than drift to correct. Nothing is pinned here because a version baked into
+# a generator rots, and the resolved graph is recorded in the project's own go.sum.
 GO_VERSION="1.23"
 
 # ============================================================================

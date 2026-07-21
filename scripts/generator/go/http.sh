@@ -20,12 +20,15 @@ go_http_layer() {
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"net/http"
 	"path"
 	"strings"
+	"time"
 
 	"${NAME}/internal/assets"
 )
@@ -134,16 +137,48 @@ func serveIndex(w http.ResponseWriter, client fs.FS) {
 	_, _ = w.Write(b)
 }
 
-// ListenAndServe starts the server on host:port and blocks. Address parts are taken
-// as arguments rather than read from the environment here, so the caller (main)
-// stays the single place configuration is resolved.
-func ListenAndServe(host string, port int) error {
+// ListenAndServe starts the server on host:port and blocks until the server fails
+// or ctx is cancelled. Address parts are taken as arguments rather than read from
+// the environment here, so the caller (main) stays the single place configuration
+// is resolved.
+func ListenAndServe(ctx context.Context, host string, port int) error {
 	addr := fmt.Sprintf("%s:%d", host, port)
-	srv := &http.Server{Addr: addr, Handler: Handler()}
-	if err := srv.ListenAndServe(); err != nil {
-		return fmt.Errorf("http server on %s: %w", addr, err)
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: Handler(),
+		// Set because the zero value is NO timeout at all: one stalled client would
+		// otherwise hold a connection open for the life of the process.
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
-	return nil
+
+	// Served in the background so this can wait on whichever comes first: the server
+	// failing, or the context being cancelled by a signal.
+	failed := make(chan error, 1)
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			failed <- fmt.Errorf("http server on %s: %w", addr, err)
+			return
+		}
+		failed <- nil
+	}()
+
+	select {
+	case err := <-failed:
+		return err
+	case <-ctx.Done():
+		// In-flight requests get a bounded chance to finish. WithoutCancel is load
+		// bearing: ctx is already cancelled, so a plain WithTimeout derived from it
+		// would expire immediately and Shutdown would drop every connection.
+		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			return fmt.Errorf("shutting down the http server on %s: %w", addr, err)
+		}
+		return nil
+	}
 }
 EOF
 
@@ -234,9 +269,12 @@ EOF
 package main
 
 import (
+	"context"
 	"log"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 
 	"${NAME}/internal/httpapi"
 )
@@ -249,9 +287,31 @@ const (
 )
 
 func main() {
-	if err := httpapi.ListenAndServe(host(), port()); err != nil {
+	// main only reports; run owns the work, so its deferred cleanup actually runs.
+	// log.Fatal calls os.Exit, which skips every deferred call in the frame, so any
+	// close deferred in main would be a promise the code never kept.
+	if err := run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func run() error {
+	// Cancelled on an interrupt or a termination signal, which is the only way a
+	// long-running binary is ever stopped. Without it the process dies where it
+	// stands, dropping in-flight requests and skipping every deferred close.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	// Default signal handling is restored as soon as the FIRST signal lands, so a
+	// second one kills the process immediately. Without this the handler stays
+	// installed for the whole shutdown grace period and an operator watching a hung
+	// drain cannot interrupt it.
+	go func() {
+		<-ctx.Done()
+		stop()
+	}()
+
+	return httpapi.ListenAndServe(ctx, host(), port())
 }
 
 // host and port read the .env values \`make config\` generates from

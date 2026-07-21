@@ -74,15 +74,17 @@ report() {
 # that goes on to report real type errors, from swallowing the errors the builder
 # actually needs to fix.
 #
-# Only a genuine inability to REACH the proxy is an environment block. A stale
-# go.mod or go.sum is the builder's to fix with go mod tidy, so it stays a
-# rejection: classifying it as environment consumes no attempt and leaves the loop
-# with no way to route the one thing that would fix it.
+# Two classes are environment, and a builder can fix neither:
+#   - the module proxy cannot be REACHED
+#   - the TOOLCHAIN itself is unusable (go.mod asks for a newer Go than is
+#     available, or a toolchain download cannot complete)
+#
+# A stale go.mod or go.sum is NOT in either class: go mod tidy fixes it and the
+# builder can run that, so it stays a rejection. Classifying it as environment
+# consumes no attempt and leaves the loop with no way to route the one thing that
+# would fix it.
 env_failure() {
-    if printf '%s' "$1" | grep -qE 'module lookup disabled|dial tcp|connection refused|i/o timeout|proxyconnect|TLS handshake timeout|GOPROXY=off'; then
-        return 0
-    fi
-    return 1
+    printf '%s' "$1" | grep -qE 'module lookup disabled|dial tcp|connection refused|i/o timeout|proxyconnect|TLS handshake timeout|GOPROXY=off|toolchain not available|go\.mod requires go >=|GOTOOLCHAIN'
 }
 
 # `go build ./...` drops a binary named after the module into the working tree

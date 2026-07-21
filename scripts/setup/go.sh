@@ -103,9 +103,13 @@ go_setup() {
         if go mod tidy >/dev/null 2>&1; then ok "go mod tidy resolved the module's dependencies"
         else bad "go mod tidy failed; check go.mod and network access to the module proxy"; fi
     else
-        # --check must not mutate. verify only reads the module cache, so it proves
-        # the dependencies are present and unmodified without writing go.sum.
-        if go mod verify >/dev/null 2>&1; then ok "module dependencies verified (not tidied under --check)"
+        # --check must not mutate. go mod verify only checks modules ALREADY in the
+        # cache against go.sum, so on a module that has never resolved anything it
+        # passes vacuously: the go.sum test comes first, or the gate reports
+        # "verified" for a project with no dependencies resolved at all.
+        if [ ! -f go.sum ] && grep -qE '^\s*(require|\t)[^)]*[a-z]+\.[a-z]+/' go.mod 2>/dev/null; then
+            need "the module declares dependencies but has no go.sum; re-run without --check to go mod tidy"
+        elif go mod verify >/dev/null 2>&1; then ok "module dependencies verified (not tidied under --check)"
         else need "module dependencies not resolved; re-run without --check to go mod tidy"; fi
     fi
 
@@ -215,8 +219,13 @@ go_setup() {
     #    "no such tool covdata" even though every instrumented package passed.
     #    Measuring what can be measured is the stronger check, not the weaker one.
     # -----------------------------------------------------------------------
-    # Skipped once anything above has failed: coverage over a module whose tiers did
-    # not run measures nothing, and a second failure line only buries the first.
+    # Coverage over a module whose tiers did not run measures nothing. The two
+    # reasons are reported apart, because "an earlier check failed" on a healthy
+    # project under --check names a failure that did not happen.
+    if ! consent; then
+        note "not measuring coverage under --check: the tiers were not run"
+        return
+    fi
     if [ "$fail" -ne 0 ]; then
         note "skipping the coverage run: an earlier check failed, so there is nothing to measure"
         return
