@@ -5,6 +5,12 @@ truth. They load into Claude's context every session, so they are terse on
 purpose. These are the GLOBAL layer, applying to every project including this
 repo itself.
 
+A rule that only applies to some repos still lives here and still loads
+everywhere; it carries its own check at the top and no-ops when that check
+fails (`omero-git-town-auth.md` is the example). The installer is an
+all-or-nothing glob of this directory, so self-scoping in the rule is the only
+way to narrow one.
+
 Stack conventions (TypeScript, Mongo, React) are a separate PER-PROJECT layer
 installed into a repo's own `.claude/rules/` by `install-project-rules.sh`, not
 kept here.
@@ -34,3 +40,4 @@ link owned by something else) and restores any `.bak` it made.
 | `omero-branch-naming.md` | `<type>/<kebab>` branch names (enforced by the git hooks) |
 | `omero-git-authorship.md` | commits authored by the user alone, no AI co-author trailers or footers |
 | `omero-script-args.md` | caller-chosen behaviour is an argument or flag, never an env var (points at script-layout.md) |
+| `omero-git-town-auth.md` | shipping via git-town with a keyring token, self-scoped to git-town repos by a `git-town.main-branch` check |
