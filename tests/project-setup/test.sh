@@ -86,6 +86,62 @@ expect_exit 0 "go.sh derives the covered package list from go list" \
     grep -qE 'go list -f .*TestGoFiles' "$GO"
 expect_exit 1 "go.sh does not run coverage over ./... (would require covdata)" \
     grep -qE 'go test -cover \./\.\.\.' "$GO"
+
+# --- imports_a_dependency, the go.sum guard's probe --------------------------
+# Driven directly against hand-built modules rather than through the gate: the cases
+# that matter are about PATH SHAPE, and each would otherwise need a real dependency
+# resolved over the network to reach. go.sh parses no arguments and sets no options
+# at the top level, so sourcing it only defines its functions.
+#
+# The wiring is asserted separately, because a correct probe wired to nothing still
+# lets a project with no go.sum reach the tiers and fail there instead of here.
+expect_exit 0 "go.sh guards go.sum on the dependency probe" \
+    grep -qE '\[ ! -f go.sum \] && imports_a_dependency' "$GO"
+expect_exit 0 "go.sh's missing-go.sum message names go.sum" \
+    grep -qE 'need "the module imports third-party packages but has no go.sum' "$GO"
+
+if ! command -v go >/dev/null 2>&1; then
+    printf '  %sSKIP%s imports_a_dependency probe cases (go toolchain absent)\n' "${C_NOTE:-}" "${C_RESET:-}"
+else
+    probe_work="$(mktemp -d)"
+    # probes <name> <module-path> : a module holding whatever the caller writes next.
+    probe_module() {
+        mkdir -p "$probe_work/$1"
+        printf 'module %s\n\ngo 1.25\n' "$2" > "$probe_work/$1/go.mod"
+    }
+    probe() { ( cd "$probe_work/$1" && . "$GO" && imports_a_dependency ); }
+
+    # The prefix case: a third-party path that merely STARTS with the module path.
+    # index($0, self) != 1 read this as the module's own package and reported no
+    # dependency, so --check told a project with no go.sum it had nothing to resolve.
+    probe_module prefix modernc.org/sql
+    printf 'package prefix\n\nimport _ "modernc.org/sqlite"\n' > "$probe_work/prefix/p.go"
+    expect_exit 0 "probe: a third-party path prefixed by the module path is a dependency" \
+        probe prefix
+
+    # The boundary must not swing the other way: a genuine subpackage of this module
+    # is not a dependency, or every multi-package project would demand a go.sum.
+    probe_module own example.com/app
+    mkdir -p "$probe_work/own/internal/thing"
+    printf 'package thing\n' > "$probe_work/own/internal/thing/t.go"
+    printf 'package own\n\nimport _ "example.com/app/internal/thing"\n' > "$probe_work/own/o.go"
+    expect_exit 1 "probe: the module's own subpackage is not a dependency" probe own
+
+    # A dependency reachable only from a _test.go still needs a go.sum entry, and the
+    # tiers the gate is about to run are exactly what would fail without one.
+    probe_module testonly example.com/app
+    printf 'package testonly\n' > "$probe_work/testonly/t.go"
+    printf 'package testonly\n\nimport _ "modernc.org/sqlite"\n' > "$probe_work/testonly/t_test.go"
+    expect_exit 0 "probe: a test-only third-party import is a dependency" probe testonly
+
+    # The negative the base scaffold relies on: standard library alone owes nothing.
+    probe_module stdlib example.com/app
+    printf 'package stdlib\n\nimport _ "fmt"\n' > "$probe_work/stdlib/s.go"
+    expect_exit 1 "probe: a standard-library-only module has no dependency" probe stdlib
+
+    rm -rf "$probe_work"
+fi
+
 # The orchestrator registers the marker and dispatches the module.
 expect_exit 0 "orchestrator sources the go module" grep -qE '\$SETUP_DIR/go.sh' "$G"
 expect_exit 0 "orchestrator registers the go.mod marker" grep -qE 'go\.mod:go' "$G"

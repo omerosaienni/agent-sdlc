@@ -60,12 +60,23 @@ run_tier() { local tier="$1" label="$2" out rc
 # deliberately writes NO require block: a layer declares its dependency by importing
 # it and go mod tidy resolves it later. A go.mod parse therefore found nothing on
 # exactly the projects this guard exists to catch.
+#
+# Test imports count: a dependency pulled in only by a _test.go file still needs a
+# go.sum entry, and the tiers the gate is about to run are exactly what would fail
+# without one.
+#
+# "Belongs to this module" is matched on a PATH BOUNDARY, not a bare prefix. A module
+# named modernc.org/sql importing modernc.org/sqlite is a third-party dependency, but
+# a prefix test reads it as the module's own package and reports nothing to resolve.
 imports_a_dependency() {
     local module
     module="$(go list -m 2>/dev/null)"
     go list -e -f '{{range .Imports}}{{.}}
+{{end}}{{range .TestImports}}{{.}}
+{{end}}{{range .XTestImports}}{{.}}
 {{end}}' ./... 2>/dev/null \
-        | awk -F/ -v self="$module" '$1 ~ /\./ && index($0, self) != 1 { found = 1 } END { exit !found }'
+        | awk -F/ -v self="$module" \
+            '$1 ~ /\./ && $0 != self && index($0, self "/") != 1 { found = 1 } END { exit !found }'
 }
 
 # has_integration_tier: does any package gain a test file under the integration tag?
