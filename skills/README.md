@@ -29,5 +29,6 @@ Repo-managed (installed from here, the source of truth):
 - omero-merge-pr, points at contracts/merge-pr.md and runs scripts/merge-pr.sh (ships a green PR: require the required remote checks pass, then git town ship; stack-agnostic, outside the build pipeline)
 - omero-create-ts-project, runs scripts/init-ts-project.sh (the project generator, no contract: deterministic; TypeScript base, optional --mongo, --react and --express layers)
 - omero-create-python-project, runs scripts/init-python-project.sh (the second project generator, no contract: deterministic; src-layout, uv, pytest unit/integration tiers, strict pyright)
+- omero-create-go-project, runs scripts/init-go-project.sh (the third project generator, no contract: deterministic; single-binary module, embed.FS client, build-tag unit/integration tiers, optional --sqlite, --react and --http layers)
 - omero-install-project-rules, runs scripts/install-project-rules.sh (installs stack rules into a repo's .claude/rules/)
 - omero-install-global-rules, runs scripts/setup-global-claude-rules.sh and scripts/setup-global-git-hooks.sh (the once-per-machine global setup: symlinks the global Claude rules and installs the git guards)

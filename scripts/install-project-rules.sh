@@ -13,12 +13,12 @@
 # At least one stack flag is required - with none there is nothing to do.
 #
 # Each rule is path-scoped via its paths: frontmatter, so it loads only for the
-# matching part of the tree (typescript: *.ts/*.tsx; mongo: src/server/db/**;
-# react: src/client/**). Those scopes assume the canonical layout the generators
-# produce.
+# matching part of the tree (typescript: *.ts/*.tsx; go: *.go; mongo:
+# src/server/db/**; react: the client tree). Those scopes assume the canonical
+# layout the generators produce.
 #
 # Usage:
-#   install-project-rules.sh <repo> --typescript --mongo --react   # any combination, >=1 required
+#   install-project-rules.sh <repo> --typescript --go --mongo --react  # any combination, >=1 required
 #   install-project-rules.sh <repo> --uninstall [--typescript ...] # remove (all installed, or the named)
 set -euo pipefail
 
@@ -29,6 +29,7 @@ RULES_SRC="$SCRIPT_DIR/../project-rules"
 rule_file() {
     case "$1" in
         typescript) echo "omero-typescript.md" ;;
+        go)         echo "omero-go.md" ;;
         mongo)      echo "omero-mongo.md" ;;
         react)      echo "omero-react.md" ;;
         *)          return 1 ;;
@@ -43,7 +44,7 @@ ok()   { printf '%s%s%s\n' "$C_OK" "$1" "$C_RESET"; }
 err()  { printf '%s%s%s\n' "$C_ERR" "$1" "$C_RESET" >&2; }
 
 usage() {
-    err "usage: install-project-rules.sh <repo> [--uninstall] --typescript --mongo --react"
+    err "usage: install-project-rules.sh <repo> [--uninstall] --typescript --go --mongo --react"
     err "  at least one stack flag is required"
     exit 2
 }
@@ -60,7 +61,7 @@ while [ $# -gt 0 ]; do
         --uninstall)
             UNINSTALL=1
             ;;
-        --typescript | --mongo | --react)
+        --typescript | --go | --mongo | --react)
             STACKS+=("${1#--}")
             ;;
         -h | --help)
@@ -126,7 +127,7 @@ do_uninstall() {
         for stack in "${STACKS[@]}"; do targets+=("$(rule_file "$stack")"); done
     else
         # No stacks named: remove every stack rule this script owns.
-        for stack in typescript mongo react; do targets+=("$(rule_file "$stack")"); done
+        for stack in typescript go mongo react; do targets+=("$(rule_file "$stack")"); done
     fi
 
     local removed=0

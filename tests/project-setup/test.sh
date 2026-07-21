@@ -62,6 +62,103 @@ expect_exit 0 "orchestrator sources python module"  grep -qE '\$SETUP_DIR/python
 expect_exit 0 "orchestrator detects pyproject.toml" grep -qE 'pyproject.toml' "$G"
 expect_exit 0 "orchestrator handles ambiguous stack" grep -qE 'ambiguous' "$G"
 
+# --- the Go per-stack module (go-build-path) ---------------------------------
+GO="$REPO_ROOT/scripts/setup/go.sh"
+# sourced-component discipline, same as ts.sh and python.sh (the grep checks also
+# prove it exists).
+expect_exit 1 "go.sh declares no own 'set -e/-euo'" grep -qE '^set -e|^set -euo' "$GO"
+expect_exit 1 "go.sh parses no arguments"           grep -qE 'for [a-z]+ in "\$@"|while \[ "\$#"' "$GO"
+expect_exit 0 "go.sh defines go_setup"              grep -qE '^go_setup\(\)' "$GO"
+# go.sh drives the Go toolchain, not the other stacks'.
+expect_exit 1 "go.sh references no pytest"  grep -qE 'pytest' "$GO"
+expect_exit 1 "go.sh references no vitest"  grep -qE 'vitest' "$GO"
+expect_exit 0 "go.sh drives go mod/build/test" grep -qE 'go (mod|build|test) ' "$GO"
+# The two Go-specific simplifications must be REPORTED, not silently skipped: a
+# check that vanishes without a line is indistinguishable from one that was missed.
+expect_exit 0 "go.sh reports coverage as built in (no provider to install)" \
+    grep -qE 'coverage tooling built in' "$GO"
+# The orchestrator registers the marker and dispatches the module.
+expect_exit 0 "orchestrator sources the go module" grep -qE '\$SETUP_DIR/go.sh' "$G"
+expect_exit 0 "orchestrator registers the go.mod marker" grep -qE 'go\.mod:go' "$G"
+
+# --- three markers: detection generalised from a pair to a registry ----------
+# The old spine hard-coded "both present" as the ambiguous case. With three markers
+# that must become "more than one present", proved by execution rather than by
+# reading the source: each marker alone detects, any two together are ambiguous.
+mwork="$(mktemp -d)"
+# gate_out <dir>: run the gate read-only in <dir> and echo what it printed. --check
+# so nothing is installed or pushed; detection happens before any of that anyway.
+# The output is CAPTURED rather than piped into grep, because the run sets pipefail
+# and the gate exits non-zero on any NOT READY verdict: piping would hand the whole
+# pipeline the gate's exit code and every match would read as a miss.
+gate_out() { ( cd "$1" && bash "$G" --check 2>&1 ); }
+
+# gate_says <dir> <regex> <want: yes|no> <case-name>: assert the gate's output does
+# or does not contain <regex>.
+gate_says() {
+    local dir="$1" regex="$2" want="$3" name="$4" out hit=no
+    out="$(gate_out "$dir")"
+    printf '%s' "$out" | grep -Eq "$regex" && hit=yes
+    if [ "$hit" = "$want" ]; then
+        _t_ok "$name"
+    else
+        _t_bad "$name: wanted match=$want for /$regex/, got match=$hit"
+        printf '       %s\n' "$out"
+    fi
+}
+
+for m in package.json pyproject.toml go.mod; do
+    mkdir -p "$mwork/only-$m" && : > "$mwork/only-$m/$m"
+    gate_says "$mwork/only-$m" 'more than one stack marker' no \
+        "single marker $m is not reported ambiguous"
+done
+
+# Any two markers together is the hard fail, whichever two: the old spine only knew
+# about package.json plus pyproject.toml, so the go.mod pairings are the new cases.
+for pair in "go.mod package.json" "go.mod pyproject.toml" "package.json pyproject.toml"; do
+    d="$mwork/two-$(echo "$pair" | tr ' .' '__')"
+    mkdir -p "$d"
+    # shellcheck disable=SC2086 # pair is a deliberate two-word list
+    for m in $pair; do : > "$d/$m"; done
+    gate_says "$d" 'more than one stack marker' yes "two markers ($pair) -> ambiguous hard fail"
+done
+
+mkdir -p "$mwork/none"
+gate_says "$mwork/none" 'could not detect a supported stack' yes \
+    "no marker present -> hard fail naming the registered markers"
+rm -rf "$mwork"
+
+# --- live READY proof: scaffold a Go project, run the gate to READY ----------
+# The base Go scaffold pulls no third-party module, so this needs only the
+# toolchain, gh and a git identity: no network.
+GOGEN="$REPO_ROOT/scripts/init-go-project.sh"
+gowork="$(mktemp -d)"
+goproj="$gowork/gosetup"
+if command -v go >/dev/null 2>&1 && command -v gh >/dev/null 2>&1 \
+   && [ -n "$(git config --global user.email 2>/dev/null)" ] \
+   && bash "$GOGEN" gosetup "$goproj" >/dev/null 2>&1; then
+    ( cd "$goproj" && git config sdlc.identityAllowlist "$(git config user.email)" )
+    if ( cd "$goproj" && bash "$G" >/dev/null 2>&1 ); then
+        _t_ok "live: setup gate reaches READY on a scaffolded Go project"
+    else
+        _t_bad "live: setup gate did NOT reach READY on a scaffolded Go project"
+    fi
+    expect_exit 0 "live: Go receipt written" test -f "$goproj/.building/setup-ok"
+    # The gate owns runner placement: all three must be down and executable, or the
+    # judge has nothing to run.
+    expect_exit 0 "live: gate placed the Go test runner"      test -x "$goproj/.building/scripts/agent-tests.sh"
+    expect_exit 0 "live: gate placed the Go type-check runner" test -x "$goproj/.building/scripts/agent-typecheck.sh"
+    expect_exit 0 "live: gate placed the shared hollow runner" test -x "$goproj/.building/scripts/agent-hollow.sh"
+    if ( cd "$goproj" && bash "$G" >/dev/null 2>&1 ); then
+        _t_ok "live: setup gate idempotent on the Go project (second run still READY)"
+    else
+        _t_bad "live: setup gate not idempotent on the Go project"
+    fi
+else
+    printf '  %sSKIP%s live Go READY proof (go/gh/git-identity absent)\n' "${C_NOTE:-}" "${C_RESET:-}"
+fi
+rm -rf "$gowork"
+
 # --- live READY proof: scaffold a Python project, run the gate to READY ------
 # Needs uv + network (uv sync) + git identity. Reported skipped otherwise.
 GEN="$REPO_ROOT/scripts/init-python-project.sh"

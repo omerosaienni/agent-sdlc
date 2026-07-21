@@ -8,9 +8,11 @@
 # .building gitignore, the receipt and the exit codes), detects the project's
 # stack, and sources the matching per-stack module under scripts/setup/ for the
 # stack-specific checks (tooling, test tiers, coverage, placing the agent runners).
-# Detection: package.json -> TypeScript (setup/ts.sh), pyproject.toml -> Python
-# (setup/python.sh). A further stack adds its own module and one detection line;
-# no check body branches on stack inline.
+# Detection is a marker-file registry: package.json -> TypeScript (setup/ts.sh),
+# pyproject.toml -> Python (setup/python.sh), go.mod -> Go (setup/go.sh). More than
+# one marker present is a hard fail (the project is ambiguous), as is none. A
+# further stack adds one registry entry and its own module; no check body branches
+# on stack inline.
 #
 # Usage:
 #   project-setup.sh            set up: install and scaffold gaps as needed (default)
@@ -61,20 +63,32 @@ copy_template(){ local src="$TEMPLATES_DIR/$1" dest="$2"
     if [ ! -f "$src" ]; then echo "missing template: $src" >&2; return 1; fi
     cp "$src" "$dest"; }
 
+# MARKERS: the registry of stack marker files, "<marker>:<stack>" per entry. A new
+# stack registers its marker here and adds its own scripts/setup/<stack>.sh; nothing
+# in the spine branches on stack.
+MARKERS="package.json:ts pyproject.toml:python go.mod:go"
+
 # detect_stack: name the project's stack from a marker file, so the orchestrator
-# sources one per-stack module instead of branching on stack at each check. A new
-# stack adds a marker and a case here, and its own scripts/setup/<stack>.sh.
+# sources one per-stack module instead of branching on stack at each check.
 detect_stack(){
-    # Marker files name the stack. Both present is ambiguous (which stack is the
-    # project?), so report it rather than guess; the dispatch turns "" into a hard
-    # fail.
-    local ts=0 py=0
-    [ -f package.json ] && ts=1
-    [ -f pyproject.toml ] && py=1
-    if [ "$ts" = 1 ] && [ "$py" = 1 ]; then echo "ambiguous"; return; fi
-    [ "$ts" = 1 ] && { echo ts; return; }
-    [ "$py" = 1 ] && { echo python; return; }
-    echo ""   # unrecognised: the orchestrator reports it as a hard fail below
+    # More than one marker present is ambiguous (which stack is the project?), so
+    # report it rather than guess; the dispatch turns "" into a hard fail.
+    local entry found="" count=0
+    for entry in $MARKERS; do
+        [ -f "${entry%%:*}" ] || continue
+        found="${entry#*:}"
+        count=$((count + 1))
+    done
+    [ "$count" -gt 1 ] && { echo "ambiguous"; return; }
+    echo "$found"   # "" when unrecognised: a hard fail below
+}
+
+# marker_list: the registered markers as human-readable text, so the hard-fail
+# messages below name the real registry rather than a hand-maintained copy of it.
+marker_list(){
+    local entry out=""
+    for entry in $MARKERS; do out="${out:+$out, }${entry%%:*} for ${entry#*:}"; done
+    echo "$out"
 }
 
 # ============================================================================
@@ -109,11 +123,16 @@ case "$stack" in
         . "$SETUP_DIR/python.sh"
         python_setup
         ;;
+    go)
+        # shellcheck source=setup/go.sh
+        . "$SETUP_DIR/go.sh"
+        go_setup
+        ;;
     ambiguous)
-        bad "both package.json and pyproject.toml present; cannot tell which stack this is. Keep one marker, or split the stacks into separate projects"
+        bad "more than one stack marker present ($(marker_list)); cannot tell which stack this is. Keep one marker, or split the stacks into separate projects"
         ;;
     *)
-        bad "could not detect a supported stack (expected package.json for TypeScript or pyproject.toml for Python); add the project's marker file"
+        bad "could not detect a supported stack (expected one of: $(marker_list)); add the project's marker file"
         ;;
 esac
 

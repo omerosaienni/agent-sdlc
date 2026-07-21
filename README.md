@@ -24,6 +24,7 @@ Then drive a project through these four `/omero-*` skills, in order:
 ```text
 /omero-create-ts-project <project-name> [--mongo] [--react] [--express]  # 1a. scaffold a TypeScript project (optional Mongo/React/Express layers)
 /omero-create-python-project <project-name>     # 1b. or scaffold a Python project (src-layout, uv, pytest, strict pyright)
+/omero-create-go-project <project-name> [--sqlite] [--react] [--http]   # 1c. or scaffold a Go project (single binary, embed.FS client, build-tag tiers)
 /omero-design-sheet "<intent>" <feature-name>   # 2. converge intent into feature sheet(s)
 /omero-review-sheet <path-to-sheet>             # 2a. review the sheet for design soundness before build
 /omero-setup-project                            # 3. prove the project ready (writes the setup receipt)
@@ -39,7 +40,7 @@ The design pass (2) produces the sheet and the review (2a) checks it for design 
 
 The work is driven by these `/omero-*` skills (thin wrappers over the contracts; two more are setup helpers, `omero-install-project-rules`, which installs stack rules into a repo and is normally run for you by the generator, and `omero-install-global-rules`, which runs the once-per-machine global setup (the global rules and git guards), see [`skills/README.md`](skills/README.md)):
 
-1. `omero-create-ts-project` scaffolds a TypeScript project, with optional Mongo, React and Express layers and a layer-aware GitHub Actions CI workflow (the generator, separate from the pipeline). `omero-create-python-project` is the second generator, scaffolding a src-layout, uv-managed Python project with a strict pyright gate and a pytest tier split.
+1. `omero-create-ts-project` scaffolds a TypeScript project, with optional Mongo, React and Express layers and a layer-aware GitHub Actions CI workflow (the generator, separate from the pipeline). `omero-create-python-project` is the second generator, scaffolding a src-layout, uv-managed Python project with a strict pyright gate and a pytest tier split. `omero-create-go-project` is the third, scaffolding a single-binary Go module with an `embed.FS` client and a build-tag unit/integration tier split, with optional `--sqlite` (pure-Go driver), `--react` (a Vite client embedded into the binary) and `--http` layers.
 2. `omero-design-sheet` converges intent into validated feature sheet(s) plus an epic manifest listing them in build order (your cross feature build order reference, which the loop never reads); `omero-review-sheet` reviews a sheet for design soundness (inter-increment contradictions, dead-code cuts) before it crosses to build.
 3. `omero-setup-project` proves the project ready and writes the setup receipt.
 4. `omero-build-full` delivers the sheet, one increment per branch (one PR per increment with a GitHub remote, otherwise a local commit to main). `omero-build-quick` is the fast alternative: the same loop and roles, but the judge verifies each increment with the type-check and unit tier only (no integration tier, no documentation, no completion gate), so no live endpoint is needed. `omero-build-full-stacked` and `omero-build-quick-stacked` are the unattended alternatives: they remove the human from the build queue, stacking increments as one linear git-town stack (each increment stacked on the previous, and the first on the previous feature's tip) and proposing a PR per increment they never merge, so you can work the open PRs while the queue builds.
@@ -64,7 +65,7 @@ The build loop runs in one of two modes, sequential-attended or parallel-attende
 | [`contracts/`](contracts/) | The operating contracts. The source of truth for behaviour, dense reference. |
 | [`docs/`](docs/README.md) | The documentation pages and the diagrams. |
 | [`skills/`](skills/README.md) | The thin `/omero-*` skill wrappers and the installer that points them at this repo. |
-| [`scripts/`](scripts/) | The shell scripts: the layered project generators (TypeScript and Python) and their `scripts/generator/` layers, the setup gate, the report-tooling helper, the sheet, state and epic-manifest validators, the board computer, the stack linearise, the per-project rules installer and the global hooks and rules installers. |
+| [`scripts/`](scripts/) | The shell scripts: the layered project generators (TypeScript, Python and Go) and their `scripts/generator/` layers, the setup gate, the report-tooling helper, the sheet, state and epic-manifest validators, the board computer, the stack linearise, the per-project rules installer and the global hooks and rules installers. |
 | [`tests/`](tests/) | The repo's own test suites (one folder per script under test) and their fixtures, run by `tests/run.sh` and the tests workflow on every PR into main. |
 | [`file-templates/`](file-templates/) | The shared constant files (agent runners, report and checkpoint templates, vitest configs) the scripts copy from so nothing drifts. |
 | [`claude-rules/`](claude-rules/README.md) | The global Claude rules (conventions, branch naming), symlinked into `~/.claude/rules`. |

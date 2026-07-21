@@ -1,12 +1,16 @@
 ---
 paths:
   - "src/client/**"
+  - "client/**"
 ---
 
 # React
 
-Conventions for the React client. Scoped to `src/client/`, so it applies to the UI
-tree and not to server `.tsx`. Drafted from sensible defaults, refine to taste.
+Conventions for the React client. Scoped to the client tree, so it applies to the
+UI and not to server `.tsx`. Two scopes because the generators place the client
+differently: the TypeScript stack serves it from `src/client/`, while the Go stack
+keeps it at `client/` and embeds the build into the binary. Drafted from sensible
+defaults, refine to taste.
 
 ## Components
 - Function components only, with hooks. No class components.

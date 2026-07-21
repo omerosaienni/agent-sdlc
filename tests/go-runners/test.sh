@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+# Suite for the Go agent runners (file-templates/runners/go/): agent-tests.sh
+# (go test) and agent-typecheck.sh (go build + go vet) must honour the stack-neutral
+# exit-code contract (contracts/agent-runner.md) so the shared agent-hollow.sh
+# drives them. Sourced and run by tests/run.sh.
+#
+# This is the most important new suite on this stack, because `go test` CONFLATES
+# outcomes: it exits 0 for a package with no test files, and exits 1 for both a
+# genuine assertion failure and a build error in a test package. Everything the
+# judge concludes rests on the runner disentangling those, so each of the four codes
+# is proved against a real Go package rather than asserted from the source.
+#
+# Structural checks always run. The live matrix scaffolds a BASE project (no
+# third-party dependency, so no network is needed) and exercises every code path
+# including an end-to-end hollow check through the SHARED runner.
+
+suite_begin "go-runners (go test + go vet/build exit-code contract)" integration
+
+GODIR="$REPO_ROOT/file-templates/runners/go"
+
+# --- the templates drive Go tooling, not pytest/vitest -----------------------
+# (existence is not asserted separately: these cat/grep checks and the live matrix
+# below consume the files, so a missing template fails them just as loudly.)
+expect_match 0 'go test'   "agent-tests.sh drives go test"          cat "$GODIR/agent-tests.sh"
+expect_match 0 'go vet'    "agent-typecheck.sh drives go vet"       cat "$GODIR/agent-typecheck.sh"
+expect_match 0 'go build'  "agent-typecheck.sh drives go build"     cat "$GODIR/agent-typecheck.sh"
+expect_match 0 'tags=integration' "agent-tests.sh splits tiers by build tag" cat "$GODIR/agent-tests.sh"
+# usage guards (the spine).
+expect_exit 64 "agent-tests.sh no tier -> usage"      bash "$GODIR/agent-tests.sh"
+expect_exit 64 "agent-tests.sh bad option -> usage"   bash "$GODIR/agent-tests.sh" unit --bogus
+expect_exit 64 "agent-typecheck.sh bad arg -> usage"  bash "$GODIR/agent-typecheck.sh" bogus
+expect_exit 64 "agent-tests.sh scope with 'both' -> usage" bash "$GODIR/agent-tests.sh" both internal/app
+
+# --- live exit-code matrix (needs the go toolchain only) ---------------------
+GEN="$REPO_ROOT/scripts/init-go-project.sh"
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+proj="$work/runtest"
+
+if command -v go >/dev/null 2>&1 && [ -f "$GEN" ] \
+   && bash "$GEN" runtest "$proj" >/dev/null 2>&1; then
+
+    mkdir -p "$proj/.building/scripts"
+    cp "$GODIR/agent-tests.sh" "$GODIR/agent-typecheck.sh" \
+       "$REPO_ROOT/file-templates/runners/agent-hollow.sh" "$proj/.building/scripts/"
+    chmod +x "$proj/.building/scripts/"*.sh
+
+    # rc <cmd...>: run in the project, echo the exit code.
+    rc() { ( cd "$proj" && "$@" >/dev/null 2>&1 ); echo $?; }
+
+    expect_exit 0 "live: unit tier passes -> 0"   test "$(rc .building/scripts/agent-tests.sh unit)" = 0
+    expect_exit 0 "live: typecheck clean -> 0"    test "$(rc .building/scripts/agent-typecheck.sh)" = 0
+
+    # Scope granularity: Go's unit of compilation is the package DIRECTORY, but the
+    # shared agent-hollow.sh's usage contract passes a test FILE. The runner maps a
+    # file to its package, which is what makes the two agree; prove both forms work,
+    # because a regression here silently breaks every hollow check on this stack.
+    expect_exit 0 "live: scope as a package directory -> 0" \
+        test "$(rc .building/scripts/agent-tests.sh unit internal/app)" = 0
+    expect_exit 0 "live: scope as a test FILE maps to its package -> 0" \
+        test "$(rc .building/scripts/agent-tests.sh unit internal/app/app_test.go)" = 0
+
+    # zero selected -> 2. cmd/<app> holds only main.go, so go test exits 0 there
+    # while running nothing: exactly the conflation the runner must disentangle.
+    expect_exit 0 "live: package with no test files -> 2 (not a pass)" \
+        test "$(rc .building/scripts/agent-tests.sh unit cmd/runtest)" = 2
+
+    # real assertion failure -> 1.
+    cp "$proj/internal/app/app.go" "$work/app.bak"
+    sed -i 's/return "app starting"/return "WRONG"/' "$proj/internal/app/app.go"
+    expect_exit 0 "live: failing test -> 1" test "$(rc .building/scripts/agent-tests.sh unit)" = 1
+    cp "$work/app.bak" "$proj/internal/app/app.go"
+
+    # build error in a TEST package -> 3, NOT 1. go exits 1 for both, so this is the
+    # case that would otherwise bounce an environment problem to the builder as a
+    # behaviour failure.
+    cat > "$proj/internal/app/broken_test.go" <<'GO'
+package app
+
+import "testing"
+
+func TestBroken(t *testing.T) { undefinedSymbolXyz() }
+GO
+    expect_exit 0 "live: build error in a test package -> 3 (not a test failure)" \
+        test "$(rc .building/scripts/agent-tests.sh unit)" = 3
+    rm -f "$proj/internal/app/broken_test.go"
+
+    # typecheck: a compile error in SOURCE is a rejection (1), not an environment block.
+    cp "$proj/internal/app/app.go" "$work/app.bak2"
+    sed -i 's/return "app starting"/return 42/' "$proj/internal/app/app.go"
+    expect_exit 0 "live: typecheck build error -> 1" test "$(rc .building/scripts/agent-typecheck.sh)" = 1
+    cp "$work/app.bak2" "$proj/internal/app/app.go"
+
+    # typecheck: a vet finding that still COMPILES must also be a rejection (1). This
+    # is the half of the gate `go build` alone would miss.
+    cat > "$proj/internal/app/vetbad.go" <<'GO'
+package app
+
+import "fmt"
+
+// Bad compiles cleanly but is a vet printf diagnostic.
+func Bad() string { return fmt.Sprintf("%d", "not a number") }
+GO
+    expect_exit 0 "live: vet finding that compiles -> 1" \
+        test "$(rc .building/scripts/agent-typecheck.sh)" = 1
+    rm -f "$proj/internal/app/vetbad.go"
+
+    # runners must report an environment block, never a failure, outside a module.
+    expect_exit 0 "live: no go.mod -> tests 3" \
+        test "$( ( cd "$work" && bash "$proj/.building/scripts/agent-tests.sh" unit >/dev/null 2>&1 ); echo $? )" = 3
+    expect_exit 0 "live: no go.mod -> typecheck 3" \
+        test "$( ( cd "$work" && bash "$proj/.building/scripts/agent-typecheck.sh" >/dev/null 2>&1 ); echo $? )" = 3
+
+    # END-TO-END: the SHARED hollow runner drives the Go runner by exit code alone.
+    # A real test catching the fault -> ASSERTS (hollow exit 0).
+    expect_exit 0 "live: shared hollow ASSERTS on a real test" \
+        test "$(rc .building/scripts/agent-hollow.sh unit internal/app/app.go internal/app/app_test.go 'app starting' 'broken')" = 0
+
+    # A non-asserting test -> HOLLOW (hollow exit 1). It must live in its OWN package:
+    # Go's scope unit is the package directory, so a hollow test placed beside the
+    # real one would be rescued by its neighbour and the case would prove nothing.
+    mkdir -p "$proj/internal/hollowdemo"
+    cat > "$proj/internal/hollowdemo/hollow_test.go" <<'GO'
+package hollowdemo
+
+import (
+	"testing"
+
+	"runtest/internal/app"
+)
+
+func TestCallsGreeting(t *testing.T) { _ = app.Greeting() }
+GO
+    expect_exit 0 "live: shared hollow HOLLOW on a non-asserting test" \
+        test "$(rc .building/scripts/agent-hollow.sh unit internal/app/app.go internal/hollowdemo/hollow_test.go 'app starting' 'broken')" = 1
+    rm -rf "$proj/internal/hollowdemo"
+
+    # A fault that breaks the COMPILE is not behavioural: BAD FAULT (hollow exit 2),
+    # never a halt. This is the rc-3 asymmetry in contracts/agent-runner.md.
+    expect_exit 0 "live: shared hollow BAD FAULT on a non-behavioural fault" \
+        test "$(rc .building/scripts/agent-hollow.sh unit internal/app/app.go internal/app/app_test.go 'return "app starting"' 'return')" = 2
+
+    # The tree must be back to green: every hollow run restores what it faulted.
+    expect_exit 0 "live: tree restored to green after the hollow runs" \
+        test "$(rc .building/scripts/agent-tests.sh unit)" = 0
+else
+    printf '  %sSKIP%s live exit-code matrix (go toolchain absent or the generator failed)\n' "${C_NOTE:-}" "${C_RESET:-}"
+fi
+
+suite_summary

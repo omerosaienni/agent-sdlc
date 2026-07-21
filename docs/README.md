@@ -13,6 +13,7 @@ Explains the whole system, and the place to start. The contracts under [`../cont
 - [`building-folder.md`](building-folder.md): the gitignored `.building/` workspace, what each file is.
 - [`scripts.md`](scripts.md): the pipeline shell scripts (the generators, the setup gate, the report helper, the sheet, state and epic-manifest validators, the board computer, the stack linearise) and how they connect.
 - [`python-build-path.md`](python-build-path.md): how a Python project goes through the same four phases, with only the underlying commands changing.
+- [`go-build-path.md`](go-build-path.md): the same four phases for Go, plus the three things that genuinely differ (tiers split by build tag, `go test` conflating its outcomes so the runner classifies by output, and the compiler-plus-vet type gate).
 - [`merge-pr.md`](merge-pr.md): the merge gate that ships a green PR (require the required remote checks pass, then `git town ship`); stack-agnostic, outside the pipeline.
 - [`script-layout-guide.md`](script-layout-guide.md): the human rationale behind the script-layout contract, with the worked reference example.
 - [`project-rules.md`](project-rules.md): the two rule layers (global conventions and per-project stack rules), the installers and the path-scoping.
@@ -20,6 +21,7 @@ Explains the whole system, and the place to start. The contracts under [`../cont
 
 ## Templates and examples
 
+- [`templates/go-react-sqlite.md`](templates/go-react-sqlite.md): the full Go / React / SQLite project `init-go-project.sh --sqlite --react --http` produces (one module, the client embedded into the binary), and what is constant versus domain.
 - [`templates/ts-react-mongo.md`](templates/ts-react-mongo.md): the full TypeScript / React / MongoDB project `init-ts-project.sh --mongo --react` produces (a single-package layout, not a monorepo), and what is constant versus domain.
 - [`../examples/smoke-test-sheet.md`](../examples/smoke-test-sheet.md): a one-increment sheet that exercises the whole build loop on a trivial case. Run it first to validate the orchestration itself.
 - [`../hooks/`](../hooks/README.md): the global git guards (commit identity and branch naming), installed via `setup-global-git-hooks.sh`.
@@ -49,4 +51,4 @@ The operating contracts, each a project-agnostic rulebook a project consumes by 
 
 ## Skills
 
-The thin `/omero-*` wrappers, in [`../skills/`](../skills/). `omero-create-ts-project` runs the TypeScript project generator (TypeScript base, optional `--mongo`, `--react` and `--express` layers) and `omero-create-python-project` runs the Python generator (src-layout, uv, pytest, strict pyright); `omero-install-project-rules` installs stack rules into a repo and `omero-install-global-rules` runs the once-per-machine global setup (symlinks the global rules and installs the git guards); the pipeline skills (`omero-design-sheet`, `omero-review-sheet`, `omero-setup-project`, `omero-build-full` and `omero-build-quick`, the fast build variant, plus `omero-build-full-stacked` and `omero-build-quick-stacked`, the unattended stacked variants) each reference a contract by path; `omero-merge-pr` ships a green PR (`contracts/merge-pr.md`, outside the build pipeline). All carry `disable-model-invocation: true`; invoke with `/omero-*`.
+The thin `/omero-*` wrappers, in [`../skills/`](../skills/). `omero-create-ts-project` runs the TypeScript project generator (TypeScript base, optional `--mongo`, `--react` and `--express` layers) and `omero-create-python-project` runs the Python generator (src-layout, uv, pytest, strict pyright) and `omero-create-go-project` runs the Go generator (single binary, `embed.FS` client, build-tag tiers, optional `--sqlite`, `--react` and `--http` layers); `omero-install-project-rules` installs stack rules into a repo and `omero-install-global-rules` runs the once-per-machine global setup (symlinks the global rules and installs the git guards); the pipeline skills (`omero-design-sheet`, `omero-review-sheet`, `omero-setup-project`, `omero-build-full` and `omero-build-quick`, the fast build variant, plus `omero-build-full-stacked` and `omero-build-quick-stacked`, the unattended stacked variants) each reference a contract by path; `omero-merge-pr` ships a green PR (`contracts/merge-pr.md`, outside the build pipeline). All carry `disable-model-invocation: true`; invoke with `/omero-*`.
