@@ -321,8 +321,11 @@ EOF
     ( cd "$DIR" && ./scripts/config-env.sh >/dev/null )
 
     CONFIG_CLAUDE_MD="
-- Service ports and addresses live in config/services.yaml; \`make config\`
-  regenerates .env from it, read by the binary and the Vite dev server."
+- Configuration lives in config/services.yaml; \`make config\` regenerates .env from
+  it. The binary itself reads only the ENVIRONMENT, which keeps it dependency free
+  and lets a process manager configure it the usual way; \`make server-start\` sources
+  .env into that environment for a local run, and the Vite dev server loads it
+  directly."
 fi
 
 # ---------------------------------------------------------------------------

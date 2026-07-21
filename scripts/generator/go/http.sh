@@ -287,10 +287,16 @@ server:
 	@echo " server"
 	@echo "  server-start  Build and run the binary (serves the embedded client)"'
 
+    # .env is sourced by this target rather than read by the binary. The binary takes
+    # its configuration from the ENVIRONMENT, which keeps it dependency free and lets
+    # a process manager configure it the usual way; this is what turns `make config`
+    # output into that environment for a local run. Without it, config/services.yaml
+    # reached the Vite dev server and nothing else, so editing a port silently did
+    # nothing to the binary.
     HTTP_MAKE_TARGET="
 # --- server --------------------------------------------------------------
 .PHONY: server-start
 
 server-start: build ## Build and run the binary (serves the embedded client)
-	./bin/${APP}"
+	set -a; [ -f .env ] && . ./.env; set +a; ./bin/${APP}"
 }
