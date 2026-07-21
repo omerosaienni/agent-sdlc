@@ -24,7 +24,7 @@ work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 proj="$work/graphapp"
 
-if command -v uv >/dev/null 2>&1 && command -v gh >/dev/null 2>&1 \
+if command -v uv >/dev/null 2>&1 && gh auth status >/dev/null 2>&1 \
    && [ -n "$(git config --global user.email 2>/dev/null)" ] \
    && bash "$GEN" graphapp "$proj" >/dev/null 2>&1 \
    && ( cd "$proj" && uv sync >/dev/null 2>&1 ); then
@@ -87,7 +87,7 @@ PY
     cp "$work/node_bak" "$proj/src/graphapp/node.py"
 
 else
-    printf '  %sSKIP%s live end-to-end proof (uv/gh/git-identity/network absent)\n' "${C_NOTE:-}" "${C_RESET:-}"
+    printf '  %sSKIP%s live end-to-end proof (uv absent, gh not authenticated, no git identity, or no network)\n' "${C_NOTE:-}" "${C_RESET:-}"
 fi
 
 # (The Python path must not break the TS path, but a `test -f` only catches

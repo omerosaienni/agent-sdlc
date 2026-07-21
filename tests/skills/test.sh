@@ -23,6 +23,32 @@ expect_match 0 'init-python-project.sh \$ARGUMENTS' "python skill body runs the 
 # the skill must explicitly NOT chain into design/setup/build (it only creates).
 expect_match 0 'Do NOT run those here' "python skill states it only creates, does not run the pipeline" cat "$PY"
 
+# --- the Go create skill is well-formed, and scoped to its own generator ------
+GO="$SKILLS/omero-create-go-project/SKILL.md"
+expect_match 0 'name: omero-create-go-project' "go skill declares its name"     cat "$GO"
+expect_match 0 'disable-model-invocation: true' "go skill is not model-invocable" cat "$GO"
+# allowed-tools must scope to the go generator path, not another stack's, not a glob.
+expect_match 0 'init-go-project.sh'  "go skill allows the go generator" cat "$GO"
+expect_exit 1 "go skill does NOT allow the TS generator"     grep -q 'init-ts-project.sh' "$GO"
+expect_exit 1 "go skill does NOT allow the Python generator" grep -q 'init-python-project.sh' "$GO"
+# the body invokes the go generator and does not chain into the pipeline.
+expect_match 0 'init-go-project.sh \$ARGUMENTS' "go skill body runs the generator with args" cat "$GO"
+expect_match 0 'Do NOT run those here' "go skill states it only creates, does not run the pipeline" cat "$GO"
+# it must document its layer flags, since they are the whole reason it takes more
+# than a project name.
+expect_match 0 'argument-hint.*--sqlite.*--react.*--http' "go skill hints its layer flags" cat "$GO"
+
+# --- the build skills can actually run the Go toolchain ----------------------
+# The four build skills hardcode an allowed-tools list. Without the Go entries a Go
+# builder or judge cannot run its own gates under an attended run, which fails as a
+# permission denial rather than as a test result: silent and confusing. Every build
+# skill must carry them, including the two unattended stacked ones.
+for b in omero-build-full omero-build-quick omero-build-full-stacked omero-build-quick-stacked; do
+    expect_exit 0 "$b allows the go toolchain"  grep -q 'Bash(go:\*)' "$SKILLS/$b/SKILL.md"
+    expect_exit 0 "$b allows gofmt"             grep -q 'Bash(gofmt:\*)' "$SKILLS/$b/SKILL.md"
+    expect_exit 0 "$b allows goimports"         grep -q 'Bash(goimports:\*)' "$SKILLS/$b/SKILL.md"
+done
+
 # --- the installer auto-discovers it (no hardcoded skill list to update) ------
 # A SKILL.md under skills/<name>/ is enough; prove the installer loops over dirs
 # rather than naming skills, so the new one is picked up.
