@@ -1,5 +1,4 @@
-# Gate: tests/run.sh on every PR into main. Red tests block merge. Only dep is node
-# (the scripts under test embed it), preinstalled on the runner.
+# Gate: tests/run.sh on every PR into main. Red tests block merge.
 name: tests
 
 on:
@@ -7,14 +6,23 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  # Two Go versions, because the Go runners classify go's OWN output and that output
+  # is not stable across releases: Go 1.26 dropped the "# import/path" banner from
+  # go vet, which silently turned every vet finding into an environment block on a
+  # current toolchain while still passing on an older one. A single version cannot
+  # catch that class, and a developer machine is always a single version.
+  suites:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go: [oldstable, stable]
     # The setup gate the live proofs drive requires an AUTHENTICATED gh, and the
     # runner ships the binary with no credentials. Without this the Go proofs
     # skipped themselves on an honest tooling gate, so the one suite that exercises
-    # the whole path end to end never ran where it matters most. The automatic
-    # token is enough: the proofs scaffold LOCAL scratch projects and never create a
-    # remote (no origin is a note, not a failure), so nothing is pushed anywhere.
+    # the whole path end to end never ran where it matters most. The automatic token
+    # is enough: the proofs scaffold LOCAL scratch projects and never create a remote
+    # (no origin is a note, not a failure), so nothing is pushed anywhere.
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -26,12 +34,27 @@ jobs:
         run: |
           git config --global user.name "agent-sdlc ci"
           git config --global user.email "ci@agent-sdlc.test"
-      # Go is not preinstalled at a pinned version, and the Go suites are the ones
-      # this branch adds. Without it they skip, which is exactly the hole that let a
-      # red branch look green.
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: stable
+          go-version: ${{ matrix.go }}
+          # No go.sum anywhere in this repo to key a cache on; the scaffolded
+          # fixtures are throwaway. Silences a restore-cache warning per run.
+          cache: false
       - name: Run test suites
         run: ./tests/run.sh
+
+  # The single check branch protection requires. A matrix publishes one context per
+  # leg ("suites (stable)", ...), so protection pinned to a fixed name would wait
+  # forever on a context that no longer exists. This job keeps "test" reported while
+  # letting the matrix grow, and it must FAIL when any leg does: `needs` alone would
+  # skip it, and a skipped required check reads as unfulfilled, not as failure.
+  test:
+    runs-on: ubuntu-latest
+    needs: suites
+    if: always()
+    steps:
+      - name: Report the matrix result
+        run: |
+          echo "suites: ${{ needs.suites.result }}"
+          [ "${{ needs.suites.result }}" = "success" ]

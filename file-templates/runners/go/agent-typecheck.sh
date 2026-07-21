@@ -57,41 +57,64 @@ report() {
 }
 
 # classify_failure <output> -> 1 (the builder's, a rejection) or 3 (the environment's,
-# a block). This mirrors agent-tests.sh's rule, and for the same reason.
+# a block).
 #
-# THE RULE: go prints a "# <import/path>" banner above every compiler and vet
-# diagnostic, and prints no banner at all when go ITSELF could not get as far as
-# compiling. So a banner means the tool ran and judged the code (1), and no banner
-# means the tool never ran (3).
+# THE RULE: cmd/go prefixes its OWN messages with "go: ". A compiler or vet
+# diagnostic never carries that prefix; it is either a bare "file.go:line:col:" or
+# that under a "# import/path" banner. So a surviving "go: " line means go was still
+# talking about modules, toolchains or flags and never got to judging the code (3),
+# and its absence means a tool ran and judged the code (1).
 #
-# This replaced a whitelist of environment error strings, which was patched three
-# times and was wrong in principle each time. Error text nobody controls cannot be
-# enumerated, and the failures it missed defaulted to 1, handing the builder "fix
-# your types" for a dead proxy or an unusable toolchain. Worse, a phrase on the list
-# matched a compiler diagnostic that merely QUOTED it, so
-# `var x int = "connection refused"` was reported as an environment block. The banner
-# is a structural property of go's own output rather than a guess at its wording.
+# "go: downloading ..." is stripped first because it is PROGRESS, not a failure. It
+# appears on any cold module cache, including a build that goes on to report real
+# type errors, and counting it would swallow the errors the builder needs to fix.
+# A download that actually fails reports separately ("go: download X: ...", or the
+# fetch error against the importing line), and that line survives the strip.
 #
-# Unlike agent-tests.sh, a "# " line here cannot be forged by the code under test:
-# go build and go vet never execute it, they only compile it.
+# TWO EARLIER RULES WERE WRONG HERE, and both failures are worth keeping in mind.
 #
-# The one class that needs naming is module hygiene: go reports it without a banner,
-# but the builder has a command that fixes it (go mod tidy / go get), so it must stay
-# a rejection. Classifying it as environment consumes no attempt and leaves the loop
-# with no way to route the one thing that would fix it.
+# First a whitelist of environment error strings, patched three times. Error text
+# nobody controls cannot be enumerated: anything missed defaulted to 1, handing the
+# builder "fix your types" for a dead proxy, and a diagnostic that merely QUOTED a
+# listed phrase (`var x int = "connection refused"`) was read as an environment
+# block.
 #
-# Note which way each rule fails. Both the banner and the list below push towards 1,
-# and 3 is what is left when neither fires. A wrong match on the list therefore
-# reports a diagnostic as a diagnostic, which is where it was going anyway. That is
-# the whole point of the inversion: nothing has to be on a list to be recognised as
-# an environment block.
+# Then the "# import/path" banner, which looked structural and was not: **Go 1.26
+# dropped the banner from go vet output**, so every vet finding became an environment
+# block on a current toolchain while passing on an older one. CI caught it; local
+# runs on one Go version never could. The suite now covers both shapes, and the
+# workflow runs the whole thing on two Go versions for exactly this reason.
+#
+# The one class that needs naming is module hygiene: the builder has a command that
+# fixes it (go mod tidy / go get), so it must stay a rejection. Classifying it as
+# environment consumes no attempt and leaves the loop with no way to route the one
+# thing that would resolve it.
+#
+# Note which way each rule fails. The hygiene list pushes towards 1 and so does the
+# absence of a "go: " line, so nothing has to be enumerated to be recognised as an
+# environment block, and a wrong hygiene match reports a diagnostic as a diagnostic,
+# which is where it was going anyway.
 builder_fixable() {
     printf '%s' "$1" | grep -qE 'no required module provides package|missing go\.sum entry|updates to go\.mod needed|errors parsing go\.mod|malformed module path|inconsistent vendoring'
 }
 
+# Two signals, and a failure has to clear both to be called the builder's:
+#   - no surviving "go: " line, so cmd/go was not still talking about itself, and
+#   - an actual diagnostic pointing at a .go file with a line and column, which is
+#     the one shape every Go tool has always used to report on source.
+# The second is what catches a go command that fails before it says anything at all
+# ("build cache is required, but could not be located: GOCACHE is not an absolute
+# path" carries no "go: " prefix). Requiring a source reference also keeps the
+# default on 3, so a go failure nobody has seen before is a block rather than
+# something the builder is told to fix.
+names_a_source_line() {
+    printf '%s' "$1" | grep -qE '(^|[^[:alnum:]_/.-])[^[:space:]]+\.go:[0-9]+:[0-9]+:'
+}
+
 classify_failure() {
     builder_fixable "$1" && return 1
-    printf '%s' "$1" | grep -qE '^# ' && return 1
+    printf '%s' "$1" | grep -v '^go: downloading ' | grep -qE '^go: ' && return 3
+    names_a_source_line "$1" && return 1
     return 3
 }
 

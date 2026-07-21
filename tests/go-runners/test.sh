@@ -407,6 +407,23 @@ var x = GOTOOLCHAIN
     expect_exit 0 "live: an unusable GOCACHE is an environment block (3)" \
         test "$(tc_rc 'package a
 ' GOCACHE=notabsolute)" = 3
+    # GOCACHE and GOPATH fail in different SHAPES, which is why both are here: the
+    # GOPATH message carries go's own "go: " prefix and the GOCACHE one carries no
+    # prefix at all, so each exercises a different half of the classifier.
+    expect_exit 0 "live: a relative GOPATH is an environment block (3)" \
+        test "$(tc_rc 'package a
+' GOPATH=notabsolute)" = 3
+    # A vet finding is the case a current toolchain broke: Go 1.26 dropped the
+    # "# import/path" banner from vet output, so a classifier keyed on the banner
+    # called every vet finding an environment block. Whatever go version runs this
+    # suite, a vet finding is the builder's to fix.
+    expect_exit 0 "live: a vet finding is a rejection (1) on this toolchain" \
+        test "$(tc_rc 'package a
+
+import "fmt"
+
+func B() string { return fmt.Sprintf("%d", "not a number") }
+')" = 1
     # Module hygiene has no banner either, but go mod tidy fixes it, so it must stay
     # a rejection: classifying it as environment leaves the loop unable to route the
     # one action that would resolve it.

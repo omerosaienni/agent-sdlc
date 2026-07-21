@@ -42,11 +42,38 @@ Two details there are scars, and both are covered by regression cases in `tests/
 
 Go has no separate type-checker: the compiler is the type system. `agent-typecheck.sh` is therefore `go build ./...` followed by `go vet ./...`, mapped onto 0 clean / 1 errors / 3 could-not-run. It is kept as a gate even though `go test` also compiles, because it fails fast, it covers packages with no test files at all, and `go vet` catches a class of defect (printf mismatches, lost cancel functions, bad struct tags) that compiles cleanly and would otherwise reach a green pass.
 
-Splitting 1 from 3 is the hard part, because go reports both on stderr. The rule is structural: **go prints a `# <import/path>` banner above every compiler and vet diagnostic, and prints no banner when it never got as far as compiling.** A banner therefore means the tool ran and judged the code (1); no banner means the tool never ran (3), so a dead proxy, an unusable `GOTOOLCHAIN` or unparseable `GOFLAGS` is never handed to the builder as a type error to fix. The one exception named explicitly is module hygiene (`no required module provides package`, `missing go.sum entry`, a malformed `go.mod`): go reports it without a banner, but `go mod tidy` fixes it, so it stays a rejection rather than a block the loop cannot route.
+Splitting 1 from 3 is the hard part, because go reports both on stderr. The rule is
+structural, and a failure has to clear **both** signals to be called the builder's:
 
-This is the exact inverse of the test runner's treatment of `# ` (above), and the asymmetry is the point: **`go build` and `go vet` never execute the code, they only compile it, so a `# ` line there can only have come from go.** `go test` runs the code, which can print anything.
+1. **No surviving `go: ` line.** cmd/go prefixes its own messages that way; a
+   compiler or vet diagnostic never does. `go: downloading ...` is stripped first,
+   since it is progress output on any cold cache and appears above real type errors.
+2. **A diagnostic naming a source position** (`file.go:line:col:`), which is the one
+   shape every Go tool has always used to report on source. This catches a go command
+   that fails before saying anything at all: `build cache is required, but could not
+   be located: GOCACHE is not an absolute path` carries no `go: ` prefix.
 
-An earlier version enumerated environment error strings instead. It was patched three times and was wrong in principle each time: text nobody controls cannot be enumerated, the failures it missed defaulted to 1, and a diagnostic that merely quoted a listed phrase (`var x int = "connection refused"`) was reported as an environment block. Note which way each rule fails now: both the banner and the hygiene list push towards 1, and 3 is what is left when neither fires, so nothing has to be on a list to be recognised as a block.
+Module hygiene is named explicitly and overrides both (`no required module provides
+package`, `missing go.sum entry`, a malformed `go.mod`): `go mod tidy` fixes it, so it
+stays a rejection the loop can route rather than a block it cannot.
+
+**Two earlier rules were wrong here, and both failures are worth carrying forward.**
+
+First a **whitelist of environment error strings**, patched three times. Text nobody
+controls cannot be enumerated: anything the list missed defaulted to 1, and a
+diagnostic that merely quoted a listed phrase (`var x int = "connection refused"`) was
+reported as an environment block.
+
+Then the **`# import/path` banner**, which looked structural and was not. **Go 1.26
+dropped the banner from `go vet` output.** Every vet finding became an environment
+block on a current toolchain while passing on an older one. It was green on the
+developer machine and red in CI, which is the only reason it was caught: a developer
+machine is always a single Go version. `.github/workflows/test.yml` therefore runs the
+whole suite on `oldstable` and `stable`, and the suite asserts both output shapes.
+
+Note which way the rule fails now: the default is **3**, so a go failure nobody has
+anticipated is a block rather than something the builder is told to fix, and nothing
+has to be enumerated to be recognised as one.
 
 ## The scope granularity reconciliation
 
