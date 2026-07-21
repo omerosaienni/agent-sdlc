@@ -56,39 +56,43 @@ report() {
     exit "$code"
 }
 
-# A module whose dependencies cannot be resolved (no network on a cold module cache,
-# a bad require) fails to build for an ENVIRONMENT reason, not a type reason. go
-# names that class in its output, so it is separated out rather than reported as a
-# type error the builder is asked to fix.
+# classify_failure <output> -> 1 (the builder's, a rejection) or 3 (the environment's,
+# a block). This mirrors agent-tests.sh's rule, and for the same reason.
 #
-# ORDER MATTERS HERE, and both orders have been wrong at some point.
+# THE RULE: go prints a "# <import/path>" banner above every compiler and vet
+# diagnostic, and prints no banner at all when go ITSELF could not get as far as
+# compiling. So a banner means the tool ran and judged the code (1), and no banner
+# means the tool never ran (3).
 #
-# A network marker is checked FIRST. Go attributes a module-fetch failure to the
-# line of the import that triggered it, so an unreachable proxy still prints a
-# "file.go:L:C:" diagnostic. Checking for a diagnostic first therefore classified
-# every genuine network failure as a type error, and handed the builder "fix your
-# types" for a dead proxy.
+# This replaced a whitelist of environment error strings, which was patched three
+# times and was wrong in principle each time. Error text nobody controls cannot be
+# enumerated, and the failures it missed defaulted to 1, handing the builder "fix
+# your types" for a dead proxy or an unusable toolchain. Worse, a phrase on the list
+# matched a compiler diagnostic that merely QUOTED it, so
+# `var x int = "connection refused"` was reported as an environment block. The banner
+# is a structural property of go's own output rather than a guess at its wording.
 #
-# A compiler diagnostic is checked SECOND, and only then does it override. That is
-# what stops "go: downloading ...", printed on any cold-cache build including one
-# that goes on to report real type errors, from swallowing the errors the builder
-# actually needs to fix.
+# Unlike agent-tests.sh, a "# " line here cannot be forged by the code under test:
+# go build and go vet never execute it, they only compile it.
 #
-# Two classes are environment, and a builder can fix neither:
-#   - the module proxy cannot be REACHED
-#   - the TOOLCHAIN itself is unusable (go.mod asks for a newer Go than is
-#     available, or a toolchain download cannot complete)
+# The one class that needs naming is module hygiene: go reports it without a banner,
+# but the builder has a command that fixes it (go mod tidy / go get), so it must stay
+# a rejection. Classifying it as environment consumes no attempt and leaves the loop
+# with no way to route the one thing that would fix it.
 #
-# Every marker below is one go prints itself. Matching a bare word like GOTOOLCHAIN
-# would be wrong however tempting: it appears in compiler and vet diagnostics about
-# code that merely mentions it, and each of those is a rejection the builder can fix.
-#
-# A stale go.mod or go.sum is NOT in either class: go mod tidy fixes it and the
-# builder can run that, so it stays a rejection. Classifying it as environment
-# consumes no attempt and leaves the loop with no way to route the one thing that
-# would fix it.
-env_failure() {
-    printf '%s' "$1" | grep -qE 'module lookup disabled|dial tcp|connection refused|i/o timeout|proxyconnect|TLS handshake timeout|GOPROXY=off|toolchain not available|go\.mod requires go >='
+# Note which way each rule fails. Both the banner and the list below push towards 1,
+# and 3 is what is left when neither fires. A wrong match on the list therefore
+# reports a diagnostic as a diagnostic, which is where it was going anyway. That is
+# the whole point of the inversion: nothing has to be on a list to be recognised as
+# an environment block.
+builder_fixable() {
+    printf '%s' "$1" | grep -qE 'no required module provides package|missing go\.sum entry|updates to go\.mod needed|errors parsing go\.mod|malformed module path|inconsistent vendoring'
+}
+
+classify_failure() {
+    builder_fixable "$1" && return 1
+    printf '%s' "$1" | grep -qE '^# ' && return 1
+    return 3
 }
 
 # `go build ./...` drops a binary named after the module into the working tree
@@ -104,16 +108,16 @@ else
     build_out="$(go build ./... 2>&1)"; build_rc=$?
 fi
 if [ "$build_rc" -ne 0 ]; then
-    env_failure "$build_out" \
-        && report 3 "COULD NOT RUN (module resolution failed, not a type error)" "$build_out"
-    report 1 "BUILD ERRORS" "$build_out"
+    classify_failure "$build_out"; fail_code=$?
+    [ "$fail_code" -eq 1 ] && report 1 "BUILD ERRORS" "$build_out"
+    report 3 "COULD NOT RUN (go could not compile the module, not a type error)" "$build_out"
 fi
 
 vet_out="$(go vet ./... 2>&1)"; vet_rc=$?
 if [ "$vet_rc" -ne 0 ]; then
-    env_failure "$vet_out" \
-        && report 3 "COULD NOT RUN (module resolution failed, not a vet error)" "$vet_out"
-    report 1 "VET ERRORS" "$vet_out"
+    classify_failure "$vet_out"; fail_code=$?
+    [ "$fail_code" -eq 1 ] && report 1 "VET ERRORS" "$vet_out"
+    report 3 "COULD NOT RUN (go could not run vet, not a vet error)" "$vet_out"
 fi
 
 report 0 "clean" "$(printf '%s\n%s' "$build_out" "$vet_out")"

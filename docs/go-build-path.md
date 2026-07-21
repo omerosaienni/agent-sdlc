@@ -40,7 +40,13 @@ Two details there are scars, and both are covered by regression cases in `tests/
 
 ### The type-check gate is the compiler plus vet
 
-Go has no separate type-checker: the compiler is the type system. `agent-typecheck.sh` is therefore `go build ./...` followed by `go vet ./...`, mapped onto 0 clean / 1 errors / 3 could-not-run. It is kept as a gate even though `go test` also compiles, because it fails fast, it covers packages with no test files at all, and `go vet` catches a class of defect (printf mismatches, lost cancel functions, bad struct tags) that compiles cleanly and would otherwise reach a green pass. A module whose dependencies cannot be resolved is separated out as exit 3, so a cold module cache with no network is never reported to the builder as a type error to fix.
+Go has no separate type-checker: the compiler is the type system. `agent-typecheck.sh` is therefore `go build ./...` followed by `go vet ./...`, mapped onto 0 clean / 1 errors / 3 could-not-run. It is kept as a gate even though `go test` also compiles, because it fails fast, it covers packages with no test files at all, and `go vet` catches a class of defect (printf mismatches, lost cancel functions, bad struct tags) that compiles cleanly and would otherwise reach a green pass.
+
+Splitting 1 from 3 is the hard part, because go reports both on stderr. The rule is structural: **go prints a `# <import/path>` banner above every compiler and vet diagnostic, and prints no banner when it never got as far as compiling.** A banner therefore means the tool ran and judged the code (1); no banner means the tool never ran (3), so a dead proxy, an unusable `GOTOOLCHAIN` or unparseable `GOFLAGS` is never handed to the builder as a type error to fix. The one exception named explicitly is module hygiene (`no required module provides package`, `missing go.sum entry`, a malformed `go.mod`): go reports it without a banner, but `go mod tidy` fixes it, so it stays a rejection rather than a block the loop cannot route.
+
+This is the exact inverse of the test runner's treatment of `# ` (above), and the asymmetry is the point: **`go build` and `go vet` never execute the code, they only compile it, so a `# ` line there can only have come from go.** `go test` runs the code, which can print anything.
+
+An earlier version enumerated environment error strings instead. It was patched three times and was wrong in principle each time: text nobody controls cannot be enumerated, the failures it missed defaulted to 1, and a diagnostic that merely quoted a listed phrase (`var x int = "connection refused"`) was reported as an environment block. Note which way each rule fails now: both the banner and the hygiene list push towards 1, and 3 is what is left when neither fires, so nothing has to be on a list to be recognised as a block.
 
 ## The scope granularity reconciliation
 

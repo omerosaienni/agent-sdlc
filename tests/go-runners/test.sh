@@ -357,6 +357,73 @@ GO
     expect_exit 0 "live: the test runner agrees a toolchain block is 3" \
         test "$( ( cd "$toolproj" && GOTOOLCHAIN=local bash "$GODIR/agent-tests.sh" unit >/dev/null 2>&1 ); echo $? )" = 3
 
+    # --- the type gate classifies by go's OWN output structure --------------
+    # Three review rounds patched a whitelist of environment error strings here, and
+    # each patch introduced the next round's defect. The rule is now structural: go
+    # prints a "# <import/path>" banner above every compiler and vet diagnostic and
+    # prints none when it never got as far as compiling. These cases are the ones the
+    # whitelist got wrong, so they are the ones that must stay covered.
+    tcproj="$work/typeclass"
+    # tc_rc <file-body> [env...]: the gate's exit code on a module holding that body.
+    tc_rc() {
+        local body="$1"; shift
+        rm -rf "$tcproj"; mkdir -p "$tcproj"
+        printf 'module typeclass\n\ngo 1.23\n' > "$tcproj/go.mod"
+        printf '%s' "$body" > "$tcproj/a.go"
+        ( cd "$tcproj" && env "$@" bash "$GODIR/agent-typecheck.sh" >/dev/null 2>&1 ); echo $?
+    }
+
+    # A diagnostic that merely QUOTES an environment phrase is still the builder's to
+    # fix. Under the whitelist this exact line was reported as an environment block,
+    # so a real type error consumed no attempt and the loop had nowhere to route it.
+    expect_exit 0 "live: a type error quoting 'connection refused' is a rejection (1)" \
+        test "$(tc_rc 'package a
+
+var x int = "connection refused"
+')" = 1
+    expect_exit 0 "live: an undefined identifier named 'proxyconnect' is a rejection (1)" \
+        test "$(tc_rc 'package a
+
+var x = proxyconnect
+')" = 1
+    # The mirror of the above: a bare GOTOOLCHAIN term was removed from the whitelist
+    # for matching diagnostics like this one, which then left the real toolchain
+    # failure below misclassified. The structural rule has to get BOTH right.
+    expect_exit 0 "live: an undefined identifier named 'GOTOOLCHAIN' is a rejection (1)" \
+        test "$(tc_rc 'package a
+
+var x = GOTOOLCHAIN
+')" = 1
+    # An unusable toolchain is nobody's code, and no whitelist entry says so now.
+    expect_exit 0 "live: an invalid GOTOOLCHAIN value is an environment block (3)" \
+        test "$(tc_rc 'package a
+' GOTOOLCHAIN=nonsense)" = 3
+    # Two more go-level failures that were never on any list, which is the point: the
+    # default is now the block, so an unanticipated go failure needs no entry to be
+    # classified correctly.
+    expect_exit 0 "live: unparseable GOFLAGS is an environment block (3)" \
+        test "$(tc_rc 'package a
+' GOFLAGS=--bogus)" = 3
+    expect_exit 0 "live: an unusable GOCACHE is an environment block (3)" \
+        test "$(tc_rc 'package a
+' GOCACHE=notabsolute)" = 3
+    # Module hygiene has no banner either, but go mod tidy fixes it, so it must stay
+    # a rejection: classifying it as environment leaves the loop unable to route the
+    # one action that would resolve it.
+    expect_exit 0 "live: a malformed go.mod is a rejection (1), not a block" \
+        test "$( rm -rf "$tcproj"; mkdir -p "$tcproj"; printf 'module\n' > "$tcproj/go.mod"
+                 printf 'package a\n' > "$tcproj/a.go"
+                 ( cd "$tcproj" && bash "$GODIR/agent-typecheck.sh" >/dev/null 2>&1 ); echo $? )" = 1
+    # Default -mod=readonly, deliberately: go answers "no required module provides
+    # package" from go.mod alone and never reaches the network, so this stays a
+    # rejection offline. Adding -mod=mod would send it to the proxy, where the same
+    # source is correctly an environment block instead.
+    expect_exit 0 "live: an import no module provides is a rejection (1), not a block" \
+        test "$( rm -rf "$tcproj"; mkdir -p "$tcproj"; printf 'module typeclass\n\ngo 1.23\n' > "$tcproj/go.mod"
+                 printf 'package a\n\nimport _ "modernc.org/sqlite"\n' > "$tcproj/a.go"
+                 ( cd "$tcproj" && bash "$GODIR/agent-typecheck.sh" >/dev/null 2>&1 ); echo $? )" = 1
+    rm -rf "$tcproj"
+
     # A scoped file that declares no test function selects NOTHING. Falling back to
     # the whole package would let a neighbour's test answer for the file that was
     # asked about, so a helpers-only file would grade ASSERTS off someone else's
