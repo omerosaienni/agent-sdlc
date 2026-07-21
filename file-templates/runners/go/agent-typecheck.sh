@@ -61,20 +61,28 @@ report() {
 # names that class in its output, so it is separated out rather than reported as a
 # type error the builder is asked to fix.
 #
-# A COMPILER DIAGNOSTIC OVERRIDES ALL OF IT. "go: downloading ..." is printed on any
-# cold-cache build, including one that then reports real type errors, so treating it
-# as an environment signal made the first judge run after a scaffold report an
-# environment block instead of the errors the builder needs to fix. If go got far
-# enough to name a file, a line and a column, it ran.
+# ORDER MATTERS HERE, and both orders have been wrong at some point.
+#
+# A network marker is checked FIRST. Go attributes a module-fetch failure to the
+# line of the import that triggered it, so an unreachable proxy still prints a
+# "file.go:L:C:" diagnostic. Checking for a diagnostic first therefore classified
+# every genuine network failure as a type error, and handed the builder "fix your
+# types" for a dead proxy.
+#
+# A compiler diagnostic is checked SECOND, and only then does it override. That is
+# what stops "go: downloading ...", printed on any cold-cache build including one
+# that goes on to report real type errors, from swallowing the errors the builder
+# actually needs to fix.
+#
+# Only a genuine inability to REACH the proxy is an environment block. A stale
+# go.mod or go.sum is the builder's to fix with go mod tidy, so it stays a
+# rejection: classifying it as environment consumes no attempt and leaves the loop
+# with no way to route the one thing that would fix it.
 env_failure() {
-    if printf '%s' "$1" | grep -qE '^[^[:space:]]+\.go:[0-9]+:[0-9]+:'; then
-        return 1
+    if printf '%s' "$1" | grep -qE 'module lookup disabled|dial tcp|connection refused|i/o timeout|proxyconnect|TLS handshake timeout|GOPROXY=off'; then
+        return 0
     fi
-    # Only a genuine inability to REACH the proxy is an environment block. A stale
-    # go.mod or go.sum is the builder's to fix with go mod tidy, so it stays a
-    # rejection: classifying it as environment consumes no attempt and leaves the
-    # loop with no way to route the one thing that would fix it.
-    printf '%s' "$1" | grep -qE 'module lookup disabled|dial tcp|connection refused|i/o timeout|proxyconnect|TLS handshake timeout'
+    return 1
 }
 
 # `go build ./...` drops a binary named after the module into the working tree

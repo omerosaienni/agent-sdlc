@@ -321,6 +321,50 @@ GO
     expect_exit 0 "live: 'both' with no tagged tests reports the integration verdict (2)" \
         test "$(rc .building/scripts/agent-tests.sh both)" = 2
 
+    # The env_failure classifier itself was untested, which is why an ordering bug in
+    # it survived two review rounds. An unreachable proxy is an ENVIRONMENT block (3),
+    # never a type error: go attributes the fetch failure to the importing file's
+    # line, so a classifier that looks for a compiler diagnostic first calls a dead
+    # proxy a type error and tells the builder to fix their types.
+    netproj="$work/netfail"
+    mkdir -p "$netproj"
+    printf 'module netfail\n\ngo 1.23\n' > "$netproj/go.mod"
+    cat > "$netproj/main.go" <<'GO'
+package main
+
+import "github.com/definitely/not/a/real/module/anywhere"
+
+func main() { _ = anywhere.Thing }
+GO
+    expect_exit 0 "live: an unreachable module proxy is an environment block (3), not a type error" \
+        test "$( ( cd "$netproj" && GOFLAGS=-mod=mod GOPROXY=off GOMODCACHE="$work/emptycache" \
+            bash "$GODIR/agent-typecheck.sh" >/dev/null 2>&1 ); echo $? )" = 3
+    # And the two runners must agree on the same input.
+    expect_exit 0 "live: the test runner agrees it is an environment block (3)" \
+        test "$( ( cd "$netproj" && GOFLAGS=-mod=mod GOPROXY=off GOMODCACHE="$work/emptycache" \
+            bash "$GODIR/agent-tests.sh" unit >/dev/null 2>&1 ); echo $? )" = 3
+
+    # A scoped file that declares no test function selects NOTHING. Falling back to
+    # the whole package would let a neighbour's test answer for the file that was
+    # asked about, so a helpers-only file would grade ASSERTS off someone else's
+    # assertion: a false pass on the gate whose job is catching hollow tests.
+    cat > "$proj/internal/app/helpers_test.go" <<'GO'
+package app
+
+// helper exists so this file declares no test function at all.
+func helper() string { return Greeting() }
+GO
+    expect_exit 0 "live: a scoped file declaring no test function selects zero (2), not a borrowed pass" \
+        test "$(rc .building/scripts/agent-tests.sh unit internal/app/helpers_test.go)" = 2
+    # Through the shared hollow runner that surfaces as HALT (3), not a pass: its
+    # restore-verify requires a green tier, and a zero selection is not green. The
+    # code is heavier than the BAD FAULT the negative run alone would give, but the
+    # property that matters holds, and holds loudly: pointing the check at a file
+    # with no tests can no longer be answered by a neighbour.
+    expect_exit 0 "live: the shared hollow runner refuses a test-free file rather than passing it" \
+        test "$(rc .building/scripts/agent-hollow.sh unit internal/app/app.go internal/app/helpers_test.go 'app starting' 'broken')" = 3
+    rm -f "$proj/internal/app/helpers_test.go"
+
     # The type-check gate must leave no artefact: `go build ./...` drops a binary
     # named after the module whenever a main package sits at the root.
     before="$( cd "$proj" && ls | sort )"

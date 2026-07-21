@@ -91,12 +91,33 @@ run_one() {
         # the planted fault grades the scoped file ASSERTS however hollow it is. So
         # the run is filtered to the test functions those files actually declare.
         names="$(scoped_test_names)"
-        [ -n "$names" ] && tags+=("-run=^(${names})$")
+        if [ -n "$names" ]; then
+            tags+=("-run=^(${names})$")
+        elif scope_names_a_file; then
+            # The scope named files and none of them declares a test function (a
+            # helpers-only _test.go, say). Falling back to the whole package here
+            # would let a neighbour's test answer for the file that was asked about,
+            # so the hollow check would report a borrowed pass. Nothing was selected,
+            # which is what code 2 means.
+            echo "$label: 0 tests selected (hollow suite)"
+            return 2
+        fi
     else
         targets=("./...")
     fi
     out="$(go test "${tags[@]}" "${targets[@]}" 2>&1)"; rc=$?
     classify "$label" "$out" "$rc"
+}
+
+# scope_names_a_file: whether any scope argument is a file rather than a directory.
+# The distinction matters because an empty test-name list means "no tests here" for a
+# file and "select the whole package" for a directory.
+scope_names_a_file() {
+    local p
+    for p in "${scope[@]}"; do
+        [ -f "$p" ] && return 0
+    done
+    return 1
 }
 
 # scoped_test_names: the test functions declared by the scope arguments that are

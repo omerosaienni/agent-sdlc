@@ -49,6 +49,19 @@ func Handler() http.Handler {
 		}
 	})
 
+	// Registered so a WRONG METHOD on an API route is a 405 rather than the client.
+	// Go's mux gives the method-qualified pattern precedence, so GET still reaches
+	// the handler above; without this the catch-all below matches first and every
+	// non-GET request is answered with the application shell and a 200.
+	mux.Handle("/healthz", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Allow", http.MethodGet)
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}))
+
+	// The API area is claimed explicitly so an unmatched path under it 404s instead
+	// of falling through to the client fallback below.
+	mux.Handle("/"+apiPrefix, http.NotFoundHandler())
+
 	// Everything not matched above is the embedded client.
 	mux.Handle("/", clientHandler(assets.FS()))
 
@@ -78,21 +91,32 @@ func clientHandler(client fs.FS) http.Handler {
 	})
 }
 
+// Prefixes the client fallback must never swallow. assetPrefix is where the build
+// emits its hashed bundles and apiPrefix is where the server's own routes live:
+// both name concrete things, so a miss under either is a real 404 rather than a
+// route the client will handle.
+const (
+	assetPrefix = "assets"
+	apiPrefix   = "api"
+)
+
 // isClientRoute reports whether a path should fall back to the application shell.
-// A path resolving to a real embedded file never does, and neither does anything
-// under the build's asset directory: those name concrete files, so their absence is
-// a genuine 404 rather than a route the client will handle.
 func isClientRoute(client fs.FS, name string) bool {
 	if name == "" || name == "." {
 		return false
 	}
-	if strings.HasPrefix(name, "assets/") {
+	if underPrefix(name, assetPrefix) || underPrefix(name, apiPrefix) {
 		return false
 	}
-	if _, err := fs.Stat(client, name); err == nil {
-		return false
-	}
-	return true
+	_, err := fs.Stat(client, name)
+	return err != nil
+}
+
+// underPrefix matches the prefix itself as well as anything beneath it. path.Clean
+// strips the trailing slash, so a bare "/api" arrives as "api" and a check for
+// "api/" alone would let it through to the client.
+func underPrefix(name, prefix string) bool {
+	return name == prefix || strings.HasPrefix(name, prefix+"/")
 }
 
 func serveIndex(w http.ResponseWriter, client fs.FS) {
@@ -151,6 +175,10 @@ func TestRoutes(t *testing.T) {
 		// Not unconditional: a missing concrete file must still 404, or a misnamed
 		// bundle is served as HTML and fails as a blank page instead of a 404.
 		{name: "a missing asset is a 404", path: "/assets/missing.js", wantStatus: http.StatusNotFound},
+		// The API area must not be answered with the shell: a caller expecting JSON
+		// would parse HTML and report something unrelated to the real fault.
+		{name: "an unmatched API path is a 404", path: "/api/nope", wantStatus: http.StatusNotFound},
+		{name: "the bare API prefix is a 404", path: "/api", wantStatus: http.StatusNotFound},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -164,6 +192,20 @@ func TestRoutes(t *testing.T) {
 				t.Errorf("GET %s body = %q, want it to contain %q", tt.path, rec.Body.String(), tt.wantBodyHas)
 			}
 		})
+	}
+}
+
+// A wrong method on a real route is a 405, not the client. Without an explicit
+// registration the catch-all matches first and answers 200 with HTML.
+func TestWrongMethodOnHealthIsNotTheClient(t *testing.T) {
+	rec := httptest.NewRecorder()
+	Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/healthz", nil))
+
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("POST /healthz status = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+	}
+	if strings.Contains(rec.Body.String(), "<html") {
+		t.Error("POST /healthz was answered with the client shell, want a method error")
 	}
 }
 

@@ -18,7 +18,11 @@
 #      running, because the contract says verify by running, never trust an install.
 #   2. This stack declares NO external endpoint. Its integration tier is in process
 #      (a temp SQLite file plus httptest), so the BLOCKED-endpoint path is
-#      unreachable and setup never waits on a service to come up.
+#      unreachable and setup never waits on a service to come up. That is also why
+#      nothing here calls block(): the spine renders a block as "BLOCKED: endpoint
+#      down, bring it up and re-run", which would be a lie about a toolchain or
+#      module problem and would tell the reader to go and start a service that does
+#      not exist.
 #
 # Tiers split by BUILD TAG, not directory: the unit tier is every untagged test, the
 # integration tier is the files behind //go:build integration. So "is the
@@ -42,9 +46,23 @@ run_tier() { local tier="$1" label="$2" out rc
            else bad "$label passed but the agent runner emitted no terse summary; check .building/scripts/agent-tests.sh"; fi ;;
         1) bad "$label failed (see output)"; printf '%s\n' "$out" ;;
         2) bad "$label selected zero tests (hollow suite)" ;;
-        3) block "$label could not run (environment); fix the toolchain or the module and re-run"; printf '%s\n' "$out" ;;
+        3) bad "$label could not run (environment: the toolchain or the module, NOT an endpoint); fix it and re-run"; printf '%s\n' "$out" ;;
         *) bad "agent test runner returned an unexpected exit $rc for $label; the judge depends on this path" ;;
     esac; }
+
+# has_integration_tier: does any package gain a test file under the integration tag?
+#
+# Asked of the TOOLCHAIN, not by grepping for the tag string. A grep matches the
+# words in a prose comment, which invented a tier the gate then reported as hollow
+# because nothing tagged actually ran. The runner already resolves it this way, and
+# a gate whose whole job is proving the runner's path must not use a different
+# method to answer the same question.
+has_integration_tier() {
+    local tagged untagged
+    tagged="$(go list -tags=integration -f '{{len .TestGoFiles}}{{len .XTestGoFiles}}' ./... 2>/dev/null | tr -d '\n')"
+    untagged="$(go list -f '{{len .TestGoFiles}}{{len .XTestGoFiles}}' ./... 2>/dev/null | tr -d '\n')"
+    [ -n "$tagged" ] && [ "$tagged" != "$untagged" ]
+}
 
 # agent_hollow_check: prove the hollow-check runner answers its usage contract.
 agent_hollow_check() {
@@ -55,15 +73,15 @@ agent_hollow_check() {
 }
 
 # agent_typecheck_check: prove the type-check runner is present and runnable. A
-# clean check (0) or reported errors (1) both prove it ran; only an environment
-# block (3) or a usage/exec failure is a problem to surface here.
+# clean check (0) or reported errors (1) both prove it ran; only a could-not-run (3)
+# or a usage/exec failure is a problem to surface here.
 agent_typecheck_check() {
     local rc
     bash .building/scripts/agent-typecheck.sh >/dev/null 2>&1; rc=$?
     case "$rc" in
         0) ok "agent type-check runner works (clean)" ;;
         1) ok "agent type-check runner works (reported build or vet errors; the runner ran)" ;;
-        3) block "agent type-check runner could not run (go absent or the module unresolved); fix tooling and re-run" ;;
+        3) bad "agent type-check runner could not run (go absent or the module unresolved); fix tooling and re-run" ;;
         *) bad ".building/scripts/agent-typecheck.sh failed (exit $rc); the judge's type-check gate depends on it" ;;
     esac
 }
@@ -106,6 +124,11 @@ go_setup() {
     fi
     rm -rf "$build_dir"
     if [ "$build_ok" = 1 ]; then ok "go build ./... compiles the module"
+    elif ! consent; then
+        # Under --check the module was deliberately not tidied, so an unresolved
+        # import is the outstanding ACTION, not a defect. Reporting a compile error
+        # here sends the reader hunting for one that does not exist.
+        need "the module does not build yet, most likely because it is not tidied; re-run without --check"
     else bad "go build ./... failed; fix the compile errors and re-run"; fi
 
     # -----------------------------------------------------------------------
@@ -164,10 +187,10 @@ go_setup() {
     # judge's surface are the same act rather than two classifiers that can disagree.
     if [ -f .building/scripts/agent-tests.sh ]; then
         run_tier unit "unit tier"
-        if grep -rlq --include='*_test.go' '//go:build integration' . 2>/dev/null; then
-            [ "$fail" -ne 3 ] && run_tier integration "integration tier"
+        if has_integration_tier; then
+            run_tier integration "integration tier"
         else
-            note "no integration tier declared (no //go:build integration test files); nothing to run"
+            note "no integration tier declared (no test file carries the integration build tag); nothing to run"
         fi
     elif consent; then
         bad ".building/scripts/agent-tests.sh is not present, so no tier can be proven"
@@ -192,6 +215,12 @@ go_setup() {
     #    "no such tool covdata" even though every instrumented package passed.
     #    Measuring what can be measured is the stronger check, not the weaker one.
     # -----------------------------------------------------------------------
+    # Skipped once anything above has failed: coverage over a module whose tiers did
+    # not run measures nothing, and a second failure line only buries the first.
+    if [ "$fail" -ne 0 ]; then
+        note "skipping the coverage run: an earlier check failed, so there is nothing to measure"
+        return
+    fi
     local covered
     covered=$(go list -f '{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./... 2>/dev/null)
     if [ -z "$covered" ]; then

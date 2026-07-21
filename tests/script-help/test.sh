@@ -33,4 +33,20 @@ for s in "$REPO_ROOT"/scripts/*.sh "$REPO_ROOT"/skills/*.sh; do
     check_help "$s"
 done
 
+# --- directly-callable scripts must be executable -----------------------------
+# The skills invoke the generators by absolute path, so a script committed without
+# its executable bit is broken for every user of the skill while every test that
+# runs it as `bash <script>` still passes. That is exactly how it shipped once.
+# Sourced components (scripts/generator/, scripts/setup/, tests/lib.sh) are exempt:
+# they are never executed directly.
+for s in "$REPO_ROOT"/scripts/*.sh "$REPO_ROOT"/skills/*.sh "$REPO_ROOT"/file-templates/runners/*.sh "$REPO_ROOT"/file-templates/runners/*/*.sh; do
+    [ -f "$s" ] || continue
+    rel="${s#"$REPO_ROOT"/}"
+    if [ -x "$s" ]; then
+        _t_ok "$rel is executable"
+    else
+        _t_bad "$rel is not executable; a skill invoking it by path gets 'Permission denied'"
+    fi
+done
+
 suite_summary
