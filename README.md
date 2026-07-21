@@ -29,6 +29,8 @@ Then drive a project through these four `/omero-*` skills, in order:
 /omero-setup-project                            # 3. prove the project ready (writes the setup receipt)
 /omero-build-full <path-to-sheet>               # 4. deliver the sheet, one PR per increment (a local commit if no remote)
 /omero-build-quick <path-to-sheet>              # 4. or the fast build: judge verifies with type-check and unit tier only, no live endpoint
+/omero-build-full-stacked <path-to-sheet>       # 4. or unattended and stacked: no checkpoint, one linear git-town stack, proposes PRs it never merges
+/omero-build-quick-stacked <path-to-sheet>      # 4. or unattended, stacked and fast: the stacked path with type-check and unit tier only
 ```
 
 The design pass (2) produces the sheet and the review (2a) checks it for design soundness; the design pass and setup (3) are independent prerequisites and can run in either order; step 4 refuses to start without both the receipt and a schema-valid sheet. The feature name is a short kebab-case label you choose, for example `gym-tracker`. To exercise the loop itself before a real build, run it against [`examples/smoke-test-sheet.md`](examples/smoke-test-sheet.md), a one-increment sheet that runs the whole orchestration on a trivial case.
@@ -40,9 +42,9 @@ The work is driven by these `/omero-*` skills (thin wrappers over the contracts;
 1. `omero-create-ts-project` scaffolds a TypeScript project, with optional Mongo, React and Express layers and a layer-aware GitHub Actions CI workflow (the generator, separate from the pipeline). `omero-create-python-project` is the second generator, scaffolding a src-layout, uv-managed Python project with a strict pyright gate and a pytest tier split.
 2. `omero-design-sheet` converges intent into validated feature sheet(s) plus an epic manifest listing them in build order (your cross feature build order reference, which the loop never reads); `omero-review-sheet` reviews a sheet for design soundness (inter-increment contradictions, dead-code cuts) before it crosses to build.
 3. `omero-setup-project` proves the project ready and writes the setup receipt.
-4. `omero-build-full` delivers the sheet, one increment per branch (one PR per increment with a GitHub remote, otherwise a local commit to main). `omero-build-quick` is the fast alternative: the same loop and roles, but the judge verifies each increment with the type-check and unit tier only (no integration tier, no documentation, no completion gate), so no live endpoint is needed.
+4. `omero-build-full` delivers the sheet, one increment per branch (one PR per increment with a GitHub remote, otherwise a local commit to main). `omero-build-quick` is the fast alternative: the same loop and roles, but the judge verifies each increment with the type-check and unit tier only (no integration tier, no documentation, no completion gate), so no live endpoint is needed. `omero-build-full-stacked` and `omero-build-quick-stacked` are the unattended alternatives: they remove the human from the build queue, stacking increments as one linear git-town stack (each increment stacked on the previous, and the first on the previous feature's tip) and proposing a PR per increment they never merge, so you can work the open PRs while the queue builds.
 
-The build loop runs in one of two modes, sequential-attended or parallel-attended, read from `mode` in `state.json`. They share every role, gate and the checkpoint; they differ only in what the loop offers after a PR opens. Orthogonally it runs in one of two profiles, full (the default) or lite, read from `profile` in `state.json`: lite defers the integration tier and the documentation to a completion gate for fast iteration, while full verifies and documents every increment before it ships. See [docs/build-loops.md](docs/build-loops.md).
+The build loop runs in one of two modes, sequential-attended or parallel-attended, read from `mode` in `state.json`. They share every role, gate and the checkpoint; they differ only in what the loop offers after a PR opens. Orthogonally it runs in one of two profiles, full (the default) or lite, read from `profile` in `state.json`: lite defers the integration tier and the documentation to a completion gate for fast iteration, while full verifies and documents every increment before it ships. The stacked builders are a separate, unattended path with their own contracts and no checkpoint. See [docs/build-loops.md](docs/build-loops.md).
 
 ## Documentation
 
@@ -50,7 +52,7 @@ The build loop runs in one of two modes, sequential-attended or parallel-attende
 | --- | --- |
 | [docs/](docs/README.md) | Documentation index and contract list |
 | [docs/pipeline.md](docs/pipeline.md) | The three phases and two gates, creating a project, tooling, prerequisites |
-| [docs/build-loops.md](docs/build-loops.md) | The one build loop, its two modes and two profiles, the fast build-quick path, the checkpoint, tests, recovery |
+| [docs/build-loops.md](docs/build-loops.md) | The one build loop, its two modes and two profiles, the fast build-quick path, the unattended stacked path, the checkpoint, tests, recovery |
 | [docs/roles.md](docs/roles.md) | The four agent roles and the ordering invariant |
 | [docs/building-folder.md](docs/building-folder.md) | The gitignored `.building/` workspace |
 | [docs/scripts.md](docs/scripts.md) | The pipeline shell scripts and how they connect |
@@ -62,7 +64,7 @@ The build loop runs in one of two modes, sequential-attended or parallel-attende
 | [`contracts/`](contracts/) | The operating contracts. The source of truth for behaviour, dense reference. |
 | [`docs/`](docs/README.md) | The documentation pages and the diagrams. |
 | [`skills/`](skills/README.md) | The thin `/omero-*` skill wrappers and the installer that points them at this repo. |
-| [`scripts/`](scripts/) | The shell scripts: the layered project generators (TypeScript and Python) and their `scripts/generator/` layers, the setup gate, the report-tooling helper, the sheet, state and epic-manifest validators, the board computer, the per-project rules installer and the global hooks and rules installers. |
+| [`scripts/`](scripts/) | The shell scripts: the layered project generators (TypeScript and Python) and their `scripts/generator/` layers, the setup gate, the report-tooling helper, the sheet, state and epic-manifest validators, the board computer, the stack linearise, the per-project rules installer and the global hooks and rules installers. |
 | [`tests/`](tests/) | The repo's own test suites (one folder per script under test) and their fixtures, run by `tests/run.sh` and the tests workflow on every PR into main. |
 | [`file-templates/`](file-templates/) | The shared constant files (agent runners, report and checkpoint templates, vitest configs) the scripts copy from so nothing drifts. |
 | [`claude-rules/`](claude-rules/README.md) | The global Claude rules (conventions, branch naming), symlinked into `~/.claude/rules`. |
@@ -73,7 +75,9 @@ The build loop runs in one of two modes, sequential-attended or parallel-attende
 
 ## Posture
 
-Attended only: with a GitHub remote the human merges every PR, and the merge is the final gate; with no remote the build loop commits each increment to local main and the judge's pass is the gate, the human still deciding at every checkpoint. GitHub is optional: a missing remote warns and the loop continues locally, it never blocks. Both build modes are attended. Unattended operation (auto-merge on a green pass) is out of scope and not built.
+Two postures. The core build loop (`omero-build-full`, `omero-build-quick`) is **attended**: with a GitHub remote the human merges every PR and the merge is the final gate; with no remote the loop commits each increment to local main and the judge's pass is the gate, the human still deciding at every checkpoint. GitHub is optional here: a missing remote warns and the loop continues locally, it never blocks. Both build modes (sequential and parallel) are attended.
+
+The stacked builders (`omero-build-full-stacked`, `omero-build-quick-stacked`) are **unattended**: they remove the human from the build queue, building a feature as one linear git-town stack with no checkpoint. Unattended here means no human in the build queue, not automatic integration: the loop only proposes stacked PRs and a human still ships them, so auto-merge on a green pass remains out of scope and unbuilt. A remote is required for the stacked path (there is no local-only stacked flow).
 
 ## License
 

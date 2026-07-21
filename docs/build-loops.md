@@ -2,7 +2,7 @@
 
 This page frames the build phase for a human: what it is, the choices it offers, and the trade-offs behind them. The exact rules live in the contracts and are linked throughout; this page summarises and points, it does not restate. The source of truth is [`../contracts/build-judge-loop.md`](../contracts/build-judge-loop.md) (the core), with the profile deltas in [`../contracts/build-loop-full.md`](../contracts/build-loop-full.md) and [`../contracts/build-loop-lite.md`](../contracts/build-loop-lite.md).
 
-The build phase delivers a sheet one increment at a time: a single loop, one [per-increment cycle](roles.md), one set of gates, one `.building/` workspace, one checkpoint. It is always attended, a human decides at every checkpoint. With a GitHub remote the human merges every PR and the merge is the final gate; with no remote the loop commits each increment locally and the judge's pass is the gate.
+The build phase delivers a sheet one increment at a time: a single loop, one [per-increment cycle](roles.md), one set of gates, one `.building/` workspace, one checkpoint. In its attended form (the default, described first below) a human decides at every checkpoint: with a GitHub remote the human merges every PR and the merge is the final gate; with no remote the loop commits each increment locally and the judge's pass is the gate. There is also an [unattended, stacked form](#the-unattended-path-stacked-builds) that removes the human from the build queue, stacking increments as one linear git-town stack and proposing PRs it never merges; it is covered in its own section below.
 
 ![The build and judge loop for one increment](diagrams/build-judge-loop.svg)
 
@@ -47,6 +47,19 @@ The trade is honest: lite buys speed at the cost of per-increment integration-gr
 - **documentation**: the document role does not run, so increments carry code only and there is no completion gate.
 
 The trade is the sharpest of the three: build-quick buys the most speed for the least proof, an increment is verified at the unit level only, with integration left entirely to you outside the loop. Use it for fast inner-loop work where unit coverage is the bar; use `omero-build-full` (full or lite) when integration or documentation must be part of the build.
+
+## The unattended path: stacked builds
+
+Everything above is attended: the loop stops at a checkpoint after every increment and a human merges each PR. The two **stacked** builders remove the human from the build queue entirely, so you can work the open PRs while the queue keeps building. They are their own skills, `omero-build-full-stacked` and `omero-build-quick-stacked`, with their own contracts ([`../contracts/build-stacked.md`](../contracts/build-stacked.md), the full path, and [`../contracts/build-quick-stacked.md`](../contracts/build-quick-stacked.md), the unit-only delta over it, exactly as build-quick is a delta over the core). They run the same four roles and the same review and judge discipline; what changes is how increments reach the remote and who is in the loop.
+
+![Unattended stacked topology: one linear git-town stack, each increment stacked on the previous, features chained by tag](diagrams/stacked-topology.svg)
+
+- **Unattended, incremental, one linear stack.** The loop builds one increment at a time and stacks each on the previous one's branch, forming a single linear git-town stack (the DAG is linearised into one chain, `scripts/stack-order.sh`; siblings are chained, never forked). There is no checkpoint: it builds every increment back to back and stops only when the sheet is exhausted or an increment escalates.
+- **Stacked across features.** A feature's first increment is not cut from main; it is stacked on the previous feature's stack tip, found through the `feature/<name>` tag. So a run continues a stack another feature left open, and a program builds as one growing stack. Tags are the index: `feature/<name>` marks each feature tip, `epic/<name>` the overall tip, force-moved so they always point at the live tip.
+- **It proposes, it never merges.** A remote is required (there is no local-only stacked flow). Each increment opens one stacked PR (`gh pr create --base <parent>`, the base being the parent branch, not main), but the loop never merges and never ships. You merge the stack bottom-up at your own pace, with `omero-merge-pr` or `git town ship`, while the queue builds ahead of you. On re-entry the loop reconciles whatever you merged, rebases the survivors (`git town sync --stack`) and continues.
+- **git-town owns the stack.** Branch parents live in git-town config, not `state.json` (whose schema is unchanged); `git town append` cuts each branch and `git town sync --stack` reconciles on re-entry. The loop drives git-town, it does not reimplement stacking.
+
+The trade: control for throughput. You give up the per-increment checkpoint and the loop's own merge gate; you get a whole feature (or a chain of features) built without waiting on you, left as a reviewable stack of PRs. Full stacked when integration and docs must be part of the stack, quick stacked for the fastest unit-only path. Escalation halts the whole chain (the stack is linear, so nothing builds past a broken increment) until you fix it on its branch and re-run (see [`../contracts/build-stacked.md`](../contracts/build-stacked.md), Escalation halts the chain).
 
 ## Multiple queues
 

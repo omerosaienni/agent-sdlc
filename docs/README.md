@@ -5,13 +5,13 @@ Explains the whole system, and the place to start. The contracts under [`../cont
 ## Start here
 
 - [`pipeline.md`](pipeline.md): the three phases and two gates, creating a project, the pipeline tooling and prerequisites.
-- [`build-loops.md`](build-loops.md): the one build loop, its two modes (sequential and parallel) and two profiles (full and lite), the per-increment cycle, the checkpoint, tests, recovery.
+- [`build-loops.md`](build-loops.md): the one build loop, its two modes (sequential and parallel) and two profiles (full and lite), the fast build-quick path, the unattended stacked path, the per-increment cycle, the checkpoint, tests, recovery.
 - [`roles.md`](roles.md): the four agent roles and the ordering invariant.
 
 ## Reference
 
 - [`building-folder.md`](building-folder.md): the gitignored `.building/` workspace, what each file is.
-- [`scripts.md`](scripts.md): the pipeline shell scripts (the generators, the setup gate, the report helper, the sheet, state and epic-manifest validators, the board computer) and how they connect.
+- [`scripts.md`](scripts.md): the pipeline shell scripts (the generators, the setup gate, the report helper, the sheet, state and epic-manifest validators, the board computer, the stack linearise) and how they connect.
 - [`python-build-path.md`](python-build-path.md): how a Python project goes through the same four phases, with only the underlying commands changing.
 - [`merge-pr.md`](merge-pr.md): the merge gate that ships a green PR (require the required remote checks pass, then `git town ship`); stack-agnostic, outside the pipeline.
 - [`script-layout-guide.md`](script-layout-guide.md): the human rationale behind the script-layout contract, with the worked reference example.
@@ -39,6 +39,8 @@ The operating contracts, each a project-agnostic rulebook a project consumes by 
 - [`../contracts/build-loop-full.md`](../contracts/build-loop-full.md): the full profile (default), integration-tested and documented per increment.
 - [`../contracts/build-loop-lite.md`](../contracts/build-loop-lite.md): the lite profile, integration and documentation deferred to a completion gate.
 - [`../contracts/build-quick.md`](../contracts/build-quick.md): the fast build path (its own skill, not a profile), verifying each increment with the type-check and unit tier only.
+- [`../contracts/build-stacked.md`](../contracts/build-stacked.md): the unattended stacked build path (its own skill), a self-contained fork of build-judge-loop.md: incremental, one linear git-town stack, each increment stacked on the previous and the first on the previous feature's tip, one stacked PR per increment, never merges or ships, tags feature/&lt;name&gt; and epic/&lt;name&gt; at the tips.
+- [`../contracts/build-quick-stacked.md`](../contracts/build-quick-stacked.md): the fast unattended stacked path, a delta over build-stacked.md (type-check and unit tier only, no integration, no documentation).
 - [`../contracts/document-agent.md`](../contracts/document-agent.md): the document stage, a producer that never gates.
 - [`../contracts/doc-payload.schema.md`](../contracts/doc-payload.schema.md): the typed payload the agents fill for the document stage.
 - [`../contracts/state.schema.md`](../contracts/state.schema.md): the typed per-feature state file the loop, the cross-queue scan and the reconstruction path read and write.
@@ -47,4 +49,4 @@ The operating contracts, each a project-agnostic rulebook a project consumes by 
 
 ## Skills
 
-The thin `/omero-*` wrappers, in [`../skills/`](../skills/). `omero-create-ts-project` runs the TypeScript project generator (TypeScript base, optional `--mongo`, `--react` and `--express` layers) and `omero-create-python-project` runs the Python generator (src-layout, uv, pytest, strict pyright); `omero-install-project-rules` installs stack rules into a repo and `omero-install-global-rules` runs the once-per-machine global setup (symlinks the global rules and installs the git guards); the pipeline skills (`omero-design-sheet`, `omero-review-sheet`, `omero-setup-project`, `omero-build-full` and `omero-build-quick`, the fast build variant) each reference a contract by path; `omero-merge-pr` ships a green PR (`contracts/merge-pr.md`, outside the build pipeline). All carry `disable-model-invocation: true`; invoke with `/omero-*`.
+The thin `/omero-*` wrappers, in [`../skills/`](../skills/). `omero-create-ts-project` runs the TypeScript project generator (TypeScript base, optional `--mongo`, `--react` and `--express` layers) and `omero-create-python-project` runs the Python generator (src-layout, uv, pytest, strict pyright); `omero-install-project-rules` installs stack rules into a repo and `omero-install-global-rules` runs the once-per-machine global setup (symlinks the global rules and installs the git guards); the pipeline skills (`omero-design-sheet`, `omero-review-sheet`, `omero-setup-project`, `omero-build-full` and `omero-build-quick`, the fast build variant, plus `omero-build-full-stacked` and `omero-build-quick-stacked`, the unattended stacked variants) each reference a contract by path; `omero-merge-pr` ships a green PR (`contracts/merge-pr.md`, outside the build pipeline). All carry `disable-model-invocation: true`; invoke with `/omero-*`.

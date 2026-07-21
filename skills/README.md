@@ -21,6 +21,8 @@ install-skills.sh adds and updates skills; it does NOT remove them. Deleting a s
 Repo-managed (installed from here, the source of truth):
 - omero-build-full, points at contracts/build-judge-loop.md
 - omero-build-quick, points at contracts/build-quick.md (fast variant: typecheck + unit only, no integration tier, documentation or completion gate)
+- omero-build-full-stacked, points at contracts/build-stacked.md (unattended stacked variant of build-full: incremental linear git-town stack, one stacked PR per increment, first increment stacked on the previous feature's tip via the epic and its tag, never merges or ships, tags feature/<name> and epic/<name> at the tips)
+- omero-build-quick-stacked, points at contracts/build-quick-stacked.md, a delta over contracts/build-stacked.md (unattended stacked variant of build-quick: the same stacking but typecheck + unit only, no integration tier or documentation)
 - omero-design-sheet, points at contracts/design-partner.md (produces the feature sheet)
 - omero-review-sheet, points at contracts/design-review.md (reviews the sheet for design soundness before build)
 - omero-setup-project, points at contracts/project-setup.md and runs scripts/project-setup.sh
