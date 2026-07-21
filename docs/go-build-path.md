@@ -46,9 +46,9 @@ Go has no separate type-checker: the compiler is the type system. `agent-typeche
 
 The shared `agent-hollow.sh` runs a **scoped** negative run: it plants a fault, then runs the tier against one test target. Its usage contract requires a test **file**, and it checks `-f` on the argument. But Go's unit of compilation is the **package directory**: `go test ./some/file_test.go` compiles that one file without the rest of its package and fails to build.
 
-The reconciliation lives in the Go runner, not in the shared script: `agent-tests.sh` maps a file argument to its containing directory, and accepts a directory as is. Both forms are proved in `tests/go-runners`, because a regression there would silently break every hollow check on this stack. Nothing about `agent-hollow.sh` changes; it stays the one copy that serves every stack, parsing integers rather than words.
+The reconciliation lives in the Go runner, not in the shared script: `agent-tests.sh` maps a file argument to its containing directory, and accepts a directory as is. Nothing about `agent-hollow.sh` changes; it stays the one copy that serves every stack, parsing integers rather than words.
 
-One consequence worth knowing when reading a judge's hollow result: because the scope is the package, a non-asserting test placed *beside* a real one is rescued by its neighbour and reports ASSERTS. The hollow check proves the package asserts, not that one specific function does.
+Mapping to the directory is necessary but **not sufficient**, and the difference is the whole value of the check. Go co-locates tests, so the package almost always holds other tests too, and any one of them catching the planted fault grades the scoped file ASSERTS however hollow it is. So when the scope names files, the runner also narrows the run to the test **functions those files declare**. A non-asserting test sitting beside a real one is correctly reported HOLLOW, on both tiers. `tests/go-runners` proves exactly that, alongside the file and directory scope forms, because a regression here is a false green on the one gate whose job is catching hollow tests.
 
 ## The seam that makes this work
 
@@ -105,6 +105,8 @@ Everything the binary serves lives in `internal/assets/static/`, embedded with `
 - `//go:embed` fails at **compile** time on an empty match, so the generator commits a placeholder `internal/assets/static/index.html`. Without it a fresh clone would not compile until someone ran a Node build, which would put a Node toolchain on the path of every Go-only gate. Node stays a build dependency of the client and is absent from the shipped artefact.
 
 ## Definition of done, proved
+
+`tests/go-runners` also pins the cases that turned out to matter most, each of which produced a wrong verdict at some point: a failure whose output contains a line starting `# `, a benchmark-only package, a goroutine panic (which fails with no `--- FAIL:` line), a module with no main package at all, a comment merely mentioning the build tag, and a hollow test placed beside a real one on each tier.
 
 `tests/go-e2e-proof` runs the chain on a real increment: scaffold the project, run the setup gate to a READY receipt proved by real `go build` and `go test`, add a typed package with a table-driven unit test, then run the judge's sequence through the placed runners (type-check clean, unit tier passes, hollow check ASSERTS on a real behavioural fault, and a deliberate type error is caught by the gate). It also asserts the stack-agnostic core contracts name no Go tooling, so the core stayed agnostic. `tests/go-runners` proves the four-code contract case by case, and `tests/init-go-project` proves each layer flag adds exactly its own files and that the scaffold builds, vets, tests and is gofmt-clean. Where the toolchain, `gh`, a git identity or the network is absent the live proofs are reported skipped, never silently passed.
 

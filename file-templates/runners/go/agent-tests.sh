@@ -82,14 +82,32 @@ as_packages() {
 # how the other stacks' runners narrow the scoped negative run.
 run_one() {
     local label="$1"; shift
-    local tags=("$@") out rc targets=()
+    local tags=("$@") out rc targets=() names
     if [ "${#scope[@]}" -gt 0 ]; then
         mapfile -t targets < <(as_packages "${scope[@]}")
+        # Narrowing to the package is not enough when the scope names FILES, which
+        # is what the hollow check's negative run does. Go co-locates tests, so the
+        # package almost always holds other tests too, and any one of them catching
+        # the planted fault grades the scoped file ASSERTS however hollow it is. So
+        # the run is filtered to the test functions those files actually declare.
+        names="$(scoped_test_names)"
+        [ -n "$names" ] && tags+=("-run=^(${names})$")
     else
         targets=("./...")
     fi
     out="$(go test "${tags[@]}" "${targets[@]}" 2>&1)"; rc=$?
     classify "$label" "$out" "$rc"
+}
+
+# scoped_test_names: the test functions declared by the scope arguments that are
+# files, as one alternation. Empty when the scope names only directories, in which
+# case the whole package is the unit of selection and no filter is applied.
+scoped_test_names() {
+    local p
+    for p in "${scope[@]}"; do
+        [ -f "$p" ] || continue
+        grep -hoE '^func Test[A-Za-z0-9_]*' "$p" 2>/dev/null | sed 's/^func //'
+    done | sort -u | paste -sd'|' -
 }
 
 # classify <label> <output> <rc>: map go test's conflated result onto the four
@@ -136,37 +154,89 @@ classify() {
         return 2
     fi
 
-    # Non-zero with neither a build failure nor a reported test failure: go itself
-    # could not run (a bad pattern, a module error, a toolchain problem).
+    # A panic in a goroutine, a TestMain calling os.Exit, and a test timeout all fail
+    # the tier WITHOUT printing a "--- FAIL:" line, but they do print go's own
+    # package verdict. That is still the code under test misbehaving, so it belongs
+    # to the builder as a failure rather than being written off as an environment
+    # block the loop can route nowhere. Checked after the build markers, which carry
+    # their own FAIL line and must stay a 3.
+    if printf '%s' "$out" | grep -qE '^FAIL[[:space:]]'; then
+        echo "$label: FAILED"
+        printf '%s\n' "$out"
+        return 1
+    fi
+
+    # Non-zero with no package verdict at all: go itself could not run (a bad
+    # pattern, a module error, a toolchain problem).
     echo "$label: COULD NOT RUN (environment, not a test failure)"
     printf '%s\n' "$out"
     return 3
 }
 
-# integration_packages: the packages holding at least one integration-tagged test
-# file. The tag ADDS files rather than selecting only them, so `go test -tags=...`
-# over the whole module is a superset of the unit tier: it can never report a zero
-# selection, and it re-runs every unit test. Scoping to the tagged packages is what
-# makes code 2 reachable on this tier, as contracts/agent-runner.md requires.
-integration_packages() {
-    grep -rl --include='*_test.go' --exclude-dir=.building --exclude-dir=vendor \
-        --exclude-dir=node_modules '//go:build integration' . 2>/dev/null \
-        | xargs -r -n1 dirname | sort -u
+# integration_targets: the test FUNCTIONS the integration tag adds, one
+# "<package-dir>|<name>|<name>..." line per package that declares any.
+#
+# The tag ADDS files rather than selecting only them, so `go test -tags=...` over the
+# whole module is a strict superset of the unit tier: it could never report a zero
+# selection, and it re-ran every unit test.
+#
+# Scoping to the PACKAGE is still not enough. Go co-locates tests, so a package with
+# an integration file almost always holds untagged unit tests too, and the tagged run
+# executes both. That let a unit test satisfy the integration tier's hollow gate: a
+# completely non-asserting integration test graded ASSERTS, because its neighbour
+# caught the planted fault. The tier has to narrow to the tagged FUNCTIONS.
+#
+# Which files the tag adds is resolved by ASKING THE TOOLCHAIN rather than grepping
+# for the tag string. A grep matched the words in a prose comment, fabricating a tier
+# that then "passed" by running unit tests, and split any package path containing a
+# space.
+integration_targets() {
+    local dir importpath tagged untagged only f names
+    while IFS='|' read -r dir importpath tagged; do
+        [ -n "$dir" ] || continue
+        untagged="$(go list -f '{{range .TestGoFiles}}{{.}} {{end}}{{range .XTestGoFiles}}{{.}} {{end}}' "$importpath" 2>/dev/null)"
+        only=""
+        for f in $tagged; do
+            case " $untagged " in
+                *" $f "*) ;;
+                *) only="$only $f" ;;
+            esac
+        done
+        [ -n "$only" ] || continue
+        # shellcheck disable=SC2086 # $only is a deliberate file list to word-split
+        names="$( cd "$dir" && grep -hoE '^func Test[A-Za-z0-9_]*' $only 2>/dev/null | sed 's/^func //' | sort -u )"
+        [ -n "$names" ] || continue
+        printf '%s|%s\n' "$dir" "$(printf '%s' "$names" | paste -sd'|' -)"
+    done < <(go list -tags=integration \
+        -f '{{.Dir}}|{{.ImportPath}}|{{range .TestGoFiles}}{{.}} {{end}}{{range .XTestGoFiles}}{{.}} {{end}}' \
+        ./... 2>/dev/null)
 }
 
-# run_integration: the tagged tier, scoped to the packages that actually carry
-# tagged files unless the caller scoped it themselves.
+# run_integration: the tagged tier, narrowed to the tagged test functions unless the
+# caller scoped it themselves.
 run_integration() {
-    local dirs=()
-    if [ "${#scope[@]}" -eq 0 ]; then
-        mapfile -t dirs < <(integration_packages)
-        if [ "${#dirs[@]}" -eq 0 ]; then
-            echo "integration: 0 tests selected (hollow suite)"
-            return 2
-        fi
-        scope=("${dirs[@]}")
+    if [ "${#scope[@]}" -gt 0 ]; then
+        run_one integration -tags=integration
+        return
     fi
-    run_one integration -tags=integration
+
+    local targets=() line dirs=() names=() pattern
+    mapfile -t targets < <(integration_targets)
+    if [ "${#targets[@]}" -eq 0 ]; then
+        echo "integration: 0 tests selected (hollow suite)"
+        return 2
+    fi
+    for line in "${targets[@]}"; do
+        dirs+=("${line%%|*}")
+        names+=("${line#*|}")
+    done
+
+    # One run over the tagged packages, filtered to the tagged function names. A name
+    # that matches nothing in a given package selects nothing there, which the
+    # per-package count already handles.
+    pattern="$(printf '%s|' "${names[@]}")"
+    scope=("${dirs[@]}")
+    run_one integration -tags=integration "-run=^(${pattern%|})$"
 }
 
 case "$tier" in

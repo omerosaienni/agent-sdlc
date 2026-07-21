@@ -24,9 +24,15 @@ work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 proj="$work/goapp"
 
-if command -v go >/dev/null 2>&1 && command -v gh >/dev/null 2>&1 \
-   && [ -n "$(git config --global user.email 2>/dev/null)" ] \
-   && bash "$GEN" goapp "$proj" --http >/dev/null 2>&1; then
+# The SKIP is gated on absent TOOLING alone. A generator regression is a defect, not
+# absent tooling, so it fails the suite instead of quietly skipping the whole proof
+# and leaving the run green.
+if ! command -v go >/dev/null 2>&1 || ! command -v gh >/dev/null 2>&1 \
+   || [ -z "$(git config --global user.email 2>/dev/null)" ]; then
+    printf '  %sSKIP%s live end-to-end proof (go/gh/git-identity absent)\n' "${C_NOTE:-}" "${C_RESET:-}"
+elif ! bash "$GEN" goapp "$proj" --http >/dev/null 2>&1; then
+    _t_bad "the generator failed to scaffold the e2e fixture; the end-to-end proof could not run"
+else
 
     ( cd "$proj" && git config sdlc.identityAllowlist "$(git config user.email)" )
 
@@ -118,8 +124,6 @@ GO
     else
         _t_bad "e2e: setup gate not idempotent on the Go project"
     fi
-else
-    printf '  %sSKIP%s live end-to-end proof (go/gh/git-identity absent)\n' "${C_NOTE:-}" "${C_RESET:-}"
 fi
 
 # --- invariant: the core stayed stack-agnostic -------------------------------

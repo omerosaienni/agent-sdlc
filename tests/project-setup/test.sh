@@ -143,9 +143,14 @@ rm -rf "$mwork"
 GOGEN="$REPO_ROOT/scripts/init-go-project.sh"
 gowork="$(mktemp -d)"
 goproj="$gowork/gosetup"
-if command -v go >/dev/null 2>&1 && command -v gh >/dev/null 2>&1 \
-   && [ -n "$(git config --global user.email 2>/dev/null)" ] \
-   && bash "$GOGEN" gosetup "$goproj" >/dev/null 2>&1; then
+# Gated on absent tooling ALONE: a generator regression must fail this suite, not
+# skip the live READY proof and leave the run green.
+if ! command -v go >/dev/null 2>&1 || ! command -v gh >/dev/null 2>&1 \
+   || [ -z "$(git config --global user.email 2>/dev/null)" ]; then
+    printf '  %sSKIP%s live Go READY proof (go/gh/git-identity absent)\n' "${C_NOTE:-}" "${C_RESET:-}"
+elif ! bash "$GOGEN" gosetup "$goproj" >/dev/null 2>&1; then
+    _t_bad "the generator failed to scaffold the setup fixture; the live Go READY proof could not run"
+else
     ( cd "$goproj" && git config sdlc.identityAllowlist "$(git config user.email)" )
     if ( cd "$goproj" && bash "$G" >/dev/null 2>&1 ); then
         _t_ok "live: setup gate reaches READY on a scaffolded Go project"
@@ -163,8 +168,15 @@ if command -v go >/dev/null 2>&1 && command -v gh >/dev/null 2>&1 \
     else
         _t_bad "live: setup gate not idempotent on the Go project"
     fi
-else
-    printf '  %sSKIP%s live Go READY proof (go/gh/git-identity absent)\n' "${C_NOTE:-}" "${C_RESET:-}"
+    # --check on an un-set-up project must report ACTION NEEDED (2), never FAILED.
+    # The runners being absent is precisely what --check exists to report.
+    fresh="$gowork/freshcheck"
+    if bash "$GOGEN" freshcheck "$fresh" >/dev/null 2>&1; then
+        ( cd "$fresh" && git config sdlc.identityAllowlist "$(git config user.email)" )
+        ( cd "$fresh" && bash "$G" --check >/dev/null 2>&1 )
+        expect_exit 0 "live: --check on an un-set-up Go project reports action needed, not failure" \
+            test "$( ( cd "$fresh" && bash "$G" --check >/dev/null 2>&1 ); echo $? )" = 2
+    fi
 fi
 rm -rf "$gowork"
 

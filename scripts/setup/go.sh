@@ -94,11 +94,19 @@ go_setup() {
     # A module that does not compile cannot have anything else proven about it, and
     # the message would otherwise be buried in the tier output below. -o discards any
     # linked executable: the gate is idempotent and must leave nothing in the tree.
-    local build_dir
+    # -o discards any linked executable so the gate leaves nothing in the tree, but
+    # only when there IS something to link: with no main package `go build -o <dir>/`
+    # fails outright, which would report a clean library as a build error.
+    local build_dir build_ok
     build_dir="$(mktemp -d)"
-    if go build -o "$build_dir/" ./... >/dev/null 2>&1; then ok "go build ./... compiles the module"
-    else bad "go build ./... failed; fix the compile errors and re-run"; fi
+    if go list -f '{{if eq .Name "main"}}{{.ImportPath}}{{end}}' ./... 2>/dev/null | grep -q .; then
+        go build -o "$build_dir/" ./... >/dev/null 2>&1 && build_ok=1 || build_ok=0
+    else
+        go build ./... >/dev/null 2>&1 && build_ok=1 || build_ok=0
+    fi
     rm -rf "$build_dir"
+    if [ "$build_ok" = 1 ]; then ok "go build ./... compiles the module"
+    else bad "go build ./... failed; fix the compile errors and re-run"; fi
 
     # -----------------------------------------------------------------------
     # 2. Coverage tooling: built into the toolchain, so there is nothing to
@@ -161,8 +169,13 @@ go_setup() {
         else
             note "no integration tier declared (no //go:build integration test files); nothing to run"
         fi
-    else
+    elif consent; then
         bad ".building/scripts/agent-tests.sh is not present, so no tier can be proven"
+    else
+        # Under --check the runner is legitimately absent: placing it is the very
+        # action --check is reporting as outstanding. A FAIL here would make the
+        # read-only preview of an un-set-up project look broken rather than pending.
+        need "the agent test runner is not placed yet, so no tier can be proven; re-run without --check"
     fi
     [ -f .building/scripts/agent-hollow.sh ] && agent_hollow_check
     [ -f .building/scripts/agent-typecheck.sh ] && agent_typecheck_check

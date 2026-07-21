@@ -70,15 +70,25 @@ env_failure() {
     if printf '%s' "$1" | grep -qE '^[^[:space:]]+\.go:[0-9]+:[0-9]+:'; then
         return 1
     fi
-    printf '%s' "$1" | grep -qE 'no required module provides|missing go\.sum entry|module lookup disabled|dial tcp|connection refused|i/o timeout|go: updates to go\.mod needed'
+    # Only a genuine inability to REACH the proxy is an environment block. A stale
+    # go.mod or go.sum is the builder's to fix with go mod tidy, so it stays a
+    # rejection: classifying it as environment consumes no attempt and leaves the
+    # loop with no way to route the one thing that would fix it.
+    printf '%s' "$1" | grep -qE 'module lookup disabled|dial tcp|connection refused|i/o timeout|proxyconnect|TLS handshake timeout'
 }
 
-# -o sends any linked executable to a throwaway directory. Without it, `go build`
-# drops a binary named after the module into the working tree whenever the module
-# has a main package at its root, so running the gate would leave a file behind.
+# `go build ./...` drops a binary named after the module into the working tree
+# whenever the module has a main package, and the gate must leave nothing behind.
+# -o sends it to a throwaway directory instead, but ONLY when there is something to
+# link: with no main package `go build -o <dir>/` fails outright with "no main
+# packages to build", which would report a perfectly clean library as a build error.
 build_dir="$(mktemp -d)"
 trap 'rm -rf "$build_dir"' EXIT
-build_out="$(go build -o "$build_dir/" ./... 2>&1)"; build_rc=$?
+if go list -f '{{if eq .Name "main"}}{{.ImportPath}}{{end}}' ./... 2>/dev/null | grep -q .; then
+    build_out="$(go build -o "$build_dir/" ./... 2>&1)"; build_rc=$?
+else
+    build_out="$(go build ./... 2>&1)"; build_rc=$?
+fi
 if [ "$build_rc" -ne 0 ]; then
     env_failure "$build_out" \
         && report 3 "COULD NOT RUN (module resolution failed, not a type error)" "$build_out"

@@ -225,6 +225,102 @@ GO
     expect_exit 0 "live: --verbose keeps the contract code" \
         test "$(rc .building/scripts/agent-tests.sh unit --verbose)" = 0
 
+    # A LIBRARY-ONLY module (no main package anywhere) must type-check clean. The
+    # gate discards the linked binary with -o, and `go build -o <dir>/` fails
+    # outright when there is nothing to link, which reported a clean library as a
+    # build error the builder could not act on.
+    lib="$work/libonly"
+    mkdir -p "$lib/internal/calc"
+    printf 'module libonly\n\ngo 1.23\n' > "$lib/go.mod"
+    cat > "$lib/internal/calc/calc.go" <<'GO'
+package calc
+
+// Add exists so the module has a package and no main.
+func Add(a, b int) int { return a + b }
+GO
+    cat > "$lib/internal/calc/calc_test.go" <<'GO'
+package calc
+
+import "testing"
+
+func TestAdd(t *testing.T) {
+	if Add(1, 2) != 3 {
+		t.Errorf("Add(1,2) = %d, want 3", Add(1, 2))
+	}
+}
+GO
+    expect_exit 0 "live: a module with no main package type-checks clean" \
+        test "$( ( cd "$lib" && bash "$GODIR/agent-typecheck.sh" >/dev/null 2>&1 ); echo $? )" = 0
+    expect_exit 0 "live: a module with no main package runs its unit tier" \
+        test "$( ( cd "$lib" && bash "$GODIR/agent-tests.sh" unit >/dev/null 2>&1 ); echo $? )" = 0
+
+    # A panic in a goroutine fails the tier WITHOUT a "--- FAIL:" line. It is the
+    # code under test misbehaving, so it belongs to the builder as a failure, not
+    # written off as an environment block the loop can route nowhere.
+    cat > "$proj/internal/app/panic_test.go" <<'GO'
+package app
+
+import "testing"
+
+func TestPanicsInAGoroutine(t *testing.T) {
+	done := make(chan struct{})
+	go func() { defer close(done); panic("worker died") }()
+	<-done
+}
+GO
+    expect_exit 0 "live: a goroutine panic is a failure (1), not an environment block" \
+        test "$(rc .building/scripts/agent-tests.sh unit)" = 1
+    rm -f "$proj/internal/app/panic_test.go"
+
+    # The hollow check narrows to the test FUNCTIONS in the file it was pointed at.
+    # Scoping only to the package let a real neighbour catch the planted fault, so a
+    # non-asserting test graded ASSERTS: a false green on the gate whose whole job is
+    # catching hollow tests.
+    cat > "$proj/internal/app/hollow_test.go" <<'GO'
+package app
+
+import "testing"
+
+func TestCallsGreetingWithoutAsserting(t *testing.T) { _ = Greeting() }
+GO
+    expect_exit 0 "live: a hollow test BESIDE a real one is still HOLLOW" \
+        test "$(rc .building/scripts/agent-hollow.sh unit internal/app/app.go internal/app/hollow_test.go 'app starting' 'broken')" = 1
+    expect_exit 0 "live: the real test beside it still ASSERTS" \
+        test "$(rc .building/scripts/agent-hollow.sh unit internal/app/app.go internal/app/app_test.go 'app starting' 'broken')" = 0
+    rm -f "$proj/internal/app/hollow_test.go"
+
+    # The same, on the tagged tier: an integration test that asserts nothing must not
+    # be rescued by the unit tests Go co-locates in the same package.
+    cat > "$proj/internal/app/app_integration_test.go" <<'GO'
+//go:build integration
+
+package app
+
+import "testing"
+
+func TestAppIntegrationWithoutAsserting(t *testing.T) { _ = Greeting() }
+GO
+    expect_exit 0 "live: a non-asserting INTEGRATION test is HOLLOW despite unit tests beside it" \
+        test "$(rc .building/scripts/agent-hollow.sh integration internal/app/app.go internal/app/app_integration_test.go 'app starting' 'broken')" = 1
+    expect_exit 0 "live: the scoped integration tier still runs" \
+        test "$(rc .building/scripts/agent-tests.sh integration)" = 0
+    rm -f "$proj/internal/app/app_integration_test.go"
+
+    # A comment MENTIONING the build tag must not fabricate an integration tier: the
+    # tagged files are resolved by asking the toolchain, not by grepping for the tag.
+    cat > "$proj/internal/app/doc_test.go" <<'GO'
+package app
+
+// The integration tier is declared with //go:build integration at the top of a file.
+GO
+    expect_exit 0 "live: prose naming the tag does not fabricate an integration tier" \
+        test "$(rc .building/scripts/agent-tests.sh integration)" = 2
+    rm -f "$proj/internal/app/doc_test.go"
+
+    # 'both' runs unit then integration, and reports the integration verdict.
+    expect_exit 0 "live: 'both' with no tagged tests reports the integration verdict (2)" \
+        test "$(rc .building/scripts/agent-tests.sh both)" = 2
+
     # The type-check gate must leave no artefact: `go build ./...` drops a binary
     # named after the module whenever a main package sits at the root.
     before="$( cd "$proj" && ls | sort )"
