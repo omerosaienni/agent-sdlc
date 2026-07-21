@@ -66,7 +66,12 @@ as_packages() {
         if [ -f "$p" ]; then d="$(dirname "$p")"; else d="${p%/}"; fi
         case "$d" in
             ./*|/*) printf '%s\n' "$d" ;;
-            .)      printf './...\n' ;;
+            # The ROOT package, not the whole module. Expanding it to ./... would
+            # silently unscope the hollow check's negative run for a root-level test
+            # file, so an unrelated failing package elsewhere would be read as the
+            # planted fault being caught: a false ASSERTS on the one gate whose job
+            # is catching hollow tests.
+            .)      printf '.\n' ;;
             *)      printf './%s\n' "$d" ;;
         esac
     done
@@ -84,48 +89,51 @@ run_one() {
         targets=("./...")
     fi
     out="$(go test "${tags[@]}" "${targets[@]}" 2>&1)"; rc=$?
+    classify "$label" "$out" "$rc"
+}
 
-    if [ "$verbose" = 1 ]; then
+# classify <label> <output> <rc>: map go test's conflated result onto the four
+# contract codes. Precedence matters and is deliberate:
+#   1. a reported test failure wins, even alongside a build error elsewhere, because
+#      "could not run" means NO suite executed (contracts/agent-runner.md)
+#   2. then a build or setup failure, which is an environment problem and must never
+#      reach the builder as a behaviour failure
+#   3. then, on a clean exit, whether any package actually ran a test
+#
+# The build-failure probe matches ONLY go's own "[build failed]"/"[setup failed]"
+# markers. It deliberately does NOT match a leading "# ", which go prints as the
+# banner above compiler diagnostics: the code under test can print that too (any
+# program emitting a shell, SQL or markdown comment does), and matching it turned
+# genuine failures into environment blocks.
+classify() {
+    local label="$1" out="$2" rc="$3"
+
+    if printf '%s' "$out" | grep -qE '^[[:space:]]*--- FAIL:'; then
+        echo "$label: FAILED"
         printf '%s\n' "$out"
-        return "$rc"
+        return 1
     fi
 
-    # go test conflates outcomes into two exit codes, so the classification is by
-    # OUTPUT, not by code (this is the whole reason this runner is not a one-liner):
-    #   exit 0 with only "[no test files]" lines  -> nothing ran   -> 2
-    #   exit 0 with at least one "ok " line       -> tests passed  -> 0
-    #   exit 1 with a build/setup failure         -> could not run -> 3
-    #   exit 1 with "--- FAIL:"                   -> real failure  -> 1
-    #   anything else non-zero                    -> could not run -> 3
-    if [ "$rc" -eq 0 ]; then
-        # "testing: warning: no tests to run" is go's other zero-selection signal
-        # (every test filtered out); treat it the same as no test files.
-        if printf '%s' "$out" | grep -qE '^ok  ' \
-           && ! printf '%s' "$out" | grep -q 'no tests to run'; then
-            local summary
-            summary="$(printf '%s' "$out" | grep -cE '^ok  ')"
-            echo "$label: $summary package(s) passed"
-            return 0
-        fi
-        echo "$label: 0 tests selected (hollow suite)"
-        return 2
-    fi
-
-    # A build error in a test package is an environment problem, not a behaviour
-    # failure, and must never be bounced to the builder as one. go reports it as
-    # "[build failed]" / "[setup failed]" on the FAIL line, and prints the compiler
-    # diagnostics under a "# package" banner. Checked BEFORE the failure case: if
-    # anything failed to compile, the tier did not fully run.
-    if printf '%s' "$out" | grep -qE '\[(build|setup) failed\]|^# '; then
+    if printf '%s' "$out" | grep -qE '\[(build|setup) failed\]'; then
         echo "$label: COULD NOT RUN (build error in a test package, not a test failure)"
         printf '%s\n' "$out"
         return 3
     fi
 
-    if printf '%s' "$out" | grep -qE '^\s*--- FAIL:|^FAIL'; then
-        echo "$label: FAILED"
-        printf '%s\n' "$out"
-        return 1
+    if [ "$rc" -eq 0 ]; then
+        # Counted PER PACKAGE. A module-wide grep would let one benchmark-only
+        # package ("ok pkg [no tests to run]") mark a fully green tier hollow.
+        local ran
+        ran="$(printf '%s' "$out" | grep -E '^ok  ' | grep -vc 'no tests to run')"
+        if [ "$ran" -gt 0 ]; then
+            echo "$label: $ran package(s) passed"
+            # --verbose adds detail; it never changes the verdict, so the contract
+            # code is the same whether or not it was asked for.
+            [ "$verbose" = 1 ] && printf '%s\n' "$out"
+            return 0
+        fi
+        echo "$label: 0 tests selected (hollow suite)"
+        return 2
     fi
 
     # Non-zero with neither a build failure nor a reported test failure: go itself
@@ -135,10 +143,36 @@ run_one() {
     return 3
 }
 
+# integration_packages: the packages holding at least one integration-tagged test
+# file. The tag ADDS files rather than selecting only them, so `go test -tags=...`
+# over the whole module is a superset of the unit tier: it can never report a zero
+# selection, and it re-runs every unit test. Scoping to the tagged packages is what
+# makes code 2 reachable on this tier, as contracts/agent-runner.md requires.
+integration_packages() {
+    grep -rl --include='*_test.go' --exclude-dir=.building --exclude-dir=vendor \
+        --exclude-dir=node_modules '//go:build integration' . 2>/dev/null \
+        | xargs -r -n1 dirname | sort -u
+}
+
+# run_integration: the tagged tier, scoped to the packages that actually carry
+# tagged files unless the caller scoped it themselves.
+run_integration() {
+    local dirs=()
+    if [ "${#scope[@]}" -eq 0 ]; then
+        mapfile -t dirs < <(integration_packages)
+        if [ "${#dirs[@]}" -eq 0 ]; then
+            echo "integration: 0 tests selected (hollow suite)"
+            return 2
+        fi
+        scope=("${dirs[@]}")
+    fi
+    run_one integration -tags=integration
+}
+
 case "$tier" in
     unit)        run_one unit ;;
-    integration) run_one integration -tags=integration ;;
+    integration) run_integration ;;
     both)
         run_one unit || exit $?
-        run_one integration -tags=integration ;;
+        run_integration ;;
 esac

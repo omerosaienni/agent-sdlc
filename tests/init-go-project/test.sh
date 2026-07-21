@@ -112,8 +112,6 @@ if command -v go >/dev/null 2>&1; then
     else
         _t_bad "live: the fresh scaffold is not gofmt-clean: $( cd "$base" && gofmt -l . )"
     fi
-    # The unit tier must NOT select the integration tier: the tags are the split.
-    if ( cd "$sq" && go test ./... 2>&1 | grep -q 'no test files\|ok  ' ); then :; fi
 else
     printf '  %sSKIP%s live base build/vet/test proof (go toolchain absent)\n' "${C_NOTE:-}" "${C_RESET:-}"
 fi

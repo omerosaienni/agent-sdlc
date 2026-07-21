@@ -27,7 +27,16 @@ This is the load-bearing piece of the whole path. `go test` returns only two exi
 - It exits **0** for a package with **no test files at all**. A hollow suite is indistinguishable from a passing one by exit code alone.
 - It exits **1** for both a **genuine assertion failure** and a **build error in a test package**. A broken compile is indistinguishable from a real failure by exit code alone.
 
-The contract in `contracts/agent-runner.md` needs those four outcomes kept apart, because the judge treats them completely differently: a failure is bounced to the builder and consumes an attempt, an environment problem is not. So `file-templates/runners/go/agent-tests.sh` parses the output: an `ok  ` line means tests actually ran, `[build failed]` or `[setup failed]` or a `# package` banner means the tier could not run (3), `--- FAIL:` means a real failure (1), and exit 0 with no `ok` line means zero selected (2). `tests/go-runners` proves each of the four against a real Go package, because the conclusion the judge reaches rests entirely on this mapping being right.
+The contract in `contracts/agent-runner.md` needs those four outcomes kept apart, because the judge treats them completely differently: a failure is bounced to the builder and consumes an attempt, an environment problem is not. So `file-templates/runners/go/agent-tests.sh` classifies by OUTPUT, in a deliberate order: a reported `--- FAIL:` wins (a tier that ran and failed is not a tier that could not run), then go's own `[build failed]` / `[setup failed]` markers mean the tier could not run (3), then on a clean exit the runner counts, PER PACKAGE, how many actually ran a test, so zero means a hollow suite (2).
+
+Two details there are scars, and both are covered by regression cases in `tests/go-runners`:
+
+- The build-failure probe matches only go's own markers. It must NOT also match a leading `# `, which go prints as the banner above compiler diagnostics: the code under test can print that too (any program emitting a shell, SQL or markdown comment), and matching it reported genuine test failures as environment blocks, which consume no judge attempt and are read as BAD FAULT by the hollow check.
+- The ran-a-test count is per package, not per module. A single benchmark-only package prints `ok pkg [no tests to run]` while passing, and counted module-wide that marked a fully green tier hollow.
+
+### The tagged tier has to be scoped, or code 2 is unreachable
+
+`-tags=integration` **adds** files, it does not select only them, so `go test -tags=integration ./...` is a strict superset of the unit tier. Left that way the integration tier can never report a zero selection (the unit tests carry it to green) and it re-runs the whole unit tier every time. The runner therefore resolves the packages that actually hold a `//go:build integration` file and runs only those, reporting 2 when there are none. That is what makes the contract's code 2 reachable on this tier.
 
 ### The type-check gate is the compiler plus vet
 

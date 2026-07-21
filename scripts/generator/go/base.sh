@@ -180,3 +180,11 @@ graphify-out/
 .claude/
 EOF
 }
+
+# go_gitignore_fragments: append each enabled layer's ignore rules to the base file.
+# Called by the orchestrator AFTER the layers have run, so a layer contributes its
+# own rules rather than the base guessing at what every layer might add.
+go_gitignore_fragments() {
+    [ -n "${REACT_GITIGNORE:-}" ] && printf '%s' "$REACT_GITIGNORE" >> "$DIR/.gitignore"
+    return 0
+}

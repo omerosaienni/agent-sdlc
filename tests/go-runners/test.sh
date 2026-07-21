@@ -37,8 +37,15 @@ work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 proj="$work/runtest"
 
-if command -v go >/dev/null 2>&1 && [ -f "$GEN" ] \
-   && bash "$GEN" runtest "$proj" >/dev/null 2>&1; then
+# The SKIP is gated on the toolchain ALONE. A generator regression is a defect, not
+# absent tooling, so it must fail the suite rather than quietly skip the matrix and
+# leave the run green (tests/README.md sanctions self-skipping only for absent
+# tooling).
+if ! command -v go >/dev/null 2>&1; then
+    printf '  %sSKIP%s live exit-code matrix (go toolchain absent)\n' "${C_NOTE:-}" "${C_RESET:-}"
+elif ! bash "$GEN" runtest "$proj" >/dev/null 2>&1; then
+    _t_bad "the generator failed to scaffold the runner fixture; the exit-code matrix could not run"
+else
 
     mkdir -p "$proj/.building/scripts"
     cp "$GODIR/agent-tests.sh" "$GODIR/agent-typecheck.sh" \
@@ -143,8 +150,91 @@ GO
     # The tree must be back to green: every hollow run restores what it faulted.
     expect_exit 0 "live: tree restored to green after the hollow runs" \
         test "$(rc .building/scripts/agent-tests.sh unit)" = 0
-else
-    printf '  %sSKIP%s live exit-code matrix (go toolchain absent or the generator failed)\n' "${C_NOTE:-}" "${C_RESET:-}"
+
+    # --- regressions this suite exists to prevent ---------------------------
+    # A real failure whose output carries a line starting "# " must stay a failure.
+    # go prints that banner above compiler diagnostics, but so does any program
+    # under test that emits a shell, SQL or markdown comment; matching it turned
+    # genuine failures into environment blocks, which consume no judge attempt and
+    # are read as BAD FAULT by the hollow check.
+    cat > "$proj/internal/app/noisy_test.go" <<'GO'
+package app
+
+import (
+	"fmt"
+	"testing"
+)
+
+func TestNoisyFailure(t *testing.T) {
+	fmt.Printf("# diagnostic dump\n# a comment-shaped line\n")
+	t.Errorf("deliberate failure")
+}
+GO
+    expect_exit 0 "live: a failure printing '# ' lines is still 1, not 3" \
+        test "$(rc .building/scripts/agent-tests.sh unit)" = 1
+    rm -f "$proj/internal/app/noisy_test.go"
+
+    # A benchmark-only package reports "[no tests to run]" while passing. Counted
+    # across the module rather than per package, it marked a fully green tier hollow.
+    mkdir -p "$proj/internal/bench"
+    cat > "$proj/internal/bench/bench.go" <<'GO'
+package bench
+
+// Noop exists so the package compiles with only a benchmark beside it.
+func Noop() {}
+GO
+    cat > "$proj/internal/bench/bench_test.go" <<'GO'
+package bench
+
+import "testing"
+
+func BenchmarkNoop(b *testing.B) {
+	for range b.N {
+		Noop()
+	}
+}
+GO
+    expect_exit 0 "live: a benchmark-only package does not make a green tier hollow" \
+        test "$(rc .building/scripts/agent-tests.sh unit)" = 0
+    rm -rf "$proj/internal/bench"
+
+    # The integration tier must be able to report a zero selection. `go test -tags`
+    # ADDS files rather than selecting only them, so over the whole module the tagged
+    # tier is a superset of the unit tier and code 2 would be unreachable.
+    expect_exit 0 "live: no tagged test files -> integration reports 2" \
+        test "$(rc .building/scripts/agent-tests.sh integration)" = 2
+    cat > "$proj/internal/app/tagged_integration_test.go" <<'GO'
+//go:build integration
+
+package app
+
+import "testing"
+
+func TestTagged(t *testing.T) {
+	if Greeting() == "" {
+		t.Error("empty greeting")
+	}
+}
+GO
+    expect_exit 0 "live: a tagged test file -> integration reports 0" \
+        test "$(rc .building/scripts/agent-tests.sh integration)" = 0
+    rm -f "$proj/internal/app/tagged_integration_test.go"
+
+    # --verbose adds detail; it must NOT change the verdict. Returning go's own code
+    # inverted the contract (a build error read as a failure, zero selection as a pass).
+    expect_exit 0 "live: --verbose keeps the contract code" \
+        test "$(rc .building/scripts/agent-tests.sh unit --verbose)" = 0
+
+    # The type-check gate must leave no artefact: `go build ./...` drops a binary
+    # named after the module whenever a main package sits at the root.
+    before="$( cd "$proj" && ls | sort )"
+    rc .building/scripts/agent-typecheck.sh >/dev/null
+    after="$( cd "$proj" && ls | sort )"
+    if [ "$before" = "$after" ]; then
+        _t_ok "live: the type-check gate leaves no build artefact behind"
+    else
+        _t_bad "live: the type-check gate changed the working tree; before [$before] after [$after]"
+    fi
 fi
 
 suite_summary

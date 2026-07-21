@@ -211,6 +211,15 @@ client-build: ## Build the client and sync it into the embedded assets
       - run: npm --prefix client run build
       - run: npm --prefix client run test'
 
+    # .gitignore fragment: client/dist is the INTERMEDIATE build output. The copy
+    # that matters is the one make client-build syncs into internal/assets/static,
+    # which is what the binary embeds and what git tracks. Without this the same
+    # bundle is committed twice, with the hashed names diverging on every rebuild.
+    REACT_GITIGNORE="# the client's intermediate build output; make client-build syncs it into
+# internal/assets/static, and THAT copy is the one the binary embeds and git tracks
+client/dist/
+"
+
     REACT_CLAUDE_MD='
 - The React client lives under client/ and is a BUILD dependency only: `make
   client-build` builds it to client/dist and syncs it into internal/assets/static,

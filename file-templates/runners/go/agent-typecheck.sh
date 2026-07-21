@@ -60,11 +60,25 @@ report() {
 # a bad require) fails to build for an ENVIRONMENT reason, not a type reason. go
 # names that class in its output, so it is separated out rather than reported as a
 # type error the builder is asked to fix.
+#
+# A COMPILER DIAGNOSTIC OVERRIDES ALL OF IT. "go: downloading ..." is printed on any
+# cold-cache build, including one that then reports real type errors, so treating it
+# as an environment signal made the first judge run after a scaffold report an
+# environment block instead of the errors the builder needs to fix. If go got far
+# enough to name a file, a line and a column, it ran.
 env_failure() {
-    printf '%s' "$1" | grep -qE 'no required module provides|missing go\.sum entry|module lookup disabled|dial tcp|connection refused|i/o timeout|go: (updates to go\.mod needed|download)'
+    if printf '%s' "$1" | grep -qE '^[^[:space:]]+\.go:[0-9]+:[0-9]+:'; then
+        return 1
+    fi
+    printf '%s' "$1" | grep -qE 'no required module provides|missing go\.sum entry|module lookup disabled|dial tcp|connection refused|i/o timeout|go: updates to go\.mod needed'
 }
 
-build_out="$(go build ./... 2>&1)"; build_rc=$?
+# -o sends any linked executable to a throwaway directory. Without it, `go build`
+# drops a binary named after the module into the working tree whenever the module
+# has a main package at its root, so running the gate would leave a file behind.
+build_dir="$(mktemp -d)"
+trap 'rm -rf "$build_dir"' EXIT
+build_out="$(go build -o "$build_dir/" ./... 2>&1)"; build_rc=$?
 if [ "$build_rc" -ne 0 ]; then
     env_failure "$build_out" \
         && report 3 "COULD NOT RUN (module resolution failed, not a type error)" "$build_out"
@@ -78,4 +92,4 @@ if [ "$vet_rc" -ne 0 ]; then
     report 1 "VET ERRORS" "$vet_out"
 fi
 
-report 0 "clean" "$build_out$vet_out"
+report 0 "clean" "$(printf '%s\n%s' "$build_out" "$vet_out")"

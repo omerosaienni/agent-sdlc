@@ -167,6 +167,9 @@ go_base_layer
 # HTTP last: it replaces the base entry point with the server bootstrap.
 [ "$WITH_HTTP" = 1 ] && go_http_layer
 
+# Each layer contributes its own .gitignore rules, appended to the base file.
+go_gitignore_fragments
+
 # ---------------------------------------------------------------------------
 # Makefile: base targets, then the help lines and target blocks each layer added.
 # Grouped by area (build, quality, tests, then the layer groups), mirroring the

@@ -22,7 +22,10 @@ package httpapi
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"net/http"
+	"path"
+	"strings"
 
 	"${NAME}/internal/assets"
 )
@@ -46,11 +49,65 @@ func Handler() http.Handler {
 		}
 	})
 
-	// Everything not matched above is the embedded client, so a page refresh on any
-	// path lands on the app rather than a 404 from the API.
-	mux.Handle("/", http.FileServerFS(assets.FS()))
+	// Everything not matched above is the embedded client.
+	mux.Handle("/", clientHandler(assets.FS()))
 
 	return mux
+}
+
+// clientHandler serves the embedded client as a single-page application. A bare
+// file server is not enough: a client that routes in the browser asks the server
+// for paths that have no file behind them, and a 404 there breaks every deep link
+// on a refresh.
+//
+// The fallback is deliberately NOT unconditional. A request naming a concrete file
+// still 404s when that file is absent, because answering it with the index turns a
+// missing or misnamed bundle into a silent success: the browser is handed HTML
+// where it expected JavaScript, and the failure shows up as an unexplained blank
+// page instead of a 404 in the network log.
+func clientHandler(client fs.FS) http.Handler {
+	files := http.FileServerFS(client)
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		name := strings.TrimPrefix(path.Clean(r.URL.Path), "/")
+		if isClientRoute(client, name) {
+			serveIndex(w, client)
+			return
+		}
+		files.ServeHTTP(w, r)
+	})
+}
+
+// isClientRoute reports whether a path should fall back to the application shell.
+// A path resolving to a real embedded file never does, and neither does anything
+// under the build's asset directory: those name concrete files, so their absence is
+// a genuine 404 rather than a route the client will handle.
+func isClientRoute(client fs.FS, name string) bool {
+	if name == "" || name == "." {
+		return false
+	}
+	if strings.HasPrefix(name, "assets/") {
+		return false
+	}
+	if _, err := fs.Stat(client, name); err == nil {
+		return false
+	}
+	return true
+}
+
+func serveIndex(w http.ResponseWriter, client fs.FS) {
+	b, err := fs.ReadFile(client, "index.html")
+	if err != nil {
+		// Unreachable in a correctly built binary: index.html is embedded at compile
+		// time. Reported rather than panicked so a broken build degrades to a 500.
+		http.Error(w, "client not built into this binary", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	// A write failure here means the client hung up; the response is already
+	// committed, so there is nothing left to report to anyone.
+	_, _ = w.Write(b)
 }
 
 // ListenAndServe starts the server on host:port and blocks. Address parts are taken
@@ -88,6 +145,12 @@ func TestRoutes(t *testing.T) {
 	}{
 		{name: "health reports ok", path: "/healthz", wantStatus: http.StatusOK, wantBodyHas: `"ok":true`},
 		{name: "root serves the embedded client", path: "/", wantStatus: http.StatusOK, wantBodyHas: "<html"},
+		// The single-page fallback: a client route has no file behind it, and
+		// answering 404 there would break every deep link on a refresh.
+		{name: "an unknown client route serves the client", path: "/some/route", wantStatus: http.StatusOK, wantBodyHas: "<html"},
+		// Not unconditional: a missing concrete file must still 404, or a misnamed
+		// bundle is served as HTML and fails as a blank page instead of a 404.
+		{name: "a missing asset is a 404", path: "/assets/missing.js", wantStatus: http.StatusNotFound},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -97,7 +160,7 @@ func TestRoutes(t *testing.T) {
 			if rec.Code != tt.wantStatus {
 				t.Errorf("GET %s status = %d, want %d", tt.path, rec.Code, tt.wantStatus)
 			}
-			if !strings.Contains(rec.Body.String(), tt.wantBodyHas) {
+			if tt.wantBodyHas != "" && !strings.Contains(rec.Body.String(), tt.wantBodyHas) {
 				t.Errorf("GET %s body = %q, want it to contain %q", tt.path, rec.Body.String(), tt.wantBodyHas)
 			}
 		})

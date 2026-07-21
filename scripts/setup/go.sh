@@ -27,39 +27,24 @@
 # Provides:
 #   go_setup   run every Go check in order, accumulating into `fail`.
 
-# go_run_tier <label> <tag-args...>: run a tier through go test and classify. Go
-# conflates outcomes in its exit codes (0 with no test files, 1 for both a real
-# failure and a build error), so classification reads the OUTPUT, the same way the
-# placed agent-tests.sh runner does. A zero selection is a hollow suite (hard fail).
-go_run_tier() { local label="$1"; shift
-    local out rc
-    out=$(go test "$@" ./... 2>&1); rc=$?
-    if [ "$rc" -eq 0 ]; then
-        if printf '%s' "$out" | grep -qE '^ok  '; then ok "$label selected tests and passed"
-        else bad "$label selected zero tests (hollow suite)"; fi
-        return
-    fi
-    if printf '%s' "$out" | grep -qE '\[(build|setup) failed\]|^# '; then
-        bad "$label could not build (see output); fix the compile error and re-run"
-    else
-        bad "$label failed (see output)"
-    fi; }
-
-# agent_check <tier>: prove the agent test runner works for one tier. The judge runs
-# tests through .building/scripts/agent-tests.sh, so a project is only loop-ready if
-# it produces a terse summary on a passing tier. exit 3 is an environment problem
-# (block); exit 2 (zero selected) only defers, the tier run above hard-fails a
-# hollow declared tier.
-agent_check() { local tier="$1" out rc
+# run_tier <tier> <label>: run a tier THROUGH THE PLACED RUNNER and classify by its
+# exit code alone.
+#
+# The gate deliberately does not carry its own copy of go test's output
+# classification. It used to, and the two drifted: a benchmark-only package made the
+# gate say "selected tests and passed" while the runner returned 2 for the same
+# module. The gate's whole job is proving the path the judge will use, so it proves
+# it by walking it, and there is one classifier to keep correct instead of two.
+run_tier() { local tier="$1" label="$2" out rc
     out=$(bash .building/scripts/agent-tests.sh "$tier" 2>&1); rc=$?
     case "$rc" in
-        0) if printf '%s' "$out" | grep -qE "^$tier: "; then ok "agent test runner works for $tier (terse summary)"
-           else bad "agent test runner ran $tier but did not emit a terse summary; check .building/scripts/agent-tests.sh"; fi ;;
-        2) note "agent runner reports $tier selects zero tests; the tier-run check above hard-fails a hollow declared tier, so this only defers" ;;
-        3) block "agent test runner could not run $tier (environment); fix tooling and re-run" ;;
-        *) bad "agent test runner failed for $tier (exit $rc); the judge depends on this path" ;;
-    esac
-}
+        0) if printf '%s' "$out" | grep -qE "^$tier: "; then ok "$label selected tests and passed (through the agent runner)"
+           else bad "$label passed but the agent runner emitted no terse summary; check .building/scripts/agent-tests.sh"; fi ;;
+        1) bad "$label failed (see output)"; printf '%s\n' "$out" ;;
+        2) bad "$label selected zero tests (hollow suite)" ;;
+        3) block "$label could not run (environment); fix the toolchain or the module and re-run"; printf '%s\n' "$out" ;;
+        *) bad "agent test runner returned an unexpected exit $rc for $label; the judge depends on this path" ;;
+    esac; }
 
 # agent_hollow_check: prove the hollow-check runner answers its usage contract.
 agent_hollow_check() {
@@ -107,9 +92,13 @@ go_setup() {
     fi
 
     # A module that does not compile cannot have anything else proven about it, and
-    # the message would otherwise be buried in the tier output below.
-    if go build ./... >/dev/null 2>&1; then ok "go build ./... compiles the module"
+    # the message would otherwise be buried in the tier output below. -o discards any
+    # linked executable: the gate is idempotent and must leave nothing in the tree.
+    local build_dir
+    build_dir="$(mktemp -d)"
+    if go build -o "$build_dir/" ./... >/dev/null 2>&1; then ok "go build ./... compiles the module"
     else bad "go build ./... failed; fix the compile errors and re-run"; fi
+    rm -rf "$build_dir"
 
     # -----------------------------------------------------------------------
     # 2. Coverage tooling: built into the toolchain, so there is nothing to
@@ -159,24 +148,21 @@ go_setup() {
     fi
 
     # -----------------------------------------------------------------------
-    # 4. Run each tier for real: non-zero selection + pass. The integration tier
-    #    is DECLARED by a build-tag line existing, not by a directory.
+    # 4. Run each tier for real, through the runner the judge will use: non-zero
+    #    selection + pass. The integration tier is DECLARED by a build-tag line
+    #    existing, not by a directory.
     # -----------------------------------------------------------------------
-    go_run_tier "unit tier"
-    if grep -rlq --include='*_test.go' '//go:build integration' . 2>/dev/null; then
-        go_run_tier "integration tier" -tags=integration
-    else
-        note "no integration tier declared (no //go:build integration test files); nothing to run"
-    fi
-
-    # -----------------------------------------------------------------------
-    # 5. Prove the agent runner paths (the judge's surfaces).
-    # -----------------------------------------------------------------------
+    # Both are driven through the placed runner, so running the tier and proving the
+    # judge's surface are the same act rather than two classifiers that can disagree.
     if [ -f .building/scripts/agent-tests.sh ]; then
-        agent_check unit
-        if grep -rlq --include='*_test.go' '//go:build integration' . 2>/dev/null && [ "$fail" -ne 3 ]; then
-            agent_check integration
+        run_tier unit "unit tier"
+        if grep -rlq --include='*_test.go' '//go:build integration' . 2>/dev/null; then
+            [ "$fail" -ne 3 ] && run_tier integration "integration tier"
+        else
+            note "no integration tier declared (no //go:build integration test files); nothing to run"
         fi
+    else
+        bad ".building/scripts/agent-tests.sh is not present, so no tier can be proven"
     fi
     [ -f .building/scripts/agent-hollow.sh ] && agent_hollow_check
     [ -f .building/scripts/agent-typecheck.sh ] && agent_typecheck_check
