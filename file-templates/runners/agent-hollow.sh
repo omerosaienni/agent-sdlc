@@ -38,7 +38,31 @@ tier="$1"; src="$2"; testfile="$3"; old="$4"; new="$5"
 [ -f "$src" ] || die "no such source file: $src" 64
 [ -f "$testfile" ] || die "no such test file: $testfile" 64
 [ "$old" != "$new" ] || die "old and new strings are identical; not a fault" 64
-occ=$(grep -Fo -- "$old" "$src" | wc -l | tr -d ' ')
+[ -n "$old" ] || die "fault target is empty; not a fault" 64
+
+# Counted with shell string operations rather than `grep -Fo | wc -l`, for two
+# reasons the old pipeline got wrong in opposite directions.
+#
+# A fault string that is NOT PRESENT made grep exit 1, which under `set -euo
+# pipefail` failed the assignment and killed the script with exit 1 before it could
+# reach the usage `die` below. Exit 1 is HOLLOW. So a judge that mistyped a fault
+# string was told the increment's test never asserts, and the increment failed for a
+# defect in the judge's own argument. The verdict codes are the contract, so nothing
+# downstream could tell that apart from a genuinely hollow test.
+#
+# A MULTI-LINE fault string could never match at all, because grep matches within a
+# line and `wc -l` counts lines rather than occurrences. Faults spanning two lines
+# are ordinary in braced languages.
+#
+# The count runs over the same `content` the replacement below uses, so what is
+# counted is exactly what will be replaced.
+content="$(cat "$src")"
+occ=0
+rest="$content"
+while [ "${rest#*"$old"}" != "$rest" ]; do
+    rest="${rest#*"$old"}"
+    occ=$((occ + 1))
+done
 [ "$occ" = 1 ] || die "fault target must occur exactly once in $src (found $occ)" 64
 
 bak="$backup_root/$src"
@@ -49,7 +73,7 @@ restore(){ [ -f "$bak" ] && mv "$bak" "$src"; }
 trap restore EXIT
 
 # Apply the fault: literal first-occurrence replace (no regex), via bash expansion.
-content="$(cat "$src")"
+# $content was read above, before the backup, and the file is untouched in between.
 printf '%s\n' "${content/"$old"/"$new"}" > "$src"
 
 # Scoped negative run through the project's runner (single source of truth for
