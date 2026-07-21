@@ -62,4 +62,46 @@ expect_exit 0  "rc3 negative run -> BAD FAULT (exit 2)"  test "$(hollow_verdict 
 # the negative run asserted: a failed restore halts regardless of the negative verdict.
 expect_exit 0  "non-green restore -> HALT (exit 3)"      test "$(hollow_verdict 1 1)" = 3
 
+# --- a bad ARGUMENT is a usage error, never a verdict ---------------------------
+# The verdict codes are the contract, so a malformed call that exits inside the
+# verdict range is indistinguishable downstream from a real finding about the code.
+# This mattered in practice: `grep -Fo "$old" | wc -l` exited 1 when the fault string
+# was absent, which under `set -euo pipefail` killed the script at exit 1 = HOLLOW.
+# A judge that mistyped a fault string was therefore told the increment's test never
+# asserts, and the increment failed for a defect in the judge's own argument.
+#
+# hollow_args <old> <new> [src]: run with a green stub and echo the runner's exit
+# code, so only the argument under test can move it.
+hollow_args() {
+    local old="$1" new="$2" src="${3:-src/a.ts}" ec
+    printf '0\n0\n' > "$work/.building/rc.seq"
+    printf '#!/usr/bin/env bash\nexit 0\n' > "$work/.building/scripts/agent-tests.sh"
+    chmod +x "$work/.building/scripts/agent-tests.sh"
+    ( cd "$work" && bash .building/scripts/agent-hollow.sh unit "$src" src/a.test.ts "$old" "$new" >/dev/null 2>&1 ); ec=$?
+    echo "$ec"
+}
+
+expect_exit 0 "a fault string that is absent -> usage (64), not HOLLOW" \
+    test "$(hollow_args 'no-such-target' 'x')" = 64
+expect_exit 0 "a fault string occurring twice -> usage (64)" \
+    test "$(hollow_args 'e' 'x')" = 64
+expect_exit 0 "an empty fault string -> usage (64), not an infinite loop" \
+    test "$(hollow_args '' 'x')" = 64
+expect_exit 0 "old identical to new -> usage (64)" \
+    test "$(hollow_args '42' '42')" = 64
+expect_exit 0 "a source file that does not exist -> usage (64)" \
+    test "$(hollow_args '42' '43' 'src/absent.ts')" = 64
+
+# A fault spanning two lines is ordinary in a braced language. The line-based count
+# could never match one, so every such fault was rejected as absent.
+printf 'export function f() {\n  return 42;\n}\n' > "$work/src/multi.ts"
+expect_exit 0 "a multi-line fault target is found and applied" \
+    test "$(hollow_args "$(printf 'export function f() {\n  return 42;')" \
+                        "$(printf 'export function f() {\n  return 43;')" 'src/multi.ts')" = 1
+
+# Whatever the verdict, the source is put back exactly as it was: the restore is what
+# lets the loop keep building on the tree afterwards.
+expect_exit 0 "the source file is restored byte-for-byte after a run" \
+    test "$(cat "$work/src/multi.ts")" = "$(printf 'export function f() {\n  return 42;\n}')"
+
 suite_summary
