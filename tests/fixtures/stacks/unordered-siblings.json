@@ -1,0 +1,10 @@
+{
+  "sheet": ".building/features/unordered-siblings/increments.md",
+  "conventions": "CLAUDE.md",
+  "increments": {
+    "root":  { "depends_on": [], "status": "pending", "review_count": 0, "judge_count": 0, "branch": null },
+    "zeta":  { "depends_on": ["root"], "status": "pending", "review_count": 0, "judge_count": 0, "branch": null },
+    "alpha": { "depends_on": ["root"], "status": "pending", "review_count": 0, "judge_count": 0, "branch": null },
+    "omega": { "depends_on": ["zeta", "alpha"], "status": "pending", "review_count": 0, "judge_count": 0, "branch": null }
+  }
+}

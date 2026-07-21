@@ -1,6 +1,6 @@
 # Epic manifest schema (epic.json)
 
-The epic's build order manifest: one JSON file per epic at `.building/epics/<epic-name>/epic.json`. Records the order in which a run's features are built, and the cross feature dependencies that fix that order. Written by the design partner (design-partner.md), one manifest per epic, emitted even for a single feature epic. A human facing, human driven document: the builder does NOT read it and nothing in the build loop is gated on it. Single source of truth for the epic level build order that was previously only prose in each feature's goal.
+The epic's build order manifest: one JSON file per epic at `.building/epics/<epic-name>/epic.json`. Records the order in which a run's features are built, and the cross feature dependencies that fix that order. Written by the design partner (design-partner.md), one manifest per epic, emitted even for a single feature epic. A human facing, human driven document: the builder does NOT read it and the ATTENDED build loop (build-judge-loop.md) is not gated on it. The one exception is the STACKED build loop (build-stacked.md), which reads it read-only to resolve its stack base (which feature a stack chains onto); even there it is a base-resolution reference, not a gate, and the loop never writes it and depends on nothing beyond the cross feature `depends_on`. Single source of truth for the epic level build order that was previously only prose in each feature's goal.
 
 ## Why this exists
 Cross feature order (Orders needs Customers merged first) was recorded only in prose in the dependent feature's goal (increment-sheet.schema.md, Vocabulary). There was no single machine-readable place stating the whole epic's build sequence, so a human driving the build had nowhere to read the order off. This manifest is that place: the epic's features, in build order, with the dependency edges that justify the order.
@@ -51,7 +51,7 @@ A single feature epic is a one element list with `depends_on: []`.
 
 ## Who writes it
 - The design partner, when it resolves an intent into features: sole writer. It writes one manifest per epic alongside the per feature sheets, and re-emits the whole manifest on a modifying run (latest wins, like a sheet).
-- Nothing else writes it. The build loop never reads or writes it; it is not a build input.
+- Nothing else writes it. The attended build loop never reads or writes it; it is not a build input there. The stacked build loop (build-stacked.md) reads it read-only to resolve its stack base and never writes it (see this file's intro); no loop writes it.
 
 ## Excludes
 No status, no counts, no branches, no build state (those are state.schema.md's, per feature). No within feature ordering (that is the sheet's depends_on). Epic level grouping is the human's; this manifest records one epic's feature order, not a hierarchy of epics.

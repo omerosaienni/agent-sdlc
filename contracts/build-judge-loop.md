@@ -10,7 +10,7 @@ Deliver a schema-valid increment sheet as small, independently verified incremen
 - Consumes increment-sheet.schema.md (the sheet) and a project conventions file (CLAUDE.md).
 
 ## Posture
-- Attended only: a human is present at every increment. With a remote the human merge is the final gate. With no remote there is no PR, so the judge's pass is the gate, the loop integrates into local main, and the human still decides at the per-increment checkpoint whether to continue. Unattended operation (auto-merge on green) is out of scope and not built.
+- Attended only: a human is present at every increment. With a remote the human merge is the final gate. With no remote there is no PR, so the judge's pass is the gate, the loop integrates into local main, and the human still decides at the per-increment checkpoint whether to continue. Auto-merge on a green pass is out of scope and not built here; the separate stacked build loop (build-stacked.md) removes the human from the build queue but still never merges, so it does not change this.
 - GitHub is optional, not assumed. A remote enables push/PR/merge; its absence is a warning, never a stop (see Remote presence). The receipt does not promise a remote, so the loop detects one itself.
 - Two modes, both attended, from `mode`: sequential-attended (default), parallel-attended (see Modes). They share every role, gate, budget, the .building layout and the hollow-test; they differ only in the cut-and-checkpoint behaviour after a PR opens.
 

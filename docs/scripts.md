@@ -2,8 +2,10 @@
 
 The pipeline scripts stand a project up, prove it ready for the build loop, and
 gate the loop's own inputs: the project generator, the setup gate, and a small
-dependency helper, plus the sheet and state validators and the checkpoint board
-computer. One more validator, `validate-epics.sh`, gates a design-phase output
+dependency helper, plus the sheet and state validators, the checkpoint board
+computer and the stack linearise (`stack-order.sh`, which the stacked build path
+uses to turn a feature's `depends_on` DAG into one linear build order). One more
+validator, `validate-epics.sh`, gates a design-phase output
 (the epic manifest) the loop never reads; it is documented here beside its sibling
 validators. This documents what each does and how they connect. A second generator,
 `init-python-project.sh`, scaffolds a Python project the same setup gate and loop
@@ -415,3 +417,30 @@ template (build-judge-loop.md, The board); the document agent embeds the same
 Mermaid (document-agent.md), so the two never drift. It always checks its inputs,
 running `validate-state.sh` first (exit 2 if the pair fails). Its tests assert the
 computed board against graphs worked out by hand; fixtures under `tests/`.
+
+---
+
+## stack-order.sh (the stack linearise)
+
+Turns a feature's `depends_on` DAG into the single linear build order the
+[stacked build path](build-loops.md#the-unattended-path-stacked-builds) appends
+in. A git-town stack is linear but the sheet is a DAG with siblings, so the loop
+must pick a linear extension; an LLM hand-picking a topological order with
+tie-breaks drifts, yet the stack must be reproducible across conversations, so a
+script owns it (the same reasoning as `board-state.sh`). Read-only; the
+orchestrator stays the sole writer of `state.json`.
+
+```
+stack-order.sh <state.json> <sheet.md>   emit the build-order JSON array
+stack-order.sh --help                     print the header
+```
+
+It emits one JSON array: the increment ids in a lowest-id-first topological order,
+so an increment never precedes one it depends on and sibling ties are broken by
+lowest id (deterministic, so re-running yields the same chain). The stacked loop
+appends each increment as a git-town child of the one before it in that order
+(build-stacked.md, Linearisation). It always checks its inputs, running
+`validate-state.sh` first (exit 2 if the pair fails); a cycle, which the sheet
+validator rejects upstream, fails loud (exit 4) rather than emitting a partial
+order. Its tests and fixtures live under `tests/`. It is used only by the stacked
+build path; the attended loop never calls it.
