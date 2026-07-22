@@ -239,14 +239,17 @@ go_setup() {
     # -----------------------------------------------------------------------
     # 6. Coverage runs (verify by running, do not trust that it is built in).
     #
-    #    Scoped to the packages that HOLD tests, not ./..., for two reasons. The
-    #    coverage of a package with no test files is not information, it is a
-    #    guaranteed zero. And covering ./... drags in `covdata`, the tool that
-    #    merges profiles across packages, which Go 1.25 builds on demand into
-    #    GOROOT/pkg/tool: when the toolchain was fetched as a module that
-    #    directory is read-only, so the build cannot happen and the run dies with
-    #    "no such tool covdata" even though every instrumented package passed.
+    #    Scoped to the packages that HOLD tests, not ./..., because the coverage of
+    #    a package with no test files is not information, it is a guaranteed zero.
     #    Measuring what can be measured is the stronger check, not the weaker one.
+    #
+    #    It also avoids `covdata`, which merges profiles across packages and which
+    #    Go 1.25 and later build on demand instead of shipping prebuilt. That build
+    #    fails across a GOTOOLCHAIN SWITCH, so a machine whose installed go is older
+    #    than a module's go directive dies with "no such tool covdata" even though
+    #    every instrumented package passed. Keeping the installed go current avoids
+    #    the switch entirely; the read-only module cache an earlier note blamed is
+    #    not the cause, the same GOROOT works when no switch happens.
     # -----------------------------------------------------------------------
     # Coverage over a module whose tiers did not run measures nothing. The two
     # reasons are reported apart, because "an earlier check failed" on a healthy

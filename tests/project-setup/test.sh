@@ -78,10 +78,11 @@ expect_exit 0 "go.sh drives go mod/build/test" grep -qE 'go (mod|build|test) ' "
 expect_exit 0 "go.sh reports coverage as built in (no provider to install)" \
     grep -qE 'coverage tooling built in' "$GO"
 # Coverage is measured over the packages that HOLD tests, derived with go list, not
-# over ./... . Covering ./... needs `covdata` to merge the profile of every package
-# without tests, and Go 1.25 builds that tool on demand into GOROOT/pkg/tool, which
-# is read-only when the toolchain came from the module cache. The result is a
-# coverage run that dies on a missing tool while every instrumented package passed.
+# over ./... , because a package with no test files has a guaranteed zero rather than
+# a measurement. It also avoids `covdata`, which merges the profiles and which Go 1.25
+# and later build on demand: that build fails across a GOTOOLCHAIN switch, so a
+# machine whose installed go is older than the module's go directive gets a coverage
+# run that dies on a missing tool while every instrumented package passed.
 expect_exit 0 "go.sh derives the covered package list from go list" \
     grep -qE 'go list -f .*TestGoFiles' "$GO"
 expect_exit 1 "go.sh does not run coverage over ./... (would require covdata)" \
