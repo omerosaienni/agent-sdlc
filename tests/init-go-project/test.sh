@@ -184,4 +184,15 @@ else
     printf '  %sSKIP%s live --react client proof (npm absent or no registry access)\n' "${C_NOTE:-}" "${C_RESET:-}"
 fi
 
+# --- generated CI must run on STACKED PRs ------------------------------------
+# `pull_request: branches: [main]` filters on the PR's BASE. In a stacked build every
+# increment after the first targets its parent branch, so that filter silently gave
+# them no CI at all: cv-generator's second increment merged having never run any.
+# The framework's flagship mode is the unattended stack, so its generated CI must not
+# be blind to it. Asserted against the generated file, not the generator's source.
+expect_exit 1 "generated CI does not filter pull_request by base branch" \
+    grep -qE '^[[:space:]]*branches:[[:space:]]*\[main\]' "$base/.github/workflows/ci.yml"
+expect_exit 0 "generated CI still triggers on pull_request" \
+    grep -qE '^[[:space:]]*pull_request:' "$base/.github/workflows/ci.yml"
+
 suite_summary
