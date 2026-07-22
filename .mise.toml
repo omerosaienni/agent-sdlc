@@ -1,0 +1,15 @@
+# Toolchains this repo's own test suite needs, so a clone gets what CI has rather
+# than whatever happens to be installed. `mise install` provisions both.
+#
+# go: the Go runners classify go's OWN output, and that output is not stable across
+# releases (1.26 dropped the "# import/path" banner from go vet, which briefly turned
+# every vet finding into an environment block). CI therefore runs the suite on two
+# versions. This pin is the `stable` leg; reproduce the other without changing it:
+#
+#     mise x go@1.25 -- ./tests/run.sh
+#
+# node: the validators (validate-state, validate-epics, stack-order, board-state)
+# embed node, and tests/run.sh refuses to start without it.
+[tools]
+go = "1.26.5"
+node = "lts"
