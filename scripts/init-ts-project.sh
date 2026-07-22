@@ -346,8 +346,10 @@ write_file "$DIR/.github/workflows/ci.yml" <<EOF
 name: CI
 
 on:
+  # No `branches:` filter. That filter matches the PR's BASE, so in a stacked build
+  # every increment after the first targets its PARENT branch and gets no CI at all,
+  # which is precisely the mode this framework runs unattended.
   pull_request:
-    branches: [main]
 
 jobs:
   lint:
